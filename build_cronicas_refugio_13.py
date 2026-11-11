@@ -45,13 +45,14 @@ PAPYRUS_SRC_DIR = os.path.join(THIS_DIR, "papyrus_src")
 PAPYRUS_OUT_DIR = os.path.join(THIS_DIR, "papyrus_out")
 VOICES_DIR = os.path.join(THIS_DIR, "assets", "voices_es")
 SFX_DIR = os.path.join(THIS_DIR, "assets", "sfx")
-BUILD_OUT_DIR = os.path.join(THIS_DIR, "build_out")
+IS_PUBLIC_RELEASE = "--public-release" in sys.argv
+BUILD_OUT_DIR = os.path.join(THIS_DIR, "release_out" if IS_PUBLIC_RELEASE else "build_out")
 
 ESP_NAME = "Vault13Chronicles.esp"
 BA2_NAME = "Vault13Chronicles - Main.ba2"
 TEX_BA2_NAME = "Vault13Chronicles - Textures.ba2"
 
-INSTALL_TO_FO4_DATA = "--no-install" not in sys.argv
+INSTALL_TO_FO4_DATA = ("--no-install" not in sys.argv) and (not IS_PUBLIC_RELEASE)
 
 # Voces ElevenLabs:
 # - Supervisor Jacoren (VTYP 0x01001001 NPCMOverseerJacoren)
@@ -2401,6 +2402,8 @@ ACT2_SCENE_DEFINITIONS = [
                         "rnam_f": "[Discurso] Calmar a Theresa y Cindy",
                         "p_sub_f": "Disuelve tu grupo ahora mismo, Theresa, y que Cindy devuelva las botellas al depósito común sin ir al calabozo. Dadme esta oportunidad en Necrópolis: os juro que volveré con el Chip de Agua.",
                         "p_tts_f": "Disuelve tu grupo ahora mismo, Theresa, y que Cindy devuelva las botellas al depósito común sin ir al calabozo. Dadme esta oportunidad en Necrópolis: os juro que volveré con el Chip de Agua.",
+                        "p_tiqs_stage": 20,
+                        "force_p_tiqs": True,
                         "n_dial": 0x0100524C,
                         "n_info": 0x0100537C,
                         "tiqs_stage": 20,
@@ -2461,6 +2464,8 @@ ACT2_SCENE_DEFINITIONS = [
                         "rnam": "Restituid el agua y abrid paso",
                         "p_sub": "Que el oficial Lyle reintegre las botellas de Cindy al tanque de reserva y que todo el mundo vuelva a su puesto. Abridme la esclusa: voy a Necrópolis a por nuestro Chip de Agua.",
                         "p_tts": "Que el oficial Lyle reintegre las botellas de Cindy al tanque de reserva y que todo el mundo vuelva a su puesto. Abridme la esclusa: voy a Necrópolis a por nuestro Chip de Agua.",
+                        "p_tiqs_stage": 20,
+                        "force_p_tiqs": True,
                         "n_dial": 0x0100524F,
                         "n_info": 0x0100537F,
                         "tiqs_stage": 20,
@@ -5057,7 +5062,7 @@ JUNKTOWN_GREETING_INFOS = [
         "speaker_fid": 0x01001241,
         "speaker_vtyp": UNDERGROUND_LEADER_VTYP,
         "speaker_voice_id": UNDERGROUND_LEADER_VOICE_ID,
-        "stage_conds": [(0x00, 25.0)],
+        "stage_conds": [(0x60, 25.0), (0x80, 40.0)],
         "tiqs_stage": 30,
         "tsce_fid": None,
         "intv_phase": None,
@@ -5079,7 +5084,7 @@ JUNKTOWN_GREETING_INFOS = [
         "speaker_fid": 0x01001241,
         "speaker_vtyp": UNDERGROUND_LEADER_VTYP,
         "speaker_voice_id": UNDERGROUND_LEADER_VOICE_ID,
-        "stage_conds": [(0x60, 30.0)],
+        "stage_conds": [(0x60, 40.0)],
         "tiqs_stage": None,
         "tsce_fid": None,
         "intv_phase": None,
@@ -11793,6 +11798,10 @@ def build_esp_file(
                     "INSTRUCCIÓN: Sal ahora de este terminal ([TAB]). El marcador de misión se ha transferido a la Puerta Dimensional/Temporal situada aquí mismo a tu izquierda. Crúzala para viajar al año 2161 y hablar con el Supervisor Jacoren.",
                     4,
                 ),
+                *(
+                    []
+                    if IS_PUBLIC_RELEASE
+                    else [
                 (
                     "5. [SALTO DIRECTO — ACTO II: Refugio 13 (Crisis de Agua y Salida a Necrópolis)]",
                     "================================================================\r\n"
@@ -11944,6 +11953,8 @@ def build_esp_file(
                     "================================================================\r\n\r\n"
                     "Trasladando al Morador directamente al Campamento de la Ruta Central al Norte de El Eje (2161) frente a la hoguera de Patrick el Celta, quien conversa sobre Nueva California y entona su balada tradicional gaélica (+1 Carisma permanente)...",
                     23,
+                ),
+                    ]
                 ),
             ],
             script_name="V13TermMnemosyneMenuScript",
@@ -13952,7 +13963,13 @@ def build_esp_file(
                     sv_n[5] = 2    # Assistance = Helps Friends and Allies
                 else:
                     sv_n[0] = 0  # Unaggressive (friendly townsfolk never auto-initiate exterior wilderness combat)
+                    if "confidence" in rdef:
+                        sv_n[1] = int(rdef["confidence"])
+                    elif rdef.get("killable"):
+                        sv_n[1] = 4  # Foolhardy: syndicate/quest bosses never flee in panic
                     sv_n[3] = 0  # Does not chain-pull distant exterior combat alarms
+                    if "assistance" in rdef and ss_n >= 6:
+                        sv_n[5] = int(rdef["assistance"])
                 out.extend(pack_sub("AIDT", bytes(sv_n)))
             elif st_n == "VTCK":
                 out.extend(pack_sub("VTCK", struct.pack("<I", rdef["vtyp_fid"])))
@@ -14630,6 +14647,8 @@ def build_esp_file(
             "inv_items": [(0x0100145A, 1), (0x01001C83, 1), (0x001BDE07, 1), (0x001BA8DA, 1), (0x00004822, 1), (0x0001F276, 48), (0x0000000F, 500)],
             "stay_at_pos": True,
             "killable": True,
+            "confidence": 4,
+            "assistance": 0,
         }),
         make_friendly_v13_npc({
             "npc_fid": 0x01001258,
@@ -14645,6 +14664,8 @@ def build_esp_file(
             "inv_items": [(0x0014831C, 1), (0x0001F673, 40), (0x00237679, 1), (0x001C4BE8, 1), (0x00023736, 2)],
             "stay_at_pos": True,
             "killable": True,
+            "confidence": 4,
+            "assistance": 0,
         }),
         make_friendly_v13_npc({
             "npc_fid": 0x01001259,
@@ -14674,6 +14695,8 @@ def build_esp_file(
             "inv_items": [(0x0100145B, 1), (0x01001C83, 1), (0x00237682, 1), (0x0017E91D, 1), (0x00004822, 1), (0x0001F276, 48), (0x00023736, 2)],
             "stay_at_pos": True,
             "killable": True,
+            "confidence": 4,
+            "assistance": 0,
         }),
         make_friendly_v13_npc({
             "npc_fid": 0x0100125B,
@@ -16294,7 +16317,11 @@ def build_esp_file(
 
                 for opt in opts:
                     p_stage_val = opt.get("p_tiqs_stage")
-                    if p_stage_val is not None and p_stage_val == opt.get("tiqs_stage"):
+                    if (
+                        p_stage_val is not None
+                        and p_stage_val == opt.get("tiqs_stage")
+                        and not opt.get("force_p_tiqs")
+                    ):
                         p_stage_val = None
                     p_tiqs_bytes = (
                         pack_sub("TIQS", struct.pack("<HH", p_stage_val, 0xFFFF))
@@ -18540,7 +18567,7 @@ def build_esp_file(
                 "XTEL",
                 struct.pack("<I6fII", 0x01002104, -2885.0, -4120.0, -16.0, 0.0, 0.0, 3.1415927, 0, 0),
             )
-            + pack_sub("DATA", struct.pack("<6f", -107.43, -752.59, 0.0, 0.0, 0.0, 6.1332)),
+            + pack_sub("DATA", struct.pack("<6f", -107.43, -752.59, 2.0, 0.0, 0.0, 6.1332)),
             flags=0x00000400,
         )
     )
@@ -18549,7 +18576,7 @@ def build_esp_file(
             "REFR",
             0x01002004,
             pack_sub("NAME", struct.pack("<I", 0x00114ACF))
-            + pack_sub("DATA", struct.pack("<6f", -119.39, -673.49, 0.0, 0.0, 0.0, 2.9916)),
+            + pack_sub("DATA", struct.pack("<6f", -119.39, -673.49, 2.0, 0.0, 0.0, 2.9916)),
             flags=0x00000400,
         )
     )
@@ -18558,7 +18585,7 @@ def build_esp_file(
             "REFR",
             0x01002005,
             pack_sub("NAME", struct.pack("<I", 0x00114ADD))
-            + pack_sub("DATA", struct.pack("<6f", -84.74, -902.87, 0.0, 0.0, 0.0, 2.9916)),
+            + pack_sub("DATA", struct.pack("<6f", -84.74, -902.87, 0.8, 0.0, 0.0, 2.9916)),
             flags=0x00000400,
         )
     )
@@ -18660,6 +18687,7 @@ def build_esp_file(
             0x0015804B,
             0x0015808F,
             0x000D2C85,
+            0x0020638F,
         },
         strip_base_fids={
             0x00061894,
@@ -18784,7 +18812,7 @@ def build_esp_file(
             "REFR",
             0x01002187,
             pack_sub("NAME", struct.pack("<I", 0x000AEF5B))
-            + pack_sub("DATA", struct.pack("<6f", -2885.0, -4065.0, -16.0, 0.0, 0.0, 0.0)),
+            + pack_sub("DATA", struct.pack("<6f", -2885.0, -4065.0, -15.2, 0.0, 0.0, 0.0)),
             flags=0x00000400,
         )
     )
@@ -21746,7 +21774,7 @@ def build_esp_file(
         (0x01003203, 0x000BA405, (ox - 1152.0, oy + 128.0, oz - 16.0, 0.0, 0.0, 0.0), None),
         (0x01003204, 0x0019C899, (ox - 672.1, oy - 127.0, oz + 128.0, -0.77, -0.18, 0.07), None),
         (0x01003205, 0x00114AC8, (ox - 1280.0, oy - 256.0, oz + 0.0, 0.0, 0.0, 4.712389), None),
-        (0x01003206, 0x00114ADD, (ox - 1536.0, oy - 256.0, oz + 0.0, 0.0, 0.0, 4.712389), None),
+        (0x01003206, 0x00114ADD, (ox - 1536.0, oy - 256.0, oz - 0.8, 0.0, 0.0, 4.712389), None),
         (0x01003207, 0x0013FECE, (ox - 1280.0, oy - 256.0, oz + 0.0, 0.0, 0.0, 4.712389), None),
         (0x01003208, 0x001A5F63, (ox - 1280.0, oy - 448.0, oz + 0.0, 0.0, 0.0, 4.712389), None),
         (0x01003209, 0x001A5F62, (ox - 1280.0, oy - 64.0, oz + 0.0, 0.0, 0.0, 4.712389), None),
@@ -22126,12 +22154,12 @@ def build_esp_file(
         (0x010035D8, 0x01001255, (10400.0, 13360.0, 206.0), 3.141593), # Petrox — Lugarteniente de los Khans
         (0x010035D9, 0x01001256, (10240.0, 13320.0, 206.0), 3.141593), # Escolta Secuestrador Khan 1
         (0x010035DA, 0x01001256, (10560.0, 13320.0, 206.0), 3.141593), # Escolta Secuestrador Khan 2
-        # Side Quest 8 (Bloque C): Ciudad Chatarra — Neal, Doc Morbid + Distrito del Casino de Gizmo, Izo y Vinnie (-1600, 1200, Z=80 — a 4.450 uds al S de Kenji)
+        # Side Quest 8 (Bloque C): Ciudad Chatarra — Neal, Doc Morbid + Distrito del Casino de Gizmo e Izo (-1600, 1200, Z=80) + Campamento Sur de Vinnie (-480, 780, Z=80)
         (0x010035DC, 0x01001259, (3340.0, 4320.0, 80.0), 3.141593),    # Neal — Barman de La Espumadera (Skum Pitt, Norte de Junktown)
         (0x010035DD, 0x0100125B, (3600.0, 3320.0, 80.0), 0.0),         # Doc Morbid — Médico y Cirujano de Junktown (Clínica Sur de Junktown)
         (0x010035DE, 0x01001257, (-1760.0, 1460.0, 86.0), 3.141593),   # Gizmo — Jefe Mafioso del Casino de Junktown (-1760, 1460)
         (0x010035DF, 0x01001258, (-1900.0, 1460.0, 86.0), 3.141593),   # Izo — Guardaespaldas de Gizmo (-1900, 1460)
-        (0x010035EC, 0x0100125A, (-1180.0, 1240.0, 86.0), 4.712389),   # Vinnie — Líder de la Banda de Los Cráneos (-1180, 1240)
+        (0x010035EC, 0x0100125A, (-480.0, 780.0, 86.0), 4.712389),     # Vinnie — Líder de la Banda de Los Cráneos (-480, 780 — a 1.450 uds al SE de Gizmo)
         # Side Quest 9 (Bloque D): El Eje — Martha Rastello, Sheriff Justin Greene, Decker, Kane + Paso Rocoso del Sanguinario y Tug (-4800, -6180, Z=102)
         (0x010035E6, 0x0100125C, (-760.0, -4250.0, 80.0), 0.0),        # Maestra Martha Rastello — Plaza Sur frente a Mercaderes del Agua
         (0x010035E7, 0x0100125F, (-1040.0, -4020.0, 80.0), 0.785398),  # Sheriff Justin Greene — Policía de El Eje (Plaza SO despejada)
@@ -22395,40 +22423,41 @@ def build_esp_file(
         _in_bunker_build = True
         bx = door_x + 64.0
         by = door_y + 132.0
-        # Doorframe & Concrete Bunker Doorway Wall
-        add_ext_scenery_ref(0x00022783, door_x, door_y, door_z, 0.0, 0.0, 1.570796)
-        add_ext_scenery_ref(0x01001323, bx, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x01001324, bx, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x01001325, bx, by + 148.0, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x0005C454, bx, by + 148.0, door_z, 0.0, 0.0, 3.141593)
+        bunker_z = door_z + 1.5
+        # Doorframe & Concrete Bunker Doorway Wall (raised +1.5 units so base floor slabs never Z-fight with flat Z=door_z terrain)
+        add_ext_scenery_ref(0x00022783, door_x, door_y, bunker_z, 0.0, 0.0, 1.570796)
+        add_ext_scenery_ref(0x01001323, bx, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x01001324, bx, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x01001325, bx, by + 148.0, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x0005C454, bx, by + 148.0, bunker_z, 0.0, 0.0, 3.141593)
         # Front wings & South corners (Exterior + Interior Liners)
-        add_ext_scenery_ref(0x01001325, bx - 256.0, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x0005C454, bx - 256.0, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x01001326, bx - 384.0, by, door_z, 0.0, 0.0, 4.712389)
-        add_ext_scenery_ref(0x0005C44D, bx - 384.0, by, door_z, 0.0, 0.0, 4.712389)
-        add_ext_scenery_ref(0x01001325, bx + 256.0, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x0005C454, bx + 256.0, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x01001326, bx + 384.0, by, door_z, 0.0, 0.0, 3.141593)
-        add_ext_scenery_ref(0x0005C44D, bx + 384.0, by, door_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x01001325, bx - 256.0, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x0005C454, bx - 256.0, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x01001326, bx - 384.0, by, bunker_z, 0.0, 0.0, 4.712389)
+        add_ext_scenery_ref(0x0005C44D, bx - 384.0, by, bunker_z, 0.0, 0.0, 4.712389)
+        add_ext_scenery_ref(0x01001325, bx + 256.0, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x0005C454, bx + 256.0, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x01001326, bx + 384.0, by, bunker_z, 0.0, 0.0, 3.141593)
+        add_ext_scenery_ref(0x0005C44D, bx + 384.0, by, bunker_z, 0.0, 0.0, 3.141593)
         # West & East side walls (2 bays deep = 512 units, Exterior + Interior Liners)
         for dy_bay in (128.0, 384.0):
-            add_ext_scenery_ref(0x01001325, bx - 384.0, by + dy_bay, door_z, 0.0, 0.0, 4.712389)
-            add_ext_scenery_ref(0x0005C454, bx - 384.0, by + dy_bay, door_z, 0.0, 0.0, 4.712389)
-            add_ext_scenery_ref(0x01001325, bx + 384.0, by + dy_bay, door_z, 0.0, 0.0, 1.570796)
-            add_ext_scenery_ref(0x0005C454, bx + 384.0, by + dy_bay, door_z, 0.0, 0.0, 1.570796)
+            add_ext_scenery_ref(0x01001325, bx - 384.0, by + dy_bay, bunker_z, 0.0, 0.0, 4.712389)
+            add_ext_scenery_ref(0x0005C454, bx - 384.0, by + dy_bay, bunker_z, 0.0, 0.0, 4.712389)
+            add_ext_scenery_ref(0x01001325, bx + 384.0, by + dy_bay, bunker_z, 0.0, 0.0, 1.570796)
+            add_ext_scenery_ref(0x0005C454, bx + 384.0, by + dy_bay, bunker_z, 0.0, 0.0, 1.570796)
         # North back corners & back wall (Exterior + Interior Liners)
-        add_ext_scenery_ref(0x01001326, bx - 384.0, by + 512.0, door_z, 0.0, 0.0, 0.0)
-        add_ext_scenery_ref(0x0005C44D, bx - 384.0, by + 512.0, door_z, 0.0, 0.0, 0.0)
-        add_ext_scenery_ref(0x01001326, bx + 384.0, by + 512.0, door_z, 0.0, 0.0, 1.570796)
-        add_ext_scenery_ref(0x0005C44D, bx + 384.0, by + 512.0, door_z, 0.0, 0.0, 1.570796)
+        add_ext_scenery_ref(0x01001326, bx - 384.0, by + 512.0, bunker_z, 0.0, 0.0, 0.0)
+        add_ext_scenery_ref(0x0005C44D, bx - 384.0, by + 512.0, bunker_z, 0.0, 0.0, 0.0)
+        add_ext_scenery_ref(0x01001326, bx + 384.0, by + 512.0, bunker_z, 0.0, 0.0, 1.570796)
+        add_ext_scenery_ref(0x0005C44D, bx + 384.0, by + 512.0, bunker_z, 0.0, 0.0, 1.570796)
         for dx_back in (-256.0, 0.0, 256.0):
-            add_ext_scenery_ref(0x01001325, bx + dx_back, by + 512.0, door_z, 0.0, 0.0, 0.0)
-            add_ext_scenery_ref(0x0005C454, bx + dx_back, by + 512.0, door_z, 0.0, 0.0, 0.0)
+            add_ext_scenery_ref(0x01001325, bx + dx_back, by + 512.0, bunker_z, 0.0, 0.0, 0.0)
+            add_ext_scenery_ref(0x0005C454, bx + dx_back, by + 512.0, bunker_z, 0.0, 0.0, 0.0)
         # Solid Concrete Roof & Ceiling slabs (3x2 grid, Exterior + Interior Liners)
         for dy_roof in (128.0, 384.0):
             for dx_roof in (-256.0, 0.0, 256.0):
-                add_ext_scenery_ref(0x01001327, bx + dx_roof, by + dy_roof, door_z, 0.0, 0.0, 0.0)
-                add_ext_scenery_ref(0x0005C451, bx + dx_roof, by + dy_roof, door_z, 0.0, 0.0, 0.0)
+                add_ext_scenery_ref(0x01001327, bx + dx_roof, by + dy_roof, bunker_z, 0.0, 0.0, 0.0)
+                add_ext_scenery_ref(0x0005C451, bx + dx_roof, by + dy_roof, bunker_z, 0.0, 0.0, 0.0)
         # Plaque above doorway
         if sign_stat_fid is not None:
             add_ext_scenery_ref(sign_stat_fid, door_x - 1.7, door_y - 92.5, door_z + 147.4, 0.0, 0.0, 0.0, 0.80)
@@ -22985,10 +23014,12 @@ def build_esp_file(
     add_ext_scenery_ref(0x0021C948, 780.0, 4660.0, 80.0, 0.0, 0.0, 0.4)             # Barricada de la ruta
     add_ext_scenery_ref(0x00048281, 480.0, 4680.0, 80.0, 0.0, 0.0, 0.0)             # Bidón de fuego de la ruta
     add_ext_scenery_ref(0x0008ADFA, 480.0, 4680.0, 178.0, 0.0, 0.0, 0.0)
-    # Distrito del Casino de Gizmo (-1600, 1200, 80) & Guarida de la Banda de los Skulz / Kenji (-2800, 5600, 80 — completamente separados)
+    # Distrito del Casino de Gizmo (-1600, 1200, 80), Hoguera Sur de Vinnie (-480, 780, 80) & Guarida de la Banda de los Skulz / Kenji (-2800, 5600, 80 — completamente separados)
     add_furnished_roadside_diner(-1600.0, 1920.0, 80.0, rz=1.570796)                # Casino «Gizmo's» (desplazado al N para dejar amplia plaza despejada en -1600, 1200)
     add_ext_scenery_ref(0x0000466D, -2380.0, 1220.0, 80.0, 0.0, 0.0, 1.570796)      # BldgMetal2Story1x1ComA — Sala de Juego y Licores de Gizmo
     add_ext_scenery_ref(0x00249EAB, -2110.0, 1220.0, 260.0, 0.0, 0.0, 1.570796)     # workshop_SignGenLiqours02 (Letrero de Licores del Casino)
+    add_ext_scenery_ref(0x00048281, -400.0, 680.0, 80.0, 0.0, 0.0, 0.0)             # Bidón de fuego del rincón SE de Vinnie (a 1.450 uds de Gizmo)
+    add_ext_scenery_ref(0x0008ADFA, -400.0, 680.0, 178.0, 0.0, 0.0, 0.0)
     add_furnished_wasteland_cabin(-1880.0, 5640.0, 80.0, rz=4.712389)               # Guarida de la Banda de los Skulz y el Sicario Kenji (en su propio sector a 4.560 uds de Gizmo)
     add_ext_scenery_ref(0x0021C948, -2980.0, 5280.0, 80.0, 0.0, 0.0, 0.3)           # Barricada O de la Guarida de Kenji
     add_ext_scenery_ref(0x0021C948, -2580.0, 5280.0, 80.0, 0.0, 0.0, 5.95)          # Barricada E de la Guarida de Kenji

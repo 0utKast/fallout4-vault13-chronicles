@@ -28,12 +28,14 @@ from generate_v13_worldmap_dds import global_california_height
 import v13_opt_helpers
 
 IS_EN_AUDIT = "--en" in sys.argv
+IS_PUBLIC_RELEASE = "--public-release" in sys.argv
 FO4_DATA_DIR = r"C:\Program Files (x86)\Steam\steamapps\common\Fallout 4\Data"
 FO4_ESM_PATH = os.path.join(FO4_DATA_DIR, "Fallout4.esm")
+_OUT_FOLDER_NAME = "release_out" if IS_PUBLIC_RELEASE else "build_out"
 BUILD_OUT_DIR = (
-    os.path.join(SCRIPT_DIR, "edition_en", "build_out")
+    os.path.join(SCRIPT_DIR, "edition_en", _OUT_FOLDER_NAME)
     if IS_EN_AUDIT
-    else os.path.join(SCRIPT_DIR, "build_out")
+    else os.path.join(SCRIPT_DIR, _OUT_FOLDER_NAME)
 )
 ESP_PATH = os.path.join(BUILD_OUT_DIR, "Vault13Chronicles.esp")
 MAIN_BA2_PATH = os.path.join(BUILD_OUT_DIR, "Vault13Chronicles - Main.ba2")

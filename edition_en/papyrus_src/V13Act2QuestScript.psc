@@ -170,10 +170,8 @@ Function EnsureSingleActiveObjective(int aiActiveObjID)
                 if Self.IsObjectiveDisplayed(oid) && !Self.IsObjectiveCompleted(oid)
                     Self.SetObjectiveCompleted(oid, true)
                 endif
-                if oid == 26 || oid == 27 || oid == 28 || oid == 30 || oid == 35
-                    if Self.IsObjectiveDisplayed(oid)
-                        Self.SetObjectiveDisplayed(oid, false, false)
-                    endif
+                if Self.IsObjectiveDisplayed(oid)
+                    Self.SetObjectiveDisplayed(oid, false, false)
                 endif
             else
                 if Self.IsObjectiveDisplayed(oid)
@@ -2117,6 +2115,8 @@ Function RefreshDisplayedAct2Objective()
     while idx < 14
         int oid = objIDs[idx]
         if Self.IsObjectiveDisplayed(oid) && !Self.IsObjectiveCompleted(oid)
+            Self.SetObjectiveDisplayed(oid, false, false)
+            Self.SetObjectiveDisplayed(oid, true, false)
             Self.SetActive(true)
         endif
         idx += 1
@@ -2143,6 +2143,15 @@ Function RegisterPlayerEvents()
         RegisterForRemoteEvent(player, "OnItemEquipped")
         RegisterForRemoteEvent(player, "OnItemAdded")
         RegisterForRemoteEvent(player, "OnLocationChange")
+        RegisterForPlayerTeleport()
+    endif
+    ObjectReference v13ExitDoor42Obj = Game.GetFormFromFile(0x00002142, "Vault13Chronicles.esp") as ObjectReference
+    if v13ExitDoor42Obj != None
+        RegisterForRemoteEvent(v13ExitDoor42Obj, "OnActivate")
+    endif
+    ObjectReference v13ExitDoor01Obj = Game.GetFormFromFile(0x00002101, "Vault13Chronicles.esp") as ObjectReference
+    if v13ExitDoor01Obj != None
+        RegisterForRemoteEvent(v13ExitDoor01Obj, "OnActivate")
     endif
     ObjectReference garretObj = Game.GetFormFromFile(0x00002E12, "Vault13Chronicles.esp") as ObjectReference
     if garretObj != None
@@ -2280,6 +2289,12 @@ Function RegisterPlayerEvents()
         RegisterForRemoteEvent(act2RetSceneReg, "OnBegin")
         RegisterForRemoteEvent(act2RetSceneReg, "OnPhaseBegin")
         RegisterForRemoteEvent(act2RetSceneReg, "OnEnd")
+    endif
+    Scene theresaSceneReg = Game.GetFormFromFile(0x00005104, "Vault13Chronicles.esp") as Scene
+    if theresaSceneReg != None
+        RegisterForRemoteEvent(theresaSceneReg, "OnBegin")
+        RegisterForRemoteEvent(theresaSceneReg, "OnPhaseBegin")
+        RegisterForRemoteEvent(theresaSceneReg, "OnEnd")
     endif
 EndFunction
 
@@ -3101,7 +3116,16 @@ Function ForceAllAct2Aliases()
     else
         ForceQuestAlias(10, 0x00002A18)
     endif
-    ForceQuestAlias(15, 0x00002153)
+    Scene theresaScnAlias = Game.GetFormFromFile(0x00005104, "Vault13Chronicles.esp") as Scene
+    if !v13CrisisResolved || (theresaScnAlias != None && theresaScnAlias.IsPlaying())
+        ForceQuestAlias(15, 0x00002153)
+    else
+        ReferenceAlias al15Th = Self.GetAlias(15) as ReferenceAlias
+        if al15Th != None && al15Th.GetReference() != None
+            al15Th.Clear()
+            markerChanged = true
+        endif
+    endif
     if markerChanged
         RefreshDisplayedAct2Objective()
     endif
@@ -3204,11 +3228,21 @@ Function ApplyV13Act2Stage(int auiStage)
         endif
     endif
 
-    if !inDial
-        if auiStage >= 20
-            SetNecropolisState(true)
-        elseif act1S != None && auiStage != lastAppliedAct2Stage
+    if auiStage >= 20
+        SetNecropolisState(true)
+        ObjectReference necroMapMarker = Game.GetFormFromFile(0x00003414, "Vault13Chronicles.esp") as ObjectReference
+        if necroMapMarker != None
+            necroMapMarker.EnableNoWait()
+            necroMapMarker.AddToMap(false)
+        endif
+        ObjectReference v12MapMarker = Game.GetFormFromFile(0x00003417, "Vault13Chronicles.esp") as ObjectReference
+        if v12MapMarker != None
+            v12MapMarker.EnableNoWait()
+            v12MapMarker.AddToMap(false)
+        endif
+        if act1S != None
             act1S.SyncVault13ExpeditionDoors()
+            act1S.UpdateSouthernCaliforniaMapMarkers()
         endif
     elseif act1S != None && auiStage != lastAppliedAct2Stage
         act1S.SyncVault13ExpeditionDoors()
@@ -3227,6 +3261,9 @@ Function ApplyV13Act2Stage(int auiStage)
         if !Self.IsObjectiveCompleted(18)
             Self.SetObjectiveCompleted(18, true)
         endif
+        if Self.IsObjectiveDisplayed(18)
+            Self.SetObjectiveDisplayed(18, false, false)
+        endif
         SyncVault13CrisisAndCelebrationActors()
         if act1S != None
             act1S.SyncVault13ExpeditionDoors()
@@ -3244,10 +3281,11 @@ Function ApplyV13Act2Stage(int auiStage)
                 auiStage = 24
             endif
         else
+            EnsureSingleActiveObjective(20)
             if !Self.IsObjectiveDisplayed(20)
                 Self.SetObjectiveDisplayed(20, true, false)
-                Self.SetActive(true)
             endif
+            Self.SetActive(true)
         endif
     endif
 
@@ -3270,6 +3308,14 @@ Function ApplyV13Act2Stage(int auiStage)
         if act1S != None
             act1S.SyncVault13ExpeditionDoors()
         endif
+    elseif auiStage == 20
+        EnsureSingleActiveObjective(20)
+        ForceAllAct2Aliases()
+        if !Self.IsObjectiveDisplayed(20)
+            Self.SetObjectiveDisplayed(20, true, false)
+        endif
+        RefreshDisplayedAct2Objective()
+        Self.SetActive(true)
     elseif auiStage == 21
         if !Self.IsObjectiveCompleted(15)
             Self.SetObjectiveCompleted(15, true)
@@ -3830,7 +3876,16 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
     ObjectReference ghoulPrisonerObj = Game.GetFormFromFile(0x00002918, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference ugLeaderObj = Game.GetFormFromFile(0x00002A18, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference setObj = Game.GetFormFromFile(0x00002E11, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference v13ExitDoor42Obj = Game.GetFormFromFile(0x00002142, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference v13ExitDoor01Obj = Game.GetFormFromFile(0x00002101, "Vault13Chronicles.esp") as ObjectReference
     int stgNow = GetEffectiveAct2Stage()
+    if (v13ExitDoor42Obj != None && akSender == v13ExitDoor42Obj) || (v13ExitDoor01Obj != None && akSender == v13ExitDoor01Obj)
+        if stgNow >= 20 && stgNow < 40
+            SetNecropolisState(true)
+            StartTimer(0.15, 12)
+        endif
+        return
+    endif
     if wpConsoleObj != None && akSender == wpConsoleObj
         OnWaterPlantConsoleActivated()
     elseif pumpConsoleObj != None && akSender == pumpConsoleObj
@@ -3979,6 +4034,7 @@ Event Scene.OnEnd(Scene akSender)
     Scene harrySceneOld = Game.GetFormFromFile(0x00005108, "Vault13Chronicles.esp") as Scene
     Scene harrySceneWsh = Game.GetFormFromFile(0x0000510A, "Vault13Chronicles.esp") as Scene
     Scene act2RetScene = Game.GetFormFromFile(0x00005101, "Vault13Chronicles.esp") as Scene
+    Scene theresaScene = Game.GetFormFromFile(0x00005104, "Vault13Chronicles.esp") as Scene
     if (harryScene != None && akSender == harryScene) || (harrySceneOld != None && akSender == harrySceneOld) || (harrySceneWsh != None && akSender == harrySceneWsh)
         harrySceneStarted = false
         harryDialogueMenuOpen = false
@@ -3986,6 +4042,16 @@ Event Scene.OnEnd(Scene akSender)
             BeginHarryEvacuationWalk()
         elseif harrySceneOutcome == 2 || harryCombatPending || GetEffectiveAct2Stage() == 28
             StartHarryCombat()
+        endif
+    elseif theresaScene != None && akSender == theresaScene
+        if v13CrisisResolved || GetEffectiveAct2Stage() >= 20
+            ReferenceAlias al15End = Self.GetAlias(15) as ReferenceAlias
+            if al15End != None && al15End.GetReference() != None
+                al15End.Clear()
+            endif
+            EnsureSingleActiveObjective(20)
+            ForceAllAct2Aliases()
+            RefreshDisplayedAct2Objective()
         endif
     elseif act2RetScene != None && akSender == act2RetScene
         if waterChipInstalledInPlant
@@ -4003,6 +4069,23 @@ Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLo
     if stgLoc >= 15 && stgLoc < 40
         ForceAllAct2Aliases()
         RefreshDisplayedAct2Objective()
+        StartTimer(0.15, 12)
+    endif
+EndEvent
+
+Event OnPlayerTeleport()
+    int stgTel = GetEffectiveAct2Stage()
+    if stgTel >= 15 && stgTel < 40
+        if stgTel >= 20
+            SetNecropolisState(true)
+            V13Act1QuestScript act1Tel = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as V13Act1QuestScript
+            if act1Tel != None
+                act1Tel.UpdateSouthernCaliforniaMapMarkers()
+            endif
+        endif
+        ForceAllAct2Aliases()
+        RefreshDisplayedAct2Objective()
+        StartTimer(0.15, 12)
     endif
 EndEvent
 

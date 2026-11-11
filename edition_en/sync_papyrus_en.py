@@ -292,6 +292,8 @@ PSC_LINE_TRANSLATIONS: dict[str, str] = {
         'Debug.Notification("Evidence against Gizmo obtained. Deliver it to Captain Lars in Junktown.")',
     'Debug.Notification("¡Lars ha incautado las pruebas contra Gizmo! Informa al alcalde Killian Darkwater en Junktown.")':
         'Debug.Notification("Lars impounded the evidence against Gizmo! Report to Mayor Killian Darkwater in Junktown.")',
+    'Debug.Notification("Capitán Lars: «Ve al Almacén General e informa al alcalde Killian Darkwater para cobrar tu recompensa.»")':
+        'Debug.Notification("Captain Lars: \'Head to the General Store and report to Mayor Killian Darkwater to collect your reward.\'")',
     'Debug.Notification("¡Misión Secundaria completada: Justicia en Junktown! (+500 Chapas, Escopeta de Combate, Cartuchos y +350 XP)")':
         'Debug.Notification("Side Quest completed: Justice in Junktown! (+500 Caps, Combat Shotgun, Shells, and +350 XP)")',
 

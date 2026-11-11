@@ -31,7 +31,8 @@ ESP_NAME = "Vault13Chronicles.esp"
 BA2_NAME = "Vault13Chronicles - Main.ba2"
 TEX_BA2_NAME = "Vault13Chronicles - Textures.ba2"
 
-BUILD_OUT_EN_DIR = os.path.join(THIS_DIR, "build_out")
+IS_PUBLIC_RELEASE = "--public-release" in sys.argv
+BUILD_OUT_EN_DIR = os.path.join(THIS_DIR, "release_out" if IS_PUBLIC_RELEASE else "build_out")
 PAPYRUS_OUT_EN_DIR = os.path.join(THIS_DIR, "papyrus_out")
 VOICES_EN_DIR = os.path.join(THIS_DIR, "voices_en")
 RADIO_DJ_EN_DIR = os.path.join(THIS_DIR, "assets", "radio_dj_en")
@@ -205,7 +206,7 @@ def main() -> None:
     with open(os.path.join(THIS_DIR, "translations_en.json"), "r", encoding="utf-8") as tf:
         trans_map = json.load(tf)
 
-    src_es_esp = os.path.join(ROOT_DIR, "build_out", ESP_NAME)
+    src_es_esp = os.path.join(ROOT_DIR, "release_out" if IS_PUBLIC_RELEASE else "build_out", ESP_NAME)
     dst_en_esp = os.path.join(BUILD_OUT_EN_DIR, ESP_NAME)
     n_trans = transform_esp_to_english(src_es_esp, dst_en_esp, trans_map)
     print(f"  [ESP EN] Built {dst_en_esp} ({n_trans} text subrecords translated to canonical Fallout 1 English).")
@@ -269,7 +270,7 @@ def main() -> None:
     finally:
         es_builder.THIS_DIR = orig_this_dir
 
-    if "--install" in sys.argv:
+    if ("--install" in sys.argv) and (not IS_PUBLIC_RELEASE):
         fo4_scripts_dir = os.path.join(es_builder.FO4_DATA_DIR, "Scripts")
         removed_loose_pex = 0
         if os.path.isdir(fo4_scripts_dir):

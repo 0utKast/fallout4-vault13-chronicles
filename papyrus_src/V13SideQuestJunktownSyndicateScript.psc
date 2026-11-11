@@ -92,7 +92,14 @@ Function ForceAllSyndicateAliases()
     ForceQuestAlias(0, 0x000035DC)
     if !bGizmoResolved
         ForceQuestAlias(1, 0x000035DE)
-    elseif gizmoScn == None || !gizmoScn.IsPlaying()
+    else
+        if gizmoScn != None && gizmoScn.IsPlaying()
+            gizmoScn.Stop()
+        endif
+        if Self.IsObjectiveDisplayed(21)
+            SetObjectiveCompleted(21, True)
+            Self.SetObjectiveDisplayed(21, False, False)
+        endif
         ClearQuestAlias(1)
     endif
     ForceQuestAlias(2, 0x00003005)
@@ -104,7 +111,14 @@ Function ForceAllSyndicateAliases()
     ForceQuestAlias(8, 0x00002035)
     if !bUrnRecovered
         ForceQuestAlias(9, 0x000035EC)
-    elseif vinnieScn == None || !vinnieScn.IsPlaying()
+    else
+        if vinnieScn != None && vinnieScn.IsPlaying()
+            vinnieScn.Stop()
+        endif
+        if Self.IsObjectiveDisplayed(20)
+            SetObjectiveCompleted(20, True)
+            Self.SetObjectiveDisplayed(20, False, False)
+        endif
         ClearQuestAlias(9)
     endif
     ForceQuestAlias(10, 0x000035DD)
@@ -120,8 +134,13 @@ EndFunction
 Function CheckLarsSyndicateReward()
     SyncSyndicateProgressFlags()
     if bGizmoResolved
+        Scene gizmoScn = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
+        if gizmoScn != None && gizmoScn.IsPlaying()
+            gizmoScn.Stop()
+        endif
+        SetObjectiveCompleted(21, True)
         if Self.IsObjectiveDisplayed(21)
-            SetObjectiveCompleted(21, True)
+            Self.SetObjectiveDisplayed(21, False, False)
         endif
         ClearQuestAlias(1)
         if bUrnRecovered && !bFinalRewardGranted
@@ -228,59 +247,123 @@ Function RefreshJunktownSyndicateLayout()
     Actor gizmoAct = Game.GetFormFromFile(0x000035DE, "Vault13Chronicles.esp") as Actor
     Form tapeBase = Game.GetFormFromFile(0x0000145A, "Vault13Chronicles.esp")
     Form dossierBase = Game.GetFormFromFile(0x00001C83, "Vault13Chronicles.esp")
+    ActorValue aggAV = Game.GetFormFromFile(0x000002BC, "Fallout4.esm") as ActorValue
+    ActorValue confAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
+    ActorValue asstAV = Game.GetFormFromFile(0x000002BF, "Fallout4.esm") as ActorValue
+    Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
     Actor player = Game.GetPlayer()
     if gizmoAct != None
-        if gizmoAct.IsDisabled() && Self.GetStage() < 40
+        if gizmoAct.IsDisabled() && Self.GetStage() < 40 && !bFinalRewardGranted
             gizmoAct.EnableNoWait()
         endif
-        if !gizmoAct.IsDead() && gizmoAct.Is3DLoaded() && !gizmoAct.IsInCombat()
-            gizmoAct.AllowPCDialogue(True)
-            gizmoAct.BlockActivation(False, False)
-            if Math.Abs(gizmoAct.GetPositionX() + 1760.0) > 450.0 || Math.Abs(gizmoAct.GetPositionY() - 1460.0) > 450.0
-                gizmoAct.SetPosition(-1760.0, 1460.0, 86.0)
-                gizmoAct.SetAngle(0.0, 0.0, 180.0)
+        if !gizmoAct.IsDead() && gizmoAct.Is3DLoaded()
+            if confAV != None
+                gizmoAct.SetValue(confAV, 4.0)
             endif
-            EquipSyndicateActorGear(gizmoAct, 0x0000102E, 0x001BDE07, 0x001BA8DA, 0x001536F4)
-            if !bGizmoResolved && tapeBase != None && player != None && player.GetItemCount(tapeBase) == 0 && gizmoAct.GetItemCount(tapeBase) == 0
-                gizmoAct.AddItem(tapeBase, 1, True)
+            if asstAV != None
+                gizmoAct.SetValue(asstAV, 0.0)
             endif
-            if dossierBase != None && gizmoAct.GetItemCount(dossierBase) == 0
-                gizmoAct.AddItem(dossierBase, 1, True)
+            if !bStg28Done && !bGizmoResolved
+                if raiderFact != None && gizmoAct.IsInFaction(raiderFact)
+                    gizmoAct.RemoveFromFaction(raiderFact)
+                endif
+                if aggAV != None
+                    gizmoAct.SetValue(aggAV, 0.0)
+                endif
+                if gizmoAct.IsInCombat()
+                    gizmoAct.StopCombat()
+                    gizmoAct.StopCombatAlarm()
+                endif
+            endif
+            if !gizmoAct.IsInCombat()
+                gizmoAct.AllowPCDialogue(True)
+                gizmoAct.BlockActivation(False, False)
+                if Math.Abs(gizmoAct.GetPositionX() + 1760.0) > 450.0 || Math.Abs(gizmoAct.GetPositionY() - 1460.0) > 450.0
+                    gizmoAct.SetPosition(-1760.0, 1460.0, 86.0)
+                    gizmoAct.SetAngle(0.0, 0.0, 180.0)
+                endif
+                EquipSyndicateActorGear(gizmoAct, 0x0000102E, 0x001BDE07, 0x001BA8DA, 0x001536F4)
+                if !bGizmoResolved && tapeBase != None && player != None && player.GetItemCount(tapeBase) == 0 && gizmoAct.GetItemCount(tapeBase) == 0
+                    gizmoAct.AddItem(tapeBase, 1, True)
+                endif
+                if dossierBase != None && gizmoAct.GetItemCount(dossierBase) == 0
+                    gizmoAct.AddItem(dossierBase, 1, True)
+                endif
             endif
         endif
     endif
 
     Actor izoAct = Game.GetFormFromFile(0x000035DF, "Vault13Chronicles.esp") as Actor
     if izoAct != None && !izoAct.IsDead()
-        if izoAct.IsDisabled() && Self.GetStage() < 40
+        if izoAct.IsDisabled() && Self.GetStage() < 40 && !bFinalRewardGranted
             izoAct.EnableNoWait()
         endif
-        if izoAct.Is3DLoaded() && !izoAct.IsInCombat()
-            izoAct.BlockActivation(False, False)
-            if Math.Abs(izoAct.GetPositionX() + 1900.0) > 450.0 || Math.Abs(izoAct.GetPositionY() - 1460.0) > 450.0
-                izoAct.SetPosition(-1900.0, 1460.0, 86.0)
-                izoAct.SetAngle(0.0, 0.0, 180.0)
+        if izoAct.Is3DLoaded()
+            if confAV != None
+                izoAct.SetValue(confAV, 4.0)
             endif
-            EquipSyndicateActorGear(izoAct, 0x0000102F, 0x00237679, 0x001C4BE8, 0x000B2D8E)
+            if asstAV != None
+                izoAct.SetValue(asstAV, 0.0)
+            endif
+            if !bStg28Done && !bGizmoResolved
+                if raiderFact != None && izoAct.IsInFaction(raiderFact)
+                    izoAct.RemoveFromFaction(raiderFact)
+                endif
+                if aggAV != None
+                    izoAct.SetValue(aggAV, 0.0)
+                endif
+                if izoAct.IsInCombat()
+                    izoAct.StopCombat()
+                    izoAct.StopCombatAlarm()
+                endif
+            endif
+            if !izoAct.IsInCombat()
+                izoAct.BlockActivation(False, False)
+                if Math.Abs(izoAct.GetPositionX() + 1900.0) > 450.0 || Math.Abs(izoAct.GetPositionY() - 1460.0) > 450.0
+                    izoAct.SetPosition(-1900.0, 1460.0, 86.0)
+                    izoAct.SetAngle(0.0, 0.0, 180.0)
+                endif
+                EquipSyndicateActorGear(izoAct, 0x0000102F, 0x00237679, 0x001C4BE8, 0x000B2D8E)
+            endif
         endif
     endif
 
     Actor vinnieAct = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
     Form urnBase = Game.GetFormFromFile(0x0000145B, "Vault13Chronicles.esp")
     if vinnieAct != None
-        if vinnieAct.IsDisabled() && Self.GetStage() < 40
+        if vinnieAct.IsDisabled() && Self.GetStage() < 40 && !bFinalRewardGranted
             vinnieAct.EnableNoWait()
         endif
-        if !vinnieAct.IsDead() && vinnieAct.Is3DLoaded() && !vinnieAct.IsInCombat()
-            vinnieAct.AllowPCDialogue(True)
-            vinnieAct.BlockActivation(False, False)
-            if Math.Abs(vinnieAct.GetPositionX() + 1180.0) > 450.0 || Math.Abs(vinnieAct.GetPositionY() - 1240.0) > 450.0
-                vinnieAct.SetPosition(-1180.0, 1240.0, 86.0)
-                vinnieAct.SetAngle(0.0, 0.0, 270.0)
+        if !vinnieAct.IsDead() && vinnieAct.Is3DLoaded()
+            if confAV != None
+                vinnieAct.SetValue(confAV, 4.0)
             endif
-            EquipSyndicateActorGear(vinnieAct, 0x00001030, 0x00237682, 0x0017E91D, 0x000B2D8E)
-            if !bUrnRecovered && urnBase != None && player != None && player.GetItemCount(urnBase) == 0 && vinnieAct.GetItemCount(urnBase) == 0
-                vinnieAct.AddItem(urnBase, 1, True)
+            if asstAV != None
+                vinnieAct.SetValue(asstAV, 0.0)
+            endif
+            if !bStg24Done
+                if raiderFact != None && vinnieAct.IsInFaction(raiderFact)
+                    vinnieAct.RemoveFromFaction(raiderFact)
+                endif
+                if aggAV != None
+                    vinnieAct.SetValue(aggAV, 0.0)
+                endif
+                if vinnieAct.IsInCombat()
+                    vinnieAct.StopCombat()
+                    vinnieAct.StopCombatAlarm()
+                endif
+            endif
+            if !vinnieAct.IsInCombat()
+                vinnieAct.AllowPCDialogue(True)
+                vinnieAct.BlockActivation(False, False)
+                if Math.Abs(vinnieAct.GetPositionX() + 480.0) > 350.0 || Math.Abs(vinnieAct.GetPositionY() - 780.0) > 350.0
+                    vinnieAct.SetPosition(-480.0, 780.0, 86.0)
+                    vinnieAct.SetAngle(0.0, 0.0, 270.0)
+                endif
+                EquipSyndicateActorGear(vinnieAct, 0x00001030, 0x00237682, 0x0017E91D, 0x000B2D8E)
+                if !bUrnRecovered && urnBase != None && player != None && player.GetItemCount(urnBase) == 0 && vinnieAct.GetItemCount(urnBase) == 0
+                    vinnieAct.AddItem(urnBase, 1, True)
+                endif
             endif
         endif
     endif
@@ -331,11 +414,17 @@ Function BindSyndicateListeners()
             RegisterForRemoteEvent(gizmoAct as ObjectReference, "OnItemRemoved")
         endif
         RegisterForRemoteEvent(gizmoAct, "OnDeath")
+        if player != None && !gizmoAct.IsDead()
+            RegisterForHitEvent(gizmoAct, player, None, None, -1, -1, -1, -1, True)
+        endif
     endif
     Actor izoAct = Game.GetFormFromFile(0x000035DF, "Vault13Chronicles.esp") as Actor
     if izoAct != None
         RegisterForRemoteEvent(izoAct as ObjectReference, "OnActivate")
         RegisterForRemoteEvent(izoAct, "OnDeath")
+        if player != None && !izoAct.IsDead()
+            RegisterForHitEvent(izoAct, player, None, None, -1, -1, -1, -1, True)
+        endif
     endif
     Actor vinnieAct = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
     if vinnieAct != None
@@ -344,6 +433,13 @@ Function BindSyndicateListeners()
             RegisterForRemoteEvent(vinnieAct as ObjectReference, "OnItemRemoved")
         endif
         RegisterForRemoteEvent(vinnieAct, "OnDeath")
+        if player != None && !vinnieAct.IsDead()
+            RegisterForHitEvent(vinnieAct, player, None, None, -1, -1, -1, -1, True)
+        endif
+    endif
+    WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && v13Wrld != None && player.GetWorldSpace() == v13Wrld && Self.GetStage() < 40 && !Self.IsCompleted()
+        StartTimer(1.5, 95)
     endif
 EndFunction
 
@@ -353,9 +449,13 @@ Function CheckAdvanceToStage30()
     Scene vinnieScn = Game.GetFormFromFile(0x00019102, "Vault13Chronicles.esp") as Scene
     if bUrnRecovered
         SetObjectiveCompleted(20, True)
-        if vinnieScn == None || !vinnieScn.IsPlaying()
-            ClearQuestAlias(9)
+        if Self.IsObjectiveDisplayed(20)
+            Self.SetObjectiveDisplayed(20, False, False)
         endif
+        if vinnieScn != None && vinnieScn.IsPlaying()
+            vinnieScn.Stop()
+        endif
+        ClearQuestAlias(9)
     elseif Self.GetStage() >= 20 && Self.GetStage() < 40 && !Self.IsObjectiveDisplayed(20)
         ForceQuestAlias(9, 0x000035EC)
         Self.SetObjectiveDisplayed(20, True, False)
@@ -363,9 +463,13 @@ Function CheckAdvanceToStage30()
 
     if bGizmoResolved
         SetObjectiveCompleted(21, True)
-        if gizmoScn == None || !gizmoScn.IsPlaying()
-            ClearQuestAlias(1)
+        if Self.IsObjectiveDisplayed(21)
+            Self.SetObjectiveDisplayed(21, False, False)
         endif
+        if gizmoScn != None && gizmoScn.IsPlaying()
+            gizmoScn.Stop()
+        endif
+        ClearQuestAlias(1)
     elseif Self.GetStage() >= 20 && Self.GetStage() < 40 && !Self.IsObjectiveDisplayed(21)
         ForceQuestAlias(1, 0x000035DE)
         Self.SetObjectiveDisplayed(21, True, False)
@@ -606,13 +710,19 @@ Event OnStageSet(int auiStageID, int auiItemID)
     elseif auiStageID == 20
         ForceAllSyndicateAliases()
         SetObjectiveCompleted(15, True)
+        if Self.IsObjectiveDisplayed(15)
+            Self.SetObjectiveDisplayed(15, False, False)
+        endif
         if !bUrnRecovered && !Self.IsObjectiveDisplayed(20)
             Self.SetObjectiveDisplayed(20, True, False)
         endif
         if !bGizmoResolved && !Self.IsObjectiveDisplayed(21)
             Self.SetObjectiveDisplayed(21, True, False)
         endif
-        Self.SetActive(True)
+        Quest killianQ20 = Game.GetFormFromFile(0x00010000, "Vault13Chronicles.esp") as Quest
+        if killianQ20 == None || killianQ20.GetStage() != 30
+            Self.SetActive(True)
+        endif
         CheckAdvanceToStage30()
     elseif auiStageID == 22 || auiStageID == 23
         NotifyNealUrnRecovered()
@@ -620,20 +730,24 @@ Event OnStageSet(int auiStageID, int auiItemID)
         StopAllSyndicateScenesExcept(0)
         Actor player = Game.GetPlayer()
         Actor vinnieAct = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
-        Actor skullAct = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as Actor
         Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
         ActorValue aggAV = Game.GetFormFromFile(0x000002BC, "Fallout4.esm") as ActorValue
+        ActorValue confAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
+        ActorValue asstAV = Game.GetFormFromFile(0x000002BF, "Fallout4.esm") as ActorValue
         if vinnieAct != None && !vinnieAct.IsDead() && player != None && !player.IsDead()
             if raiderFact != None
                 vinnieAct.AddToFaction(raiderFact)
+            endif
+            if confAV != None
+                vinnieAct.SetValue(confAV, 4.0)
+            endif
+            if asstAV != None
+                vinnieAct.SetValue(asstAV, 0.0)
             endif
             if aggAV != None
                 vinnieAct.SetValue(aggAV, 2.0)
             endif
             vinnieAct.StartCombat(player)
-        endif
-        if skullAct != None && !skullAct.IsDead() && player != None && !player.IsDead()
-            skullAct.StartCombat(player)
         endif
     elseif auiStageID == 25
         NotifyDocMorbidLedgerRecovered()
@@ -646,9 +760,17 @@ Event OnStageSet(int auiStageID, int auiItemID)
         Actor izoAct = Game.GetFormFromFile(0x000035DF, "Vault13Chronicles.esp") as Actor
         Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
         ActorValue aggAV = Game.GetFormFromFile(0x000002BC, "Fallout4.esm") as ActorValue
+        ActorValue confAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
+        ActorValue asstAV = Game.GetFormFromFile(0x000002BF, "Fallout4.esm") as ActorValue
         if gizmoAct != None && !gizmoAct.IsDead() && player != None && !player.IsDead()
             if raiderFact != None
                 gizmoAct.AddToFaction(raiderFact)
+            endif
+            if confAV != None
+                gizmoAct.SetValue(confAV, 4.0)
+            endif
+            if asstAV != None
+                gizmoAct.SetValue(asstAV, 0.0)
             endif
             if aggAV != None
                 gizmoAct.SetValue(aggAV, 2.0)
@@ -656,6 +778,12 @@ Event OnStageSet(int auiStageID, int auiItemID)
             gizmoAct.StartCombat(player)
         endif
         if izoAct != None && !izoAct.IsDead() && player != None && !player.IsDead()
+            if confAV != None
+                izoAct.SetValue(confAV, 4.0)
+            endif
+            if asstAV != None
+                izoAct.SetValue(asstAV, 0.0)
+            endif
             if aggAV != None
                 izoAct.SetValue(aggAV, 2.0)
             endif
@@ -665,19 +793,33 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(15, True)
         SetObjectiveCompleted(20, True)
         SetObjectiveCompleted(21, True)
+        if Self.IsObjectiveDisplayed(15)
+            Self.SetObjectiveDisplayed(15, False, False)
+        endif
+        if Self.IsObjectiveDisplayed(20)
+            Self.SetObjectiveDisplayed(20, False, False)
+        endif
+        if Self.IsObjectiveDisplayed(21)
+            Self.SetObjectiveDisplayed(21, False, False)
+        endif
         Scene gizmoScn30 = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
         Scene vinnieScn30 = Game.GetFormFromFile(0x00019102, "Vault13Chronicles.esp") as Scene
-        if gizmoScn30 == None || !gizmoScn30.IsPlaying()
-            ClearQuestAlias(1)
+        if gizmoScn30 != None && gizmoScn30.IsPlaying()
+            gizmoScn30.Stop()
         endif
-        if vinnieScn30 == None || !vinnieScn30.IsPlaying()
-            ClearQuestAlias(9)
+        if vinnieScn30 != None && vinnieScn30.IsPlaying()
+            vinnieScn30.Stop()
         endif
+        ClearQuestAlias(1)
+        ClearQuestAlias(9)
         ForceQuestAlias(0, 0x000035DC)
         if !Self.IsObjectiveDisplayed(30)
             Self.SetObjectiveDisplayed(30, True, False)
         endif
-        Self.SetActive(True)
+        Quest killianQ30 = Game.GetFormFromFile(0x00010000, "Vault13Chronicles.esp") as Quest
+        if killianQ30 == None || killianQ30.GetStage() != 30
+            Self.SetActive(True)
+        endif
     elseif auiStageID == 40
         GrantSyndicateFinalReward()
         FinalizeSyndicateQuestCleanly()
@@ -739,6 +881,31 @@ Event Actor.OnDeath(Actor akSender, Actor akKiller)
     endif
 EndEvent
 
+Event OnHit(ObjectReference akTarget, ObjectReference akAggressor, Form akSource, Projectile akProjectile, bool abPowerAttack, bool abSneakAttack, bool abBashAttack, bool abHitBlocked, string apMaterial)
+    Actor player = Game.GetPlayer()
+    if player == None || akAggressor != (player as ObjectReference)
+        if akTarget != None && player != None
+            RegisterForHitEvent(akTarget, player, None, None, -1, -1, -1, -1, True)
+        endif
+        return
+    endif
+    Actor gizmoAct = Game.GetFormFromFile(0x000035DE, "Vault13Chronicles.esp") as Actor
+    Actor izoAct = Game.GetFormFromFile(0x000035DF, "Vault13Chronicles.esp") as Actor
+    Actor vinnieAct = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
+    if Self.GetStage() < 20
+        Self.SetStage(20)
+    endif
+    if (gizmoAct != None && akTarget == (gizmoAct as ObjectReference)) || (izoAct != None && akTarget == (izoAct as ObjectReference))
+        if !bStg28Done
+            Self.SetStage(28)
+        endif
+    elseif vinnieAct != None && akTarget == (vinnieAct as ObjectReference)
+        if !bStg24Done
+            Self.SetStage(24)
+        endif
+    endif
+EndEvent
+
 Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akActionRef)
     if akActionRef != Game.GetPlayer()
         return
@@ -790,6 +957,16 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
             return
         endif
         if !bGizmoResolved
+            if vinnieAct != None && !bStg24Done && !vinnieAct.IsDead()
+                if vinnieAct.IsInCombat()
+                    vinnieAct.StopCombat()
+                    vinnieAct.StopCombatAlarm()
+                endif
+                if vinnieAct.Is3DLoaded() && (Math.Abs(vinnieAct.GetPositionX() + 480.0) > 350.0 || Math.Abs(vinnieAct.GetPositionY() - 780.0) > 350.0)
+                    vinnieAct.SetPosition(-480.0, 780.0, 86.0)
+                    vinnieAct.SetAngle(0.0, 0.0, 270.0)
+                endif
+            endif
             StopAllSyndicateScenesExcept(1)
             if synGreeting != None && !gizmoAct.IsTalking()
                 gizmoAct.Say(synGreeting, None, false, None)
@@ -941,5 +1118,20 @@ Event OnTimer(int aiTimerID)
                 morbidScn.Start()
             endif
         endif
+    elseif aiTimerID == 95
+        Actor player95 = Game.GetPlayer()
+        WorldSpace v13Wrld95 = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+        if player95 == None || v13Wrld95 == None || player95.GetWorldSpace() != v13Wrld95 || Self.GetStage() >= 40 || Self.IsCompleted()
+            return
+        endif
+        SyncSyndicateProgressFlags()
+        if bGizmoResolved && Self.IsObjectiveDisplayed(21)
+            CheckAdvanceToStage30()
+        endif
+        if bUrnRecovered && Self.IsObjectiveDisplayed(20)
+            CheckAdvanceToStage30()
+        endif
+        RefreshJunktownSyndicateLayout()
+        StartTimer(2.0, 95)
     endif
 EndEvent

@@ -10,8 +10,8 @@ import os
 import zipfile
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ES_BUILD_DIR = os.path.join(THIS_DIR, "build_out")
-EN_BUILD_DIR = os.path.join(THIS_DIR, "edition_en", "build_out")
+ES_BUILD_DIR = os.path.join(THIS_DIR, "release_out")
+EN_BUILD_DIR = os.path.join(THIS_DIR, "edition_en", "release_out")
 RELEASE_DIR = os.path.join(THIS_DIR, "release_nexus")
 
 MOD_FILES = (
@@ -188,6 +188,18 @@ conservando todas las armas y equipo clasico desbloqueado.
 
 
 def build_zip(src_dir: str, zip_path: str, readme_name: str, readme_body: str) -> None:
+    esp_path = os.path.join(src_dir, "Vault13Chronicles.esp")
+    if not os.path.exists(esp_path):
+        raise FileNotFoundError(
+            f"Missing public release ESP: {esp_path}. Run build scripts with --public-release first."
+        )
+    with open(esp_path, "rb") as ef:
+        esp_bytes = ef.read()
+    for forbidden_marker in (b"[SALTO DIRECTO", b"[DIRECT JUMP"):
+        if forbidden_marker in esp_bytes:
+            raise RuntimeError(
+                f"ABORTED: Public release {esp_path} still contains QA debug jump marker {forbidden_marker!r}!"
+            )
     os.makedirs(os.path.dirname(zip_path), exist_ok=True)
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for fn in MOD_FILES:

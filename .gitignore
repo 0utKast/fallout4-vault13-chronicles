@@ -13,9 +13,11 @@ scratch/
 KIT_CAMTASIA_TRAILER_EN/
 trailer_motion_graphics/
 
-# Packaged release archives & >100 MB Main.ba2 archives
+# Packaged release archives, public staging dirs & >100 MB Main.ba2 archives
 # (Published directly on GitHub Releases — unlimited bandwidth, up to 2 GB per file)
 release_nexus/*.zip
+release_out/
+edition_en/release_out/
 build_out/Vault13Chronicles - Main.ba2
 edition_en/build_out/Vault13Chronicles - Main.ba2
 

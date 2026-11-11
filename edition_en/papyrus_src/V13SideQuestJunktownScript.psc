@@ -43,9 +43,27 @@ Function ForceQuestAlias(int aiAliasID, int aiFormID)
     endif
 EndFunction
 
+Function ClearQuestAlias(int aiAliasID)
+    ReferenceAlias al = Self.GetAlias(aiAliasID) as ReferenceAlias
+    if al != None && al.GetReference() != None
+        al.Clear()
+    endif
+EndFunction
+
 Function ForceAllJunktownAliases()
+    int stg = Self.GetStage()
+    if Self.IsCompleted() || stg >= 40
+        ClearQuestAlias(0)
+        ClearQuestAlias(1)
+        ClearQuestAlias(9)
+        return
+    endif
     ForceQuestAlias(0, 0x000035C0)
-    ForceQuestAlias(1, 0x000035C4)
+    if stg < 25
+        ForceQuestAlias(1, 0x000035C4)
+    else
+        ClearQuestAlias(1)
+    endif
     ForceQuestAlias(2, 0x00003005)
     ForceQuestAlias(3, 0x00002003)
     ForceQuestAlias(4, 0x0000351C)
@@ -53,8 +71,69 @@ Function ForceAllJunktownAliases()
     ForceQuestAlias(6, 0x00003501)
     ForceQuestAlias(7, 0x00002206)
     ForceQuestAlias(8, 0x00002035)
-    ForceQuestAlias(9, 0x000035C1)
+    Scene larsScn = Game.GetFormFromFile(0x00010101, "Vault13Chronicles.esp") as Scene
+    if stg < 30 || (larsScn != None && larsScn.IsPlaying())
+        ForceQuestAlias(9, 0x000035C1)
+    else
+        ClearQuestAlias(9)
+    endif
     ForceQuestAlias(10, 0x000035C2)
+EndFunction
+
+Function EnsureKillianStage30Marker()
+    if Self.IsCompleted() || Self.GetStage() >= 40
+        return
+    endif
+    Actor killianAct = Game.GetFormFromFile(0x000035C0, "Vault13Chronicles.esp") as Actor
+    if killianAct != None
+        if killianAct.IsDisabled()
+            killianAct.EnableNoWait()
+        endif
+        if killianAct.IsDead()
+            killianAct.Resurrect()
+        endif
+        if killianAct.Is3DLoaded()
+            killianAct.AllowPCDialogue(True)
+            killianAct.BlockActivation(False, False)
+            if !killianAct.IsInCombat() && !killianAct.IsTalking()
+                if Math.Abs(killianAct.GetPositionX() - 3850.0) > 120.0 || Math.Abs(killianAct.GetPositionY() - 3820.0) > 120.0
+                    killianAct.SetPosition(3850.0, 3820.0, 80.0)
+                    killianAct.SetAngle(0.0, 0.0, 225.0)
+                endif
+            endif
+        endif
+    endif
+    SetObjectiveCompleted(20, True)
+    SetObjectiveCompleted(22, True)
+    SetObjectiveCompleted(25, True)
+    if Self.IsObjectiveDisplayed(20)
+        Self.SetObjectiveDisplayed(20, False, False)
+    endif
+    if Self.IsObjectiveDisplayed(22)
+        Self.SetObjectiveDisplayed(22, False, False)
+    endif
+    if Self.IsObjectiveDisplayed(25)
+        Self.SetObjectiveDisplayed(25, False, False)
+    endif
+    Scene sLars = Game.GetFormFromFile(0x00010101, "Vault13Chronicles.esp") as Scene
+    if sLars != None && sLars.IsPlaying()
+        sLars.Stop()
+    endif
+    ClearQuestAlias(1)
+    ClearQuestAlias(9)
+    ForceQuestAlias(0, 0x000035C0)
+    ForceQuestAlias(2, 0x00003005)
+    ForceQuestAlias(3, 0x00002003)
+    ForceQuestAlias(4, 0x0000351C)
+    ForceQuestAlias(5, 0x00002101)
+    ForceQuestAlias(6, 0x00003501)
+    ForceQuestAlias(7, 0x00002206)
+    ForceQuestAlias(8, 0x00002035)
+    if Self.IsObjectiveDisplayed(30)
+        Self.SetObjectiveDisplayed(30, False, False)
+    endif
+    Self.SetObjectiveDisplayed(30, True, True)
+    Self.SetActive(True)
 EndFunction
 
 Function EquipCustomGear(Actor akNpc, int aiOutfitID, int aiBodyArmorEsmID, int aiExtraArmorEsmID, int aiHatID)
@@ -2001,7 +2080,7 @@ Function BindJunktownListeners()
             if (kz < 68.0 || kz > 190.0) && Self.GetStage() < 25
                 kenjiRef.SetPosition(-2760.0, 5480.0, 86.0)
                 ForceQuestAlias(1, 0x000035C4)
-            elseif !kenjiRef.IsInCombat()
+            elseif !kenjiRef.IsInCombat() && Self.GetStage() < 25
                 if Math.Abs(kx + 2760.0) > 450.0 || Math.Abs(ky - 5480.0) > 450.0
                     kenjiRef.StopCombat()
                     kenjiRef.SetPosition(-2760.0, 5480.0, 86.0)
@@ -2031,6 +2110,12 @@ Function BindJunktownListeners()
     endif
     if Self.GetStage() == 20 && !IsObjectiveDisplayed(20)
         EnsureJunktownStage20Active()
+    elseif Self.GetStage() == 30 && !Self.IsCompleted()
+        ForceQuestAlias(0, 0x000035C0)
+        if !IsObjectiveDisplayed(30)
+            SetObjectiveDisplayed(30, True, False)
+            Self.SetActive(True)
+        endif
     endif
     Actor skullRef = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as Actor
     if skullRef != None
@@ -2322,19 +2407,22 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         SilenceJunktownActorsExcept(larsRef as Actor, 0)
         NotifyJunktownProofRecovered()
         DeliverProofToLars()
+        EnsureKillianStage30Marker()
         Topic helloTopLars = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
         if helloTopLars != None && (larsRef as Actor) != None && !(larsRef as Actor).IsTalking()
             (larsRef as Actor).Say(helloTopLars, None, false, None)
         endif
     elseif akSender == larsRef && (curStage == 30 || (bItemDelivered && curStage < 40))
         SilenceJunktownActorsExcept(larsRef as Actor, 0)
-        if Self.GetStage() < 40
-            Self.SetStage(40)
+        if Self.GetStage() < 30
+            Self.SetStage(30)
         endif
+        EnsureKillianStage30Marker()
         Topic helloTopLars30 = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
         if helloTopLars30 != None && (larsRef as Actor) != None && !(larsRef as Actor).IsTalking()
             (larsRef as Actor).Say(helloTopLars30, None, false, None)
         endif
+        Debug.Notification("Captain Lars: 'Head to the General Store and report to Mayor Killian Darkwater to collect your reward.'")
     elseif akSender == killianRef && (curStage == 25 || curStage == 30 || (bItemDelivered && curStage < 40) || (proofBase != None && player.GetItemCount(proofBase) > 0 && curStage < 40))
         SilenceJunktownActorsExcept(killianRef as Actor, 0)
         if !bItemDelivered
@@ -2606,6 +2694,14 @@ Event OnStageSet(int auiStageID, int auiItemID)
     elseif auiStageID == 25
         SetObjectiveCompleted(20, True)
         SetObjectiveCompleted(22, True)
+        if IsObjectiveDisplayed(20)
+            SetObjectiveDisplayed(20, False, False)
+        endif
+        if IsObjectiveDisplayed(22)
+            SetObjectiveDisplayed(22, False, False)
+        endif
+        ClearQuestAlias(1)
+        ForceQuestAlias(9, 0x000035C1)
         if !IsObjectiveDisplayed(25)
             SetObjectiveDisplayed(25, True, False)
         endif
@@ -2618,22 +2714,23 @@ Event OnStageSet(int auiStageID, int auiItemID)
         if !bItemDelivered
             DeliverProofToLars()
         endif
-        SetObjectiveCompleted(20, True)
-        SetObjectiveCompleted(22, True)
-        SetObjectiveCompleted(25, True)
-        if !IsObjectiveDisplayed(30)
-            SetObjectiveDisplayed(30, True, False)
-        endif
-        Self.SetActive(True)
+        BindJunktownListeners()
+        EnsureKillianStage30Marker()
         if doStg30
             Debug.Notification("Lars impounded the evidence against Gizmo! Report to Mayor Killian Darkwater in Junktown.")
         endif
-        BindJunktownListeners()
     elseif auiStageID == 40
         SetObjectiveCompleted(20, True)
         SetObjectiveCompleted(22, True)
         SetObjectiveCompleted(25, True)
         SetObjectiveCompleted(30, True)
+        if IsObjectiveDisplayed(30)
+            SetObjectiveDisplayed(30, False, False)
+        endif
+        Self.CompleteAllObjectives()
+        ClearQuestAlias(0)
+        ClearQuestAlias(1)
+        ClearQuestAlias(9)
         if doReward40
             Form caps = Game.GetFormFromFile(0x0000000F, "Fallout4.esm")
             Form shotgun = Game.GetFormFromFile(0x0014831C, "Fallout4.esm")
