@@ -1,0 +1,6 @@
+# Optional Python packages used ONLY when regenerating procedural 2D/3D DDS textures
+# from scratch (generate_v13_worldmap_dds.py, generate_v13_junktown_3d_assets.py,
+# edition_en/generate_v13_textures_en.py).
+# Core binary .esp/.ba2 compilation and QA auditing rely solely on Python 3.10+ stdlib.
+Pillow>=10.0.0
+numpy>=1.24.0

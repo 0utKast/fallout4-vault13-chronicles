@@ -1,0 +1,31 @@
+# Python bytecode, virtualenvs & environment secrets
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+*.env
+*.log
+
+# Scratch & local video editing projects (multi-GB raw Camtasia / MOV stems)
+scratch/
+KIT_CAMTASIA_TRAILER_EN/
+trailer_motion_graphics/
+
+# Packaged release archives & >100 MB Main.ba2 archives
+# (Published directly on GitHub Releases — unlimited bandwidth, up to 2 GB per file)
+release_nexus/*.zip
+build_out/Vault13Chronicles - Main.ba2
+edition_en/build_out/Vault13Chronicles - Main.ba2
+
+# Local multi-GB intermediate TTS / XWM / FUZ synthesis caches
+assets/voices_es/
+assets/voices_en/
+assets/voices_fuz_cache/
+assets/radio_dj_es/
+assets/radio_dj_en/
+assets/radio_music_cache/
+edition_en/voices_en/
+edition_en/assets_en/voices_fuz_cache/
+edition_en/assets/radio_dj_en/

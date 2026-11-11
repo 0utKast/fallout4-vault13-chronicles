@@ -1,0 +1,14 @@
+========================================================================
+CARPETA DE MÚSICA DE LA RADIO DE FALLOUT 1 (RADIO EL EJE - 2161)
+Ruta: c:\proyectos_python\Mods_Fallout\cronicas_refugio_13\radio_music
+========================================================================
+
+Instrucciones:
+1. Copia o descarga aquí tus 10-15 canciones de Suno en formato .mp3 o .wav
+   (puedes dejarles su nombre original o numerarlas, por ejemplo:
+   01_atom_fever.mp3, 02_radiation_blues.mp3, etc.).
+2. Al ejecutar build_cronicas_refugio_13.py, el generador detectará
+   automáticamente todas las canciones de esta carpeta, les aplicará el
+   procesado de radio de válvulas de Fallout, las convertirá a .xwm y las
+   integrará junto con las locuciones e historias de ElevenLabs en la
+   emisora del Pip-Boy: "Radio El Eje — Nueva California (2161)".
