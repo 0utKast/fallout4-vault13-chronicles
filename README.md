@@ -2,13 +2,17 @@
 ### Standalone Recreation of *Fallout 1 (1997)* Inside Fallout 4 — Custom Southern California Worldspace, 1:1 Pip-Boy Map, Radio, Classic Companions & Multi-Path Quests (English & Spanish Editions)
 
 [![License: MIT & Open Permissions](https://img.shields.io/badge/License-MIT%20%28100%25%20Open%20Permissions%29-brightgreen.svg)](LICENSE)
+[![Nexus Mods](https://img.shields.io/badge/Nexus%20Mods-Fallout%204%20%23111327-da8e35.svg)](https://www.nexusmods.com/fallout4/mods/111327)
+[![Official Trailer](https://img.shields.io/badge/YouTube-Official%20Trailer-ff0000.svg)](https://youtu.be/f4HKP1jbSHs)
 [![Fallout 4 Compatibility](https://img.shields.io/badge/Fallout%204-1.10.163%20%2B%20Next--Gen%2FAE%20%28HEDR%201.0%20%2F%20BA2%20v1%29-blue.svg)](#universal-compatibility)
 [![Zero Dependencies](https://img.shields.io/badge/Requirements-Base%20Fallout4.esm%20Only%20%280%20CC%20%2F%200%20DLC%20%2F%200%20F4SE%29-orange.svg)](#universal-compatibility)
-[![Release Status](https://img.shields.io/badge/v0.9.0%20Public%20Beta-Chapter%201%20Complete%20%2821%2F21%20QA%20Passed%29-success.svg)](ROADMAP.md)
+[![Release Status](https://img.shields.io/badge/v0.9.0%20Public%20Beta-Chapter%201%20Complete%20%2824%2F24%20QA%20Passed%29-success.svg)](ROADMAP.md)
 
 ![Vault 13 Chronicles Header Banner](NEXUS_MEDIA_PACK/01_CABECERAS_MOD_NEXUS/00_HEADER_NEXUS_1920x1080_EN.jpg)
 
 > **🌍 Language Navigation & Direct Downloads / Navegación y Descarga Directa:**
+> - 🎬 **[Watch Official Trailer on YouTube / Ver Tráiler Oficial en YouTube (`youtu.be/f4HKP1jbSHs`)](https://youtu.be/f4HKP1jbSHs)**
+> - 🧡 **[Nexus Mods Unified Page (EN & ES Main Files — `#111327`)](https://www.nexusmods.com/fallout4/mods/111327)**
 > - 🇺🇸 **[English Documentation (Features, Pip-Boy Worldspace, Status & Installation)](#english-documentation)**
 > - 🇪🇸 **[Documentación en Español (Aportaciones Clave, Estado Actual, Hoja de Ruta e Instalación)](#documentación-en-español)**
 > - 📦 **[Download Complete Playable `.zip` Packages (EN & ES) — GitHub Releases (`v0.9.0-beta`)](https://github.com/0utKast/fallout4-vault13-chronicles/releases/tag/v0.9.0-beta)**
@@ -100,7 +104,7 @@ We believe in **100% engineering transparency** for players and fellow modders. 
 ---
 
 ## 6. Installation & How to Start In-Game
-1. **Download Your Preferred Standalone Edition** from **[GitHub Releases (`v0.9.0-beta`)](https://github.com/0utKast/fallout4-vault13-chronicles/releases/tag/v0.9.0-beta)**:
+1. **Download Your Preferred Standalone Edition** from **[Nexus Mods (`#111327`)](https://www.nexusmods.com/fallout4/mods/111327)** or **[GitHub Releases (`v0.9.0-beta`)](https://github.com/0utKast/fallout4-vault13-chronicles/releases/tag/v0.9.0-beta)**:
    - **English Edition:** `Vault13Chronicles_EN_v0.9.0_Beta.zip`
    - **Spanish Edition:** `CronicasDelRefugio13_ES_v0.9.0_Beta.zip`
 2. **Install via Mod Manager or Manually:**
@@ -224,7 +228,7 @@ Para que cualquier jugador o desarrollador tenga claridad absoluta sobre el alca
 - **Compatibilidad Nativa Universal:** Funciona directamente y sin parches tanto en **Fallout 4 `1.10.163` (Pre-Next-Gen / GOG / Downgraded)** como en **`1.10.980+` (Next-Gen / Anniversary Edition)** gracias a su cabecera **`HEDR v1.00`** (`FormIDs >= 0x800`) y archivos **`.ba2` Versión 1** (`GNRL v1` y `DX10 v1`).
 - **Cero Dependencias y Política Abierta:** Solo requiere `Fallout4.esm` (**0** Creation Club, **0** DLCs, **0** F4SE y **0** mods externos). Publicado bajo **Permisos 100% Abiertos (Licencia MIT)**, rechazando cualquier sistema de bloqueo o privatización del *modding*.
 - **Instalación Rápida:**
-  1. Descarga [`CronicasDelRefugio13_ES_v0.9.0_Beta.zip`](https://github.com/0utKast/fallout4-vault13-chronicles/releases/download/v0.9.0-beta/CronicasDelRefugio13_ES_v0.9.0_Beta.zip) (o la edición inglesa [`Vault13Chronicles_EN_v0.9.0_Beta.zip`](https://github.com/0utKast/fallout4-vault13-chronicles/releases/download/v0.9.0-beta/Vault13Chronicles_EN_v0.9.0_Beta.zip)) desde **[GitHub Releases](https://github.com/0utKast/fallout4-vault13-chronicles/releases/tag/v0.9.0-beta)**.
+  1. Descarga la edición que prefieras desde **[Nexus Mods (`#111327`)](https://www.nexusmods.com/fallout4/mods/111327)** o desde **[GitHub Releases](https://github.com/0utKast/fallout4-vault13-chronicles/releases/tag/v0.9.0-beta)** ([`CronicasDelRefugio13_ES_v0.9.0_Beta.zip`](https://github.com/0utKast/fallout4-vault13-chronicles/releases/download/v0.9.0-beta/CronicasDelRefugio13_ES_v0.9.0_Beta.zip) en español o [`Vault13Chronicles_EN_v0.9.0_Beta.zip`](https://github.com/0utKast/fallout4-vault13-chronicles/releases/download/v0.9.0-beta/Vault13Chronicles_EN_v0.9.0_Beta.zip) en inglés) — y mira el **[Tráiler Oficial en YouTube](https://youtu.be/f4HKP1jbSHs)**.
   2. Instálalo con **Vortex / Mod Organizer 2** o extrae `Vault13Chronicles.esp`, `Vault13Chronicles - Main.ba2` y `Vault13Chronicles - Textures.ba2` en `Fallout 4\Data` y activa `Vault13Chronicles.esp`.
   3. Carga tu partida y dirígete al marcador del **Archivo Histórico Mnemosyne de Vault-Tec** (al noroeste del Refugio 111) para viajar al **Refugio 13 (5 de diciembre de 2161)**.
 

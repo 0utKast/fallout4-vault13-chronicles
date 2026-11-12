@@ -7,7 +7,7 @@ Todos los archivos cumplen estrictamente los requisitos de dimensiones (`16:9` `
 - **Ficha en Español (Si se publica aparte):** Usa `00_HEADER_NEXUS_1920x1080_ES.jpg` y `00_BANNER_PANORAMICO_1400x400_ES.jpg`.
 
 ## 2. Vídeo para la pestaña Media
-- Sube primero `refugio13_YouTube_Master.mp4` a YouTube (puede estar en *Público* o *Oculto / Unlisted*) y pega su enlace en **Media -> Add Video** de Nexus Mods.
+- Enlace oficial ya publicado en YouTube: **`https://youtu.be/f4HKP1jbSHs`** — pégalo directamente en **Media -> Add Video** de Nexus Mods (además ya está incrustado con `[youtube]f4HKP1jbSHs[/youtube]` en la parte superior de la descripción BBCode).
 
 ## 3. Las 20 Capturas de Pantalla (`02_20_CAPTURAS_GALERIA_1920x1080/`)
 Puedes arrastrar las 20 imágenes de golpe en **Media -> Add Images**. Aquí tienes los pies de foto en inglés por si quieres pegarlos:

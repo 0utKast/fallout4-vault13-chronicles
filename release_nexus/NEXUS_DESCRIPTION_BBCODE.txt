@@ -1,7 +1,9 @@
 [center][size=6][b]VAULT 13 CHRONICLES (2161) — CRÓNICAS DEL REFUGIO 13[/b][/size]
 [size=4][b]Standalone Recreation of Classic Fallout 1 (1997) Inside Fallout 4 • Chapter 1: The Water Chip (v0.9.0 Public Beta)[/b][/size]
 [size=3][i]Custom Southern California (2161) Worldspace & Calibrated Pip-Boy Map • The Hub Radio (84.5 kHz) • 3 Simultaneous Classic Companions (Ian, Tycho & Dogmeat) • All 6 Classic 1997 Special Encounters • 1,020+ Lip-Synced Voices (.fuz) • Native 1.10.163 & Next-Gen/AE Support • 0 Creation Club / 0 DLC / 0 F4SE • Standalone English & Spanish Editions[/i][/size]
-[size=3][b]Open-Source Repository & Technical Documentation:[/b] [url=https://github.com/0utKast/fallout4-vault13-chronicles]github.com/0utKast/fallout4-vault13-chronicles[/url][/size][/center]
+[size=3][b]Official Trailer:[/b] [url=https://youtu.be/f4HKP1jbSHs]youtu.be/f4HKP1jbSHs[/url]  •  [b]Open-Source Repository:[/b] [url=https://github.com/0utKast/fallout4-vault13-chronicles]github.com/0utKast/fallout4-vault13-chronicles[/url][/size]
+
+[youtube]f4HKP1jbSHs[/youtube][/center]
 
 [line]
 
@@ -40,15 +42,15 @@
   6. [b]Patrick the Celt:[/b] Friendly wandering bard whose song of Old Erin grants [b]+1 Permanent Charisma[/b]!
 [*][b]Classic Arsenal, Custom Meshes & Over 1,020 Lip-Synced Voice Clips ([font=Courier New].fuz[/font]):[/b]
   • Wield the [b]Colt 6520 10mm Pistol[/b], [b].223 Pistol[/b], [b]Wattz 2000 Laser Rifle[/b], [b]Winchester P94 Plasma Caster[/b], [b]Red Ryder LE BB Gun[/b], [b]Classic Alien Blaster[/b], and the [b]Vault 13 Armored Jumpsuit[/b] (with isolated golden [font=Courier New]13[/font] back numbers) — and bring them freely back to the 2287 Commonwealth!
-  • Every single NPC across all [b]43 four-option dialogue wheels[/b] features native FaceFX lip-synced [font=Courier New].fuz[/font] audio (`1,020+` clips per language).
+  • Every single NPC across all [b]43 four-option dialogue wheels[/b] features native FaceFX lip-synced [font=Courier New].fuz[/font] audio (1,020+ clips per language).
 [/list]
 
 [line]
 
-[size=5][b]🛡️ UNIVERSAL COMPATIBILITY (`1.10.163` + NEXT-GEN / AE) & OPEN MODDING POLICY[/b][/size]
+[size=5][b]🛡️ UNIVERSAL COMPATIBILITY (1.10.163 + NEXT-GEN / AE) & OPEN MODDING POLICY[/b][/size]
 [list]
-[*][b]Works Natively on BOTH Fallout 4 `1.10.163` (Pre-Next-Gen / GOG / Downgraded) AND `1.10.980+` (Next-Gen / Anniversary Edition):[/b]
-  • Plugin header compiled strictly as [b][font=Courier New]HEDR v1.00[/font][/b] (all custom FormIDs `>= 0x01000800`) and archives packed strictly as [b][font=Courier New]BTDX Version 1[/font][/b] ([font=Courier New]GNRL v1[/font] & [font=Courier New]DX10 v1[/font] — never `v7`/`v8`).
+[*][b]Works Natively on BOTH Fallout 4 [font=Courier New]1.10.163[/font] (Pre-Next-Gen / GOG / Downgraded) AND [font=Courier New]1.10.980+[/font] (Next-Gen / Anniversary Edition):[/b]
+  • Plugin header compiled strictly as [b][font=Courier New]HEDR v1.00[/font][/b] (all custom FormIDs [font=Courier New]>= 0x01000800[/font]) and archives packed strictly as [b][font=Courier New]BTDX Version 1[/font][/b] ([font=Courier New]GNRL v1[/font] & [font=Courier New]DX10 v1[/font] — never v7/v8).
 [*][b]ZERO Creation Club, ZERO DLCs, ZERO F4SE & ZERO External Dependencies:[/b]
   • Depends [b]exclusively on base [font=Courier New]Fallout4.esm[/font][/b]. 100% Standalone All-in-One package.
 [*][b]100% Free & Open Permissions Forever:[/b]
@@ -67,7 +69,8 @@
 [line]
 
 [center][size=6][b]🇪🇸 EDICIÓN COMPLETA EN ESPAÑOL — CRÓNICAS DEL REFUGIO 13 (2161)[/b][/size]
-[size=4][b]Recreación Autónoma de Fallout 1 (1997) en el Motor de Fallout 4 • Capítulo 1: El Chip de Agua (v0.9.0 Beta Pública)[/b][/size][/center]
+[size=4][b]Recreación Autónoma de Fallout 1 (1997) en el Motor de Fallout 4 • Capítulo 1: El Chip de Agua (v0.9.0 Beta Pública)[/b][/size]
+[size=3][b]Tráiler Oficial:[/b] [url=https://youtu.be/f4HKP1jbSHs]youtu.be/f4HKP1jbSHs[/url]  •  [b]Repositorio Abierto:[/b] [url=https://github.com/0utKast/fallout4-vault13-chronicles]github.com/0utKast/fallout4-vault13-chronicles[/url][/size][/center]
 
 [size=4][b]☢️ ESTADO ACTUAL DE LA BETA (v0.9.0) Y HOJA DE RUTA[/b][/size]
 [quote][b]Crónicas del Refugio 13[/b] recrea el clásico [b]Fallout (1997)[/b] de forma 100% autónoma dentro de Fallout 4, con voces, textos, radio, carteles 3D y mapa del Pip-Boy íntegramente localizados al español en el segundo archivo principal de la pestaña [b]Files[/b] ([font=Courier New]Cronicas del Refugio 13 - Spanish Edition[/font]).
@@ -87,7 +90,7 @@
   • Sintoniza [b]Radio El Eje (84.5 kHz)[/b] con [b]24 canciones retro-atómicas[/b] y [b]24 boletines de locutor doblados al español[/b].
   • Descubre en el desierto la [b]Cabina Azul TARDIS[/b] (Sensor de Movimiento), el [b]Platillo Estrellado del Área 51[/b] (Bláster Alienígena + cuadro de Elvis), el [b]Camión Volcado de Nuka-Cola[/b], la [b]Huella Gigante de Godzilla[/b], el [b]Concesionario de Bob[/b] (Red Ryder LE BB) y a [b]Patrick el Celta[/b] (+1 Carisma permanente).
 [*][b]Más de 1.020 Líneas de Voz con Lip-Sync ([font=Courier New].fuz[/font]) y Compatibilidad Universal:[/b]
-  • Funciona de serie en [b]Fallout 4 `1.10.163` (GOG / Pre-Next-Gen)[/b] y en [b]`1.10.980+` (Next-Gen / AE)[/b] (`HEDR v1.00`, `BA2 v1`, `0` Creation Club, `0` DLCs, `0` F4SE) bajo [b]Permisos 100% Abiertos[/b].
+  • Funciona de serie en [b]Fallout 4 [font=Courier New]1.10.163[/font] (GOG / Pre-Next-Gen)[/b] y en [b][font=Courier New]1.10.980+[/font] (Next-Gen / AE)[/b] ([font=Courier New]HEDR v1.00[/font], [font=Courier New]BA2 v1[/font], 0 Creation Club, 0 DLCs, 0 F4SE) bajo [b]Permisos 100% Abiertos[/b].
 [/list]
 
 [size=5][b]🛠️ INSTALACIÓN EN ESPAÑOL[/b][/size]
