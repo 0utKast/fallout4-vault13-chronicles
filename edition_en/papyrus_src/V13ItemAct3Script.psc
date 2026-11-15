@@ -2,9 +2,10 @@ Scriptname V13ItemAct3Script extends ObjectReference
 
 Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldContainer)
     if akNewContainer == Game.GetPlayer()
-        Quest q = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
-        if q != None && q.GetStage() >= 20 && q.GetStage() < 30
-            q.SetStage(30)
+        Quest q = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
+        V13Act3QuestScript act3S = q as V13Act3QuestScript
+        if act3S != None
+            act3S.GrantVreeAutopsyHolodisk()
         endif
     endif
 EndEvent

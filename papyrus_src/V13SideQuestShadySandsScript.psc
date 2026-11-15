@@ -23,6 +23,9 @@ Function ForceQuestAlias(int aiAliasID, int aiFormID)
 EndFunction
 
 Function ForceAllShadySandsAliases()
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        return
+    endif
     ForceQuestAlias(0, 0x000035A0)
     ForceQuestAlias(1, 0x000035A6)
     ForceQuestAlias(2, 0x00003005)
@@ -37,7 +40,11 @@ Function ForceAllShadySandsAliases()
 EndFunction
 
 Function EquipFullOutfitOnActor(Actor akActor, Outfit akOutfit, Form akBodyArmor, Form akExtraArmor)
-    if akActor == None || akActor.IsDead() || !akActor.Is3DLoaded() || akActor.IsTalking()
+    if akActor == None || akActor.IsDead() || !akActor.Is3DLoaded() || akActor.IsTalking() || akActor.IsInDialogueWithPlayer() || akActor.IsPlayerTeammate()
+        return
+    endif
+    Actor plDist = Game.GetPlayer()
+    if plDist != None && akActor.GetDistance(plDist) < 2200.0
         return
     endif
     if akOutfit != None && (akBodyArmor == None || !akActor.IsEquipped(akBodyArmor))
@@ -64,6 +71,11 @@ Function RemoveLegacyArmorFromActor(Actor akActor, Form akOldItem)
 EndFunction
 
 Function RefreshShadySandsSettlementLayout()
+    Actor pShady = Game.GetPlayer()
+    WorldSpace caliShady = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pShady == None || caliShady == None || pShady.GetWorldSpace() != caliShady
+        return
+    endif
     Form combatHelm = Game.GetFormFromFile(0x0011E2C8, "Fallout4.esm")
     Form metalHelm = Game.GetFormFromFile(0x000787D3, "Fallout4.esm")
     Form pastorClothes = Game.GetFormFromFile(0x001467A4, "Fallout4.esm")
@@ -72,8 +84,8 @@ Function RefreshShadySandsSettlementLayout()
     Actor aradeshAct = Game.GetFormFromFile(0x000035A0, "Vault13Chronicles.esp") as Actor
     if aradeshAct != None && !aradeshAct.IsDead() && aradeshAct.Is3DLoaded()
         if !aradeshAct.IsInCombat() && !aradeshAct.IsTalking()
-            if Math.Abs(aradeshAct.GetPositionX() - 2250.0) > 45.0 || Math.Abs(aradeshAct.GetPositionY() - 9690.0) > 45.0
-                aradeshAct.SetPosition(2250.0, 9690.0, 160.0)
+            if Math.Abs(aradeshAct.GetPositionX() - 6350.0) > 45.0 || Math.Abs(aradeshAct.GetPositionY() - 23590.0) > 45.0
+                aradeshAct.SetPosition(6350.0, 23590.0, 160.0)
                 aradeshAct.SetAngle(0.0, 0.0, 180.0)
                 aradeshAct.EvaluatePackage()
             elseif Math.Abs(aradeshAct.GetAngleZ() - 180.0) > 35.0 && Math.Abs(aradeshAct.GetAngleZ() - 180.0) < 325.0
@@ -101,13 +113,13 @@ Function RefreshShadySandsSettlementLayout()
         endif
         bool bTandiKidnapped = (trStage >= 15 && trStage < 30)
         if bTandiKidnapped
-            if !tandiAct.IsInCombat() && (Math.Abs(tandiAct.GetPositionX() - 10400.0) > 400.0 || Math.Abs(tandiAct.GetPositionY() - 13580.0) > 400.0)
-                tandiAct.SetPosition(10400.0, 13580.0, 206.0)
+            if !tandiAct.IsInCombat() && (Math.Abs(tandiAct.GetPositionX() - 26500.0) > 400.0 || Math.Abs(tandiAct.GetPositionY() - 33680.0) > 400.0)
+                tandiAct.SetPosition(26500.0, 33680.0, 206.0)
             endif
         elseif trStage != 30 || player == None || player.GetDistance(tandiAct) > 1800.0 || (aradeshAct != None && player.GetDistance(aradeshAct) < 2400.0)
             if !tandiAct.IsInCombat() && !tandiAct.IsTalking()
-                if Math.Abs(tandiAct.GetPositionX() - 2550.0) > 45.0 || Math.Abs(tandiAct.GetPositionY() - 9690.0) > 45.0
-                    tandiAct.SetPosition(2550.0, 9690.0, 160.0)
+                if Math.Abs(tandiAct.GetPositionX() - 6650.0) > 45.0 || Math.Abs(tandiAct.GetPositionY() - 23590.0) > 45.0
+                    tandiAct.SetPosition(6650.0, 23590.0, 160.0)
                     tandiAct.SetAngle(0.0, 0.0, 180.0)
                     tandiAct.EvaluatePackage()
                 elseif Math.Abs(tandiAct.GetAngleZ() - 180.0) > 35.0 && Math.Abs(tandiAct.GetAngleZ() - 180.0) < 325.0
@@ -123,8 +135,8 @@ Function RefreshShadySandsSettlementLayout()
 
     Actor sethAct = Game.GetFormFromFile(0x000035A2, "Vault13Chronicles.esp") as Actor
     if sethAct != None && !sethAct.IsDead() && sethAct.Is3DLoaded()
-        if !sethAct.IsInCombat() && (Math.Abs(sethAct.GetPositionX() - 1810.0) > 600.0 || Math.Abs(sethAct.GetPositionY() - 9720.0) > 600.0)
-            sethAct.SetPosition(1810.0, 9720.0, 160.0)
+        if !sethAct.IsInCombat() && (Math.Abs(sethAct.GetPositionX() - 5910.0) > 600.0 || Math.Abs(sethAct.GetPositionY() - 23620.0) > 600.0)
+            sethAct.SetPosition(5910.0, 23620.0, 178.0)
         endif
         Outfit sethOut = Game.GetFormFromFile(0x00001023, "Vault13Chronicles.esp") as Outfit
         Form sethUnder = Game.GetFormFromFile(0x0019CBB3, "Fallout4.esm")
@@ -136,8 +148,8 @@ Function RefreshShadySandsSettlementLayout()
 
     Actor razloAct = Game.GetFormFromFile(0x000035A3, "Vault13Chronicles.esp") as Actor
     if razloAct != None && !razloAct.IsDead() && razloAct.Is3DLoaded()
-        if !razloAct.IsInCombat() && (Math.Abs(razloAct.GetPositionX() - 2990.0) > 600.0 || Math.Abs(razloAct.GetPositionY() - 9600.0) > 600.0)
-            razloAct.SetPosition(2990.0, 9600.0, 160.0)
+        if !razloAct.IsInCombat() && (Math.Abs(razloAct.GetPositionX() - 7090.0) > 600.0 || Math.Abs(razloAct.GetPositionY() - 23500.0) > 600.0)
+            razloAct.SetPosition(7090.0, 23500.0, 178.0)
         endif
         RemoveLegacyArmorFromActor(razloAct, v81LabCoat)
         Outfit razloOut = Game.GetFormFromFile(0x0000102B, "Vault13Chronicles.esp") as Outfit
@@ -154,8 +166,8 @@ Function RefreshShadySandsSettlementLayout()
         if junktownS != None && junktownS.IsIanRecruited()
             bIanRecruited = True
         endif
-        if !bIanRecruited && !ianAct.IsInCombat() && (Math.Abs(ianAct.GetPositionX() - 1810.0) > 600.0 || Math.Abs(ianAct.GetPositionY() - 9460.0) > 600.0)
-            ianAct.SetPosition(1810.0, 9460.0, 160.0)
+        if !bIanRecruited && !ianAct.IsInCombat() && (Math.Abs(ianAct.GetPositionX() - 5910.0) > 600.0 || Math.Abs(ianAct.GetPositionY() - 23360.0) > 600.0)
+            ianAct.SetPosition(5910.0, 23360.0, 178.0)
         endif
         RemoveLegacyArmorFromActor(ianAct, combatHelm)
         RemoveLegacyArmorFromActor(ianAct, metalHelm)
@@ -166,8 +178,8 @@ Function RefreshShadySandsSettlementLayout()
 
     Actor jarvisAct = Game.GetFormFromFile(0x000035A5, "Vault13Chronicles.esp") as Actor
     if jarvisAct != None && !jarvisAct.IsDead() && jarvisAct.Is3DLoaded()
-        if !jarvisAct.IsInCombat() && (Math.Abs(jarvisAct.GetPositionX() - 3320.0) > 600.0 || Math.Abs(jarvisAct.GetPositionY() - 9480.0) > 600.0)
-            jarvisAct.SetPosition(3320.0, 9480.0, 160.0)
+        if !jarvisAct.IsInCombat() && (Math.Abs(jarvisAct.GetPositionX() - 7420.0) > 600.0 || Math.Abs(jarvisAct.GetPositionY() - 23380.0) > 600.0)
+            jarvisAct.SetPosition(7420.0, 23380.0, 178.0)
         endif
         Form jarvisClothes = Game.GetFormFromFile(0x000B2D8D, "Fallout4.esm")
         EquipFullOutfitOnActor(jarvisAct, None, jarvisClothes, None)
@@ -180,8 +192,8 @@ Function RefreshShadySandsSettlementLayout()
         endif
         if junktownS != None
             if !junktownS.IsDogmeatRecruited() && shadyDog.Is3DLoaded() && !shadyDog.IsInCombat()
-                if Math.Abs(shadyDog.GetPositionX() - 2600.0) > 220.0 || Math.Abs(shadyDog.GetPositionY() - 9600.0) > 220.0
-                    shadyDog.SetPosition(2600.0, 9600.0, 160.0)
+                if Math.Abs(shadyDog.GetPositionX() - 6700.0) > 220.0 || Math.Abs(shadyDog.GetPositionY() - 23500.0) > 220.0
+                    shadyDog.SetPosition(6700.0, 23500.0, 160.0)
                 endif
             endif
             junktownS.RefreshDogmeatAppearance(shadyDog)
@@ -219,17 +231,32 @@ Function SilenceShadySandsActorsExcept(Actor akSpeaker, int aiKeepScene = 0)
     endwhile
 EndFunction
 
-Function SetupShadySandsListeners()
-    if !Self.IsRunning() && !Self.IsCompleted()
-        Self.Start()
-    endif
-    if Self.GetStage() < 10
-        Self.SetStage(10)
+Function SetupShadySandsListeners(bool abRefreshLayout = True)
+    bool isDone = Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+    if isDone
+        bRewardGranted = True
+        bGlandDelivered = True
+        bGlandRecovered = True
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+    else
+        if !Self.IsRunning()
+            Self.Start()
+        endif
+        if Self.GetStage() < 10
+            Self.SetStage(10)
+        endif
     endif
     ForceAllShadySandsAliases()
-    RefreshShadySandsSettlementLayout()
-
     Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    bool inCali = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
+    if abRefreshLayout && inCali
+        RefreshShadySandsSettlementLayout()
+    endif
+
     Form glandBase = Game.GetFormFromFile(0x00001116, "Vault13Chronicles.esp")
     Self.RemoveAllInventoryEventFilters()
     if glandBase != None
@@ -272,7 +299,7 @@ Function SetupShadySandsListeners()
         RegisterForRemoteEvent(emperorRef, "OnDeath")
         RegisterForRemoteEvent(emperorRef as ObjectReference, "OnActivate")
         RegisterForRemoteEvent(emperorRef as ObjectReference, "OnItemRemoved")
-        if !emperorRef.IsDead()
+        if abRefreshLayout && inCali && !emperorRef.IsDead()
             emperorRef.EnableAI(true)
             emperorRef.SetValue(Game.GetAggressionAV(), 2.0)
             emperorRef.SetValue(Game.GetConfidenceAV(), 4.0)
@@ -280,16 +307,18 @@ Function SetupShadySandsListeners()
             if empAI != None
                 empAI.InitCreatureAI()
             endif
-            float ex = emperorRef.GetPositionX()
-            float ey = emperorRef.GetPositionY()
-            float ez = emperorRef.GetPositionZ()
-            if (ez < 148.0 || ez > 270.0) && Self.GetStage() < 25
-                emperorRef.SetPosition(6400.0, 13800.0, 166.0)
-                ForceQuestAlias(1, 0x000035A6)
-            elseif !emperorRef.IsInCombat()
-                if Math.Abs(ex - 6400.0) > 450.0 || Math.Abs(ey - 13800.0) > 450.0
-                    emperorRef.SetPosition(6400.0, 13800.0, 166.0)
+            if emperorRef.Is3DLoaded()
+                float ex = emperorRef.GetPositionX()
+                float ey = emperorRef.GetPositionY()
+                float ez = emperorRef.GetPositionZ()
+                if (ez < 148.0 || ez > 270.0) && Self.GetStage() < 25
+                    emperorRef.SetPosition(16000.0, 34500.0, 166.0)
                     ForceQuestAlias(1, 0x000035A6)
+                elseif !emperorRef.IsInCombat()
+                    if Math.Abs(ex - 16000.0) > 450.0 || Math.Abs(ey - 34500.0) > 450.0
+                        emperorRef.SetPosition(16000.0, 34500.0, 166.0)
+                        ForceQuestAlias(1, 0x000035A6)
+                    endif
                 endif
             endif
         endif
@@ -314,7 +343,7 @@ Function SetupShadySandsListeners()
         endif
     endif
     Actor scorp1Ref = Game.GetFormFromFile(0x000035A7, "Vault13Chronicles.esp") as Actor
-    if scorp1Ref != None && !scorp1Ref.IsDead()
+    if abRefreshLayout && inCali && scorp1Ref != None && !scorp1Ref.IsDead()
         scorp1Ref.EnableAI(true)
         scorp1Ref.SetValue(Game.GetAggressionAV(), 2.0)
         scorp1Ref.SetValue(Game.GetConfidenceAV(), 4.0)
@@ -322,12 +351,12 @@ Function SetupShadySandsListeners()
         if sc1AI != None
             sc1AI.InitCreatureAI()
         endif
-        if !scorp1Ref.IsInCombat() && (Math.Abs(scorp1Ref.GetPositionX() - 6220.0) > 800.0 || Math.Abs(scorp1Ref.GetPositionY() - 13660.0) > 800.0)
-            scorp1Ref.SetPosition(6220.0, 13660.0, 166.0)
+        if scorp1Ref.Is3DLoaded() && !scorp1Ref.IsInCombat() && (Math.Abs(scorp1Ref.GetPositionX() - 15820.0) > 800.0 || Math.Abs(scorp1Ref.GetPositionY() - 34360.0) > 800.0)
+            scorp1Ref.SetPosition(15820.0, 34360.0, 166.0)
         endif
     endif
     Actor scorp2Ref = Game.GetFormFromFile(0x000035A8, "Vault13Chronicles.esp") as Actor
-    if scorp2Ref != None && !scorp2Ref.IsDead()
+    if abRefreshLayout && inCali && scorp2Ref != None && !scorp2Ref.IsDead()
         scorp2Ref.EnableAI(true)
         scorp2Ref.SetValue(Game.GetAggressionAV(), 2.0)
         scorp2Ref.SetValue(Game.GetConfidenceAV(), 4.0)
@@ -335,8 +364,8 @@ Function SetupShadySandsListeners()
         if sc2AI != None
             sc2AI.InitCreatureAI()
         endif
-        if !scorp2Ref.IsInCombat() && (Math.Abs(scorp2Ref.GetPositionX() - 6480.0) > 350.0 || Math.Abs(scorp2Ref.GetPositionY() - 13560.0) > 350.0)
-            scorp2Ref.SetPosition(6480.0, 13560.0, 166.0)
+        if scorp2Ref.Is3DLoaded() && !scorp2Ref.IsInCombat() && (Math.Abs(scorp2Ref.GetPositionX() - 16080.0) > 350.0 || Math.Abs(scorp2Ref.GetPositionY() - 34260.0) > 350.0)
+            scorp2Ref.SetPosition(16080.0, 34260.0, 166.0)
         endif
     endif
     ObjectReference nestRef = Game.GetFormFromFile(0x000035A9, "Vault13Chronicles.esp") as ObjectReference
@@ -348,8 +377,14 @@ Function SetupShadySandsListeners()
         junktownQ.Start()
     endif
     Actor razloAct = Game.GetFormFromFile(0x000035A3, "Vault13Chronicles.esp") as Actor
-    if razloAct != None
+    if abRefreshLayout && inCali && razloAct != None
         EnsureRazloVendorReady(razloAct)
+    endif
+    if Self.GetStage() >= 40
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
     endif
 EndFunction
 
@@ -416,20 +451,39 @@ Function OpenRazloBarter()
 EndFunction
 
 Event OnInit()
-    SetupShadySandsListeners()
+    SetupShadySandsListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 98)
+    endif
 EndEvent
 
 Event OnQuestInit()
-    SetupShadySandsListeners()
+    SetupShadySandsListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 98)
+    endif
 EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
-    SetupShadySandsListeners()
+    SetupShadySandsListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 98)
+    endif
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
     SetupShadySandsListeners()
-    StartTimer(1.0, 97)
+    Actor pLoc = Game.GetPlayer()
+    WorldSpace caliLoc = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pLoc != None && caliLoc != None && pLoc.GetWorldSpace() == caliLoc
+        StartTimer(1.0, 97)
+    endif
 EndEvent
 
 Function NotifyRadscorpionGlandRecovered()
@@ -442,6 +496,19 @@ Function NotifyRadscorpionGlandRecovered()
     Form glandBase = Game.GetFormFromFile(0x00001116, "Vault13Chronicles.esp")
     if emperorRef != None && glandBase != None && emperorRef.GetItemCount(glandBase) > 0
         emperorRef.RemoveItem(glandBase, emperorRef.GetItemCount(glandBase), True)
+    endif
+    if Self.GetStage() < 20
+        if Self.GetStage() < 12
+            Self.SetStage(12)
+        endif
+        ForceQuestAlias(0, 0x000035A0)
+        if !IsObjectiveDisplayed(12)
+            SetObjectiveDisplayed(12, True, False)
+            Self.SetActive(True)
+        endif
+        Debug.Notification("Has recuperado la Glándula del Mutascorpión Emperador. Habla con el líder Aradesh en Shady Sands.")
+        SetupShadySandsListeners()
+        return
     endif
     if Self.GetStage() < 25
         Self.SetStage(25)
@@ -504,6 +571,18 @@ Event Actor.OnDeath(Actor akSender, Actor akKiller)
             bGlandSeeded = True
         endif
         ForceQuestAlias(1, 0x000035A6)
+        if Self.GetStage() < 20
+            if Self.GetStage() < 12
+                Self.SetStage(12)
+            endif
+            ForceQuestAlias(0, 0x000035A0)
+            if !IsObjectiveDisplayed(12)
+                SetObjectiveDisplayed(12, True, False)
+                Self.SetActive(True)
+            endif
+            Debug.Notification("Has abatido al Mutascorpión Emperador. Informa al líder Aradesh en la entrada de Shady Sands.")
+            return
+        endif
         if bGlandRecovered || (glandBase != None && player != None && player.GetItemCount(glandBase) > 0)
             if Self.GetStage() < 25
                 Self.SetStage(25)
@@ -540,42 +619,36 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
 
     ForceAllShadySandsAliases()
     int curStage = Self.GetStage()
+    if Self.IsCompleted() || Self.IsStageDone(40) || bRewardGranted
+        bRewardGranted = True
+        curStage = 40
+    endif
     if (akSender == razloRef || akSender == jarvisRef) && (curStage == 25 || (glandBase != None && player.GetItemCount(glandBase) > 0 && curStage < 30))
         SilenceShadySandsActorsExcept(akSender as Actor, 0)
         DeliverGlandToRazlo()
-        Topic helloTop = Game.GetFormFromFile(0x00009501, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (akSender as Actor) != None && !(akSender as Actor).IsTalking()
-            (akSender as Actor).Say(helloTop, None, false, None)
-        endif
     elseif akSender == aradeshRef && (curStage == 30 || (bGlandDelivered && curStage < 40))
         SilenceShadySandsActorsExcept(aradeshRef as Actor, 0)
         if Self.GetStage() < 40
             Self.SetStage(40)
         endif
-        Topic helloTop = Game.GetFormFromFile(0x00009501, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (aradeshRef as Actor) != None && !(aradeshRef as Actor).IsTalking()
-            (aradeshRef as Actor).Say(helloTop, None, false, None)
-        endif
     elseif akSender == razloRef
-        Message barterMsg = Game.GetFormFromFile(0x00001C72, "Vault13Chronicles.esp") as Message
-        if barterMsg != None
-            int choice = barterMsg.Show()
-            if choice == 0
-                OpenRazloBarter()
-                return
-            elseif choice == 2
-                return
+        if curStage >= 25 || player.IsSneaking()
+            Message barterMsg = Game.GetFormFromFile(0x00001C72, "Vault13Chronicles.esp") as Message
+            if barterMsg != None
+                int choice = barterMsg.Show()
+                if choice == 0
+                    OpenRazloBarter()
+                    return
+                elseif choice == 2
+                    return
+                endif
             endif
         endif
         SilenceShadySandsActorsExcept(razloRef as Actor, 2)
-        Topic helloTop = Game.GetFormFromFile(0x00009501, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (razloRef as Actor) != None && !(razloRef as Actor).IsTalking()
-            (razloRef as Actor).Say(helloTop, None, false, None)
-        endif
         if curStage < 25
             CancelTimer(91)
             aradeshSceneWaitTicks = 0
-            StartTimer(0.5, 92)
+            StartTimer(1.2, 92)
             StartTimer(2.0, 94)
         endif
     elseif akSender == aradeshRef && curStage < 25
@@ -610,12 +683,7 @@ Event OnTimer(int aiTimerID)
         Scene introScene = Game.GetFormFromFile(0x00009600, "Vault13Chronicles.esp") as Scene
         Actor aradeshActor = Game.GetFormFromFile(0x000035A0, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && introScene != None && Self.GetStage() < 25
-            if introScene.IsPlaying()
-                return
-            elseif aradeshActor != None && aradeshActor.IsTalking() && aradeshSceneWaitTicks < 28
-                aradeshSceneWaitTicks += 1
-                StartTimer(0.35, 91)
-            else
+            if !introScene.IsPlaying() && !Utility.IsInMenuMode() && (aradeshActor == None || (!aradeshActor.IsInDialogueWithPlayer() && !aradeshActor.IsTalking()))
                 ForceAllShadySandsAliases()
                 SilenceShadySandsActorsExcept(aradeshActor, 1)
                 if Self.IsRunning()
@@ -627,12 +695,7 @@ Event OnTimer(int aiTimerID)
         Scene razloScene = Game.GetFormFromFile(0x00009601, "Vault13Chronicles.esp") as Scene
         Actor razloActor = Game.GetFormFromFile(0x000035A3, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && razloScene != None && Self.GetStage() < 25
-            if razloScene.IsPlaying()
-                return
-            elseif razloActor != None && razloActor.IsTalking() && aradeshSceneWaitTicks < 28
-                aradeshSceneWaitTicks += 1
-                StartTimer(0.35, 92)
-            else
+            if !razloScene.IsPlaying() && !Utility.IsInMenuMode() && (razloActor == None || (!razloActor.IsInDialogueWithPlayer() && !razloActor.IsTalking()))
                 ForceAllShadySandsAliases()
                 SilenceShadySandsActorsExcept(razloActor, 2)
                 if Self.IsRunning()
@@ -705,7 +768,7 @@ Event OnTimer(int aiTimerID)
         endif
         bPendingTandiKidnapTrigger = False
         Quest tandiRescueInitQ = Game.GetFormFromFile(0x00018000, "Vault13Chronicles.esp") as Quest
-        if tandiRescueInitQ != None && tandiRescueInitQ.GetStage() < 15
+        if tandiRescueInitQ != None && !tandiRescueInitQ.IsCompleted() && !tandiRescueInitQ.IsStageDone(40) && tandiRescueInitQ.GetStage() < 15
             if !tandiRescueInitQ.IsRunning()
                 tandiRescueInitQ.Start()
             endif
@@ -713,6 +776,8 @@ Event OnTimer(int aiTimerID)
         endif
     elseif aiTimerID == 97
         RefreshShadySandsSettlementLayout()
+    elseif aiTimerID == 98
+        SetupShadySandsListeners(True)
     endif
 EndEvent
 
@@ -753,7 +818,33 @@ Event OnStageSet(int auiStageID, int auiItemID)
     Actor player = Game.GetPlayer()
     Form glandBase = Game.GetFormFromFile(0x00001116, "Vault13Chronicles.esp")
 
-    if auiStageID == 20
+    if auiStageID == 11
+        if Self.GetStage() < 12 && !Self.IsCompleted()
+            ForceQuestAlias(0, 0x000035A0)
+            if !IsObjectiveDisplayed(11)
+                SetObjectiveDisplayed(11, True, False)
+                Self.SetActive(True)
+            endif
+        endif
+    elseif auiStageID == 12
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        ForceQuestAlias(0, 0x000035A0)
+        if !IsObjectiveDisplayed(12)
+            SetObjectiveDisplayed(12, True, False)
+            Self.SetActive(True)
+        endif
+    elseif auiStageID == 20
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(12)
+            SetObjectiveCompleted(12, True)
+            SetObjectiveDisplayed(12, False, False)
+        endif
         ObjectReference shadyMapMarker = Game.GetFormFromFile(0x00003412, "Vault13Chronicles.esp") as ObjectReference
         if shadyMapMarker != None
             shadyMapMarker.EnableNoWait()
@@ -771,8 +862,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         ForceQuestAlias(1, 0x000035A6)
         if !IsObjectiveDisplayed(20)
             SetObjectiveDisplayed(20, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg20
             Debug.Notification("Misión Secundaria: Sombras sobre Shady Sands — Elimina al Mutascorpión Emperador en la guarida al norte.")
         endif
@@ -785,8 +876,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(20, True)
         if !IsObjectiveDisplayed(22)
             SetObjectiveDisplayed(22, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg22
             Debug.Notification("¡Mutascorpión Emperador abatido! Extrae la Glándula de Veneno de su cadáver.")
         endif
@@ -795,8 +886,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(22, True)
         if !IsObjectiveDisplayed(25)
             SetObjectiveDisplayed(25, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg25
             Debug.Notification("Glándula de Veneno extraída. Entrégasela al Dr. Razlo en la Clínica de Shady Sands para curar a Jarvis.")
         endif
@@ -809,8 +900,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(25, True)
         if !IsObjectiveDisplayed(30)
             SetObjectiveDisplayed(30, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg30
             Debug.Notification("¡El Dr. Razlo ha elaborado el antídoto y salvado a Jarvis! Informa a Aradesh en Shady Sands.")
         endif
@@ -839,6 +930,7 @@ Event OnStageSet(int auiStageID, int auiItemID)
             Game.RewardPlayerXP(350)
             Debug.Notification("¡Misión Secundaria completada: Sombras sobre Shady Sands! (+500 Chapas, Munición, Estimulantes y +350 XP)")
         endif
+        Self.CompleteAllObjectives()
         Self.CompleteQuest()
         if !bPendingTandiKidnapTrigger
             bPendingTandiKidnapTrigger = True

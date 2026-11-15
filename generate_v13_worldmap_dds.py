@@ -2,273 +2,44 @@
 """
 Generates the 2048x2048 BC1/DXT1 Pip-Boy World Map texture for Crónicas del Refugio 13:
   assets/textures/interface/pip-boy/V13CaliforniaWorldMap_d.dds
-and provides the exact shared 3D heightfield `global_california_height(wx, wy)` used by
-`build_cronicas_refugio_13.py` to generate the 64 exterior `LAND` records of
-`WRLD 0x01003400` ("Sur de California (2161)").
+and re-exports the exact shared 3D heightfield `global_california_height(wx, wy)` from
+`v13_world_layout.py` used by `build_cronicas_refugio_13.py` to generate the 400 exterior
+`LAND` records of `WRLD 0x01003400` ("Sur de California (2161)").
 
 Worldspace bounds:
-  8x8 exterior cells: cx in [-4..3], cy in [-4..3]
-  wx in [-16384.0 .. +16384.0], wy in [-16384.0 .. +16384.0]
+  20x20 exterior cells: cx in [-10..9], cy in [-10..9] (400 LAND cells)
+  wx in [-40960.0 .. +40960.0], wy in [-40960.0 .. +40960.0] (81,920 x 81,920 units)
 """
 
 import math
 import os
 import struct
+import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+if THIS_DIR not in sys.path:
+    sys.path.insert(0, THIS_DIR)
+
+from v13_world_layout import (
+    LOCATION_PLATEAUS,
+    MAP_MAX,
+    MAP_MIN,
+    MAP_SPAN,
+    NECROPOLIS_BASIN_BOUNDS,
+    V13_WORLD_ANCHORS,
+    WORLD_MAX,
+    WORLD_MIN,
+    WORLD_SPAN,
+    _smoothstep,
+    coastline_x as _coastline_x,
+    global_california_height,
+    px_to_world,
+    world_to_px,
+)
+
 OUT_DDS = os.path.join(THIS_DIR, "assets", "textures", "interface", "pip-boy", "V13CaliforniaWorldMap_d.dds")
 PREVIEW_PNG = os.path.join(THIS_DIR, "assets", "textures", "interface", "pip-boy", "V13CaliforniaWorldMap_preview.png")
-
-WORLD_MIN = -16384.0
-WORLD_MAX = 16384.0
-WORLD_SPAN = WORLD_MAX - WORLD_MIN  # 32768.0
-
-# Pip-Boy World Map bounds matching WRLD 0x01003400 MNAM = (0, 0, -4, 4, 4, -4)
-# (Fallout4.exe shifts MNAM shorts by << 12, so (-4, 4, 4, -4) = [-16384.0 .. +16384.0])
-MAP_MIN = -16384.0
-MAP_MAX = 16384.0
-MAP_SPAN = MAP_MAX - MAP_MIN  # 32768.0
-
-
-def world_to_px(wx: float, wy: float, size: int = 2048) -> tuple[float, float]:
-    u = (wx - MAP_MIN) / MAP_SPAN
-    v = (MAP_MAX - wy) / MAP_SPAN
-    return (u * size, v * size)
-
-
-def px_to_world(px: float, py: float, size: int = 2048) -> tuple[float, float]:
-    wx = MAP_MIN + (px / size) * MAP_SPAN
-    wy = MAP_MAX - (py / size) * MAP_SPAN
-    return (wx, wy)
-
-
-def _smoothstep(edge0: float, edge1: float, x: float) -> float:
-    if x <= edge0:
-        return 0.0
-    if x >= edge1:
-        return 1.0
-    t = (x - edge0) / (edge1 - edge0)
-    return t * t * (3.0 - 2.0 * t)
-
-
-def _coastline_x(wy: float) -> float:
-    """
-    Returns the West-coast shoreline X coordinate for a given Y coordinate,
-    faithfully following Fallout 1's Southern California coastline across the full
-    [-16384..+16384] worldspace while keeping all western coastal locations inland.
-    """
-    if wy > 6500.0:
-        # Far NW coast (Monterey / Big Sur, well west of Mariposa at -9800 and TARDIS at -11600)
-        base = -14200.0 - (wy - 6500.0) * 0.08
-    elif wy > -3500.0:
-        # Central Coast (San Luis Obispo / Morro Bay / Point Conception, west of Irwin's Farm & Lost Hills)
-        t = (6500.0 - wy) / 10000.0
-        base = -14200.0 + t * 1400.0
-    elif wy > -9500.0:
-        # Santa Barbara curve eastward toward Ventura / Malibu (west of The Glow at -8400)
-        t = (-3500.0 - wy) / 6000.0
-        base = -12800.0 + t * 2000.0
-    else:
-        # Santa Monica Bay -> Palos Verdes -> San Pedro / Long Beach (well west of The Cathedral at -4800)
-        t = (-9500.0 - wy) / 6884.0
-        base = -10800.0 + t * 2400.0
-    # Natural coastal coves and headlands
-    ripple = 280.0 * math.sin(wy * 0.00075 + 0.8) + 160.0 * math.cos(wy * 0.0019 - 0.4)
-    return base + ripple
-
-
-# Flat settlement / dungeon entrance plateaus: (cx, cy, target_z, r_flat, r_blend)
-# Every target_z is an exact multiple of 8.0 (Creation Engine VHGT vertex unit), and every r_flat
-# encompasses 100% of all building footprints in that settlement/outpost.
-LOCATION_PLATEAUS: list[tuple[float, float, float, float, float]] = [
-    (-2950.0, 13350.0, 320.0, 1350.0, 2200.0),   # Refugio 13 & Cueva de Entrada (Mt. Whitney canyon)
-    (-6200.0, 13600.0, 320.0, 1050.0, 2100.0),   # Puente Temporal (2287) canyon pass
-    (-2500.0, 11800.0, 240.0, 900.0, 1450.0),    # Northern Pass Red Rocket Service Station
-    (-220.0, 9760.0, 160.0, 920.0, 1450.0),      # Parada de Caravanas del Paso de Sierra Nevada
-    (2400.0, 9600.0, 160.0, 2550.0, 3300.0),     # Shady Sands town & commercial outskirts
-    (550.0, 9600.0, 160.0, 1200.0, 1950.0),      # Shady Sands Diner SO & House W
-    (4000.0, 10150.0, 160.0, 900.0, 1400.0),     # Shady Sands Super Duper Mart NE & House E
-    (6400.0, 13800.0, 160.0, 1450.0, 2500.0),    # Guarida Lejana del Mutascorpión Emperador
-    (10400.0, 13400.0, 200.0, 1150.0, 2200.0),   # Campamento de Saqueadores de Petrox (Celda de Tandi)
-    (14200.0, 10800.0, 200.0, 1650.0, 2800.0),   # Fortaleza Esclavista de los Khans del Norte (Tolan)
-    (8250.0, 8020.0, 200.0, 900.0, 1500.0),      # Paso Oriental de los Khans (Refugio de Diana y Gwen)
-    (12150.0, 7050.0, 240.0, 1650.0, 2800.0),    # Refugio 15 canyon & Khan Raider outpost
-    (3550.0, 4150.0, 80.0, 1650.0, 2800.0),      # Junktown (Ciudad Chatarra) & Central Valley Waystation
-    (6160.0, 1400.0, 80.0, 1150.0, 2100.0),      # Estación de Servicio y Talleres del Valle Central
-    (8350.0, 3250.0, 80.0, 1250.0, 2200.0),      # Concesionario de Coches de Bob (Bob's Pre-Owned Car Mart)
-    (1200.0, 3800.0, 80.0, 1050.0, 2200.0),      # Puesto de Caravanas del Valle Central
-    (-2800.0, 5600.0, 80.0, 1350.0, 2400.0),     # Guarida de los Skulz (Kenji)
-    (-1600.0, 1200.0, 80.0, 1350.0, 2400.0),     # Casino de Gizmo y Guarida de Vinnie
-    (-11600.0, 7400.0, 160.0, 1050.0, 2100.0),   # Encuentro Especial: Cabina Telefónica Inusual (TARDIS)
-    (-7400.0, 7600.0, 160.0, 850.0, 1800.0),     # Encuentro Especial: Platillo Volante Estrellado (Área 51)
-    (-800.0, -3800.0, 80.0, 1450.0, 2500.0),     # El Eje (The Hub) — Mercado de Caravanas
-    (4850.0, -5300.0, 48.0, 900.0, 1500.0),      # Encuentro Especial: Camión de Nuka-Cola Volcado
-    (-4900.0, -6050.0, 96.0, 1550.0, 2450.0),    # Paso Rocoso de la Caravana Desaparecida (Sanguinario y Tug)
-    (2600.0, -360.0, 80.0, 1050.0, 2100.0),      # Encuentro Especial: Patrick el Celta & Parada de Caravanas
-    (-9200.0, 2350.0, 80.0, 1550.0, 2600.0),     # Complejo Agrícola de la Granja de Irwin (Krag)
-    (-6950.0, 2625.0, 160.0, 1150.0, 2000.0),    # Western Highway Drumlin Diner & Waystation
-    (-8600.0, 4800.0, 216.0, 1200.0, 1900.0),    # Campamento Militar Abandonado de la Costa Norte
-    (-9800.0, -2600.0, 120.0, 1450.0, 2400.0),   # Lost Hills Brotherhood bunker & Cabbot Gate
-    (-9200.0, -5550.0, 120.0, 1050.0, 2000.0),   # Puesto de Patrulla Sur de la Hermandad
-    (-8375.0, -8450.0, 120.0, 1450.0, 2500.0),   # El Resplandor (The Glow — Complejo West Tek)
-    (-9950.0, 13350.0, 280.0, 1400.0, 2100.0),   # Base Militar Mariposa
-    (-4800.0, -12650.0, 40.0, 2050.0, 2850.0),   # La Catedral (El Boneyard / L.A. urban district + Super Duper Mart)
-    (760.0, -12450.0, 40.0, 1350.0, 2250.0),     # Adytum — Fortaleza de los Gun Runners
-    (3550.0, -11300.0, 40.0, 1550.0, 2500.0),    # Suburbio en Ruinas del Este de Los Ángeles (Boneyard Este)
-    (2700.0, -11000.0, 40.0, 1150.0, 2000.0),    # Almacén Intermedio de Adytum
-    (6700.0, -10400.0, 40.0, 2250.0, 3000.0),    # Distrito Industrial Este del Boneyard — Nido de la Madre Sanguinario
-    (12400.0, -11800.0, 160.0, 1100.0, 2100.0),  # Encuentro Especial: La Huella Gigante de Godzilla (Desierto Suroriental)
-]
-
-
-def global_california_height(wx: float, wy: float) -> float:
-    """
-    Continuous, deterministic 3D elevation function Z(wx, wy) for Southern California (2161).
-    Shared 1:1 between the 100 exterior LAND records and the 2048x2048 Pip-Boy World Map.
-    Designed with wide, gentle valley basins and low-gradient hills so no settlement or
-    objective is ever inside a steep crater and every route is 100% walkable without jumping.
-    """
-    # 1. Pacific Ocean shelf in the West / Southwest
-    shore_x = _coastline_x(wy)
-    if wx < shore_x:
-        depth_t = _smoothstep(0.0, 3500.0, shore_x - wx)
-        # Channel Islands off Santa Barbara (-14200, -6400) and Catalina (-12600, -11800)
-        d_isl1 = math.hypot((wx - (-14200.0)) * 0.7, (wy - (-6400.0)) * 1.3)
-        d_isl2 = math.hypot((wx - (-12600.0)) * 0.8, (wy - (-11800.0)) * 1.2)
-        isl_boost = 0.0
-        if d_isl1 < 1400.0:
-            isl_boost = max(isl_boost, 520.0 * (1.0 - _smoothstep(320.0, 1400.0, d_isl1)))
-        if d_isl2 < 1250.0:
-            isl_boost = max(isl_boost, 480.0 * (1.0 - _smoothstep(280.0, 1250.0, d_isl2)))
-        return -520.0 * depth_t + isl_boost
-
-    coastal_rise = _smoothstep(0.0, 1600.0, wx - shore_x)
-
-    # 2. Smooth regional valley baseline interpolated from LOCATION_PLATEAUS & Necropolis basin
-    #    so the natural ground elevation around every settlement/objective already matches its target_z
-    w_sum = 0.0
-    z_sum = 0.0
-    basin_clear = 1.0
-    for px, py, pz, r_flat, r_blend in LOCATION_PLATEAUS:
-        d = math.hypot(wx - px, wy - py)
-        w_idw = 1.0 / ((d * d) + (1800.0 * 1800.0))
-        w_sum += w_idw
-        z_sum += pz * w_idw
-        if d < r_blend + 1800.0:
-            c_loc = _smoothstep(r_flat + 250.0, r_blend + 1800.0, d)
-            if c_loc < basin_clear:
-                basin_clear = c_loc
-
-    # Include Necropolis basin center (12000, -1700, Z=0.0) in regional interpolation
-    d_nec_center = math.hypot(wx - 12000.0, wy - (-1700.0))
-    w_nec_idw = 1.8 / ((d_nec_center * d_nec_center) + (2400.0 * 2400.0))
-    w_sum += w_nec_idw
-    regional_valley_z = z_sum / w_sum if w_sum > 0.0 else 100.0
-
-    # Gentle rolling desert dunes & arroyos (suppressed near flat settlement plateaus)
-    n1 = math.sin(wx * 0.00045 + 0.3) * math.cos(wy * 0.00042 - 0.5)
-    n2 = math.sin((wx + wy) * 0.00095) * math.cos((wx - wy) * 0.00085)
-    n3 = math.sin(wx * 0.0021 - 1.2) * math.sin(wy * 0.0023 + 0.7)
-    dunes = (22.0 * n1 + 11.0 * n2 + 5.0 * n3) * basin_clear
-
-    # 3. Gentle, Walkable Orographic Ridges & Distant Perimeter Mountains (suppressed inside valley basins):
-    # (a) Far Northern Sierra Rim (North-West of Vault 13)
-    d_sierra_n = math.hypot((wx - (-4200.0)) * 0.55, (wy - 15400.0) * 0.85)
-    sierra_n = 210.0 * math.exp(-((d_sierra_n / 4200.0) ** 2))
-
-    # Low Tehachapi rolling hills
-    d_sierra_s = math.hypot((wx - (-800.0)) * 0.70, (wy - 7400.0) * 0.70)
-    sierra_s = 85.0 * math.exp(-((d_sierra_s / 3600.0) ** 2))
-
-    # (b) Far North-East Mojave Rim
-    d_mojave = math.hypot((wx - 14800.0) * 0.65, (wy - 14400.0) * 0.75)
-    mojave_mtn = 180.0 * math.exp(-((d_mojave / 4200.0) ** 2))
-
-    # (c) Coastal Hills (Northwest & Central Coast)
-    d_coast_nw = math.hypot((wx - (-12800.0)) * 0.75, (wy - 11600.0) * 0.65)
-    coast_nw = 160.0 * math.exp(-((d_coast_nw / 3800.0) ** 2))
-
-    d_coast_mid = math.hypot((wx - (-11400.0)) * 0.8, (wy - 800.0) * 0.55)
-    coast_mid = 110.0 * math.exp(-((d_coast_mid / 3600.0) ** 2))
-
-    # (d) Gentle Transverse Hills
-    d_transverse = math.hypot((wx - (-4200.0)) * 0.50, (wy - (-8800.0)) * 0.90)
-    transverse = 95.0 * math.exp(-((d_transverse / 3800.0) ** 2))
-
-    # (e) Far Eastern Mojave Rim (East of Necropolis)
-    d_east_rim = max(0.0, wx - 15200.0)
-    east_rim = 160.0 * _smoothstep(0.0, 2400.0, d_east_rim)
-
-    mtn_sum = (sierra_n + sierra_s + mojave_mtn + coast_nw + coast_mid + transverse + east_rim) * basin_clear
-    crag = (0.08 * mtn_sum) * (
-        0.6 * math.sin(wx * 0.0017 + wy * 0.0013)
-        + 0.4 * math.cos(wx * 0.0031 - wy * 0.0027)
-    )
-    z = (regional_valley_z + dunes + mtn_sum + crag) * coastal_rise
-
-    # 4. Gentle pass corridors along main caravan highways so the player can walk comfortably
-    #    North Road: Vault 13 (-3200, 13360) -> Shady Sands (2400, 9600) -> Vault 15 (12600, 6880)
-    if -3800.0 <= wx <= 13200.0 and 6200.0 <= wy <= 14200.0:
-        if wx < 2400.0:
-            t_r = max(0.0, min(1.0, (wx - (-3200.0)) / 5600.0))
-            road_y = 13360.0 * (1.0 - t_r) + 9600.0 * t_r
-            z_pass = 320.0 * (1.0 - t_r) + 160.0 * t_r
-        else:
-            t_r = max(0.0, min(1.0, (wx - 2400.0) / 10200.0))
-            road_y = 9600.0 * (1.0 - t_r) + 6880.0 * t_r
-            z_pass = 160.0 * (1.0 - t_r) + 240.0 * t_r
-        d_road = abs(wy - road_y)
-        if d_road < 900.0:
-            w_r = _smoothstep(260.0, 900.0, d_road)
-            z = z_pass * (1.0 - w_r) + z * w_r
-
-    # 5. Flatten Bakersfield / Necropolis Open-Air Ruined City Basin:
-    #    X in [9400..14600], Y in [-5000..+1850] -> exact Z = 0.0
-    dx_nec = 0.0
-    if wx < 9400.0:
-        dx_nec = 9400.0 - wx
-    elif wx > 14600.0:
-        dx_nec = wx - 14600.0
-    dy_nec = 0.0
-    if wy < -5000.0:
-        dy_nec = -5000.0 - wy
-    elif wy > 1850.0:
-        dy_nec = wy - 1850.0
-    d_nec = math.hypot(dx_nec, dy_nec)
-    if d_nec < 2600.0:
-        w_nec = _smoothstep(0.0, 2600.0, d_nec)
-        z = 0.0 * (1.0 - w_nec) + z * w_nec
-
-    # 6. Flatten each Settlement / Surface Entrance Plateau LAST so every complex sits on 100% flat ground
-    #    Uses rim-distance priority so no plateau's transition apron (r_blend) can ever overwrite another plateau's r_flat.
-    shore_blend = _smoothstep(0.0, 220.0, wx - shore_x)
-    locked_pz: float | None = None
-    blend_w_sum = 0.0
-    blend_pz_sum = 0.0
-    max_inf = 0.0
-    for px, py, pz, r_flat, r_blend in LOCATION_PLATEAUS:
-        d = math.hypot(wx - px, wy - py)
-        if d <= r_flat:
-            locked_pz = pz * shore_blend
-            break
-        elif d < r_blend:
-            t_rim = (d - r_flat) / (r_blend - r_flat)
-            inf = 1.0 - _smoothstep(0.0, 1.0, t_rim)
-            if inf > max_inf:
-                max_inf = inf
-            w_p = (inf * inf) / (t_rim * t_rim + 1e-6)
-            blend_w_sum += w_p
-            blend_pz_sum += (pz * shore_blend) * w_p
-    if locked_pz is not None:
-        z = locked_pz
-    elif max_inf > 0.0 and blend_w_sum > 0.0:
-        avg_pz = blend_pz_sum / blend_w_sum
-        z = avg_pz * max_inf + z * (1.0 - max_inf)
-    if d_nec == 0.0:
-        z = 0.0
-
-    return z
 
 
 def build_worldmap() -> None:
@@ -336,40 +107,39 @@ def build_worldmap() -> None:
     draw.line(coast_pts, fill=10, width=6)
     draw.line(coast_pts, fill=88, width=2)
 
-    # 2. Pre-War Highways & Caravan Trails of Southern California (2161)
+    # 2. Pre-War Highways & Caravan Trails of Southern California (2161, 20x20 Scale)
     roads = [
-        # Northern Sierra Pass (CA-190 / US-395): Puente Temporal -> Refugio 13 -> Shady Sands -> Khans -> Refugio 15
+        # Northern Sierra Pass (CA-190 / US-395): Puente Temporal -> Refugio 13 -> Shady Sands -> Paso Khans -> Refugio 15
         [
-            (-6200, 13600), (-4600, 13480), (-3200, 13360), (-2600, 13160),
-            (-2500, 11800), (-220, 9760), (2400, 9600),
-            (5400, 8800), (8200, 7800), (10400, 7300), (12600, 6880),
+            (-18000, 33500), (-12500, 33300), (-7000, 33000), (-500, 28500),
+            (6500, 23500), (14500, 21000), (21500, 18500), (27500, 16000), (33500, 13500),
         ],
-        # North-East Raider Trail: Shady Sands -> Mutascorpion Lair -> Petrox Camp -> Tolan Stronghold -> Khans Pass
+        # North-East Raider Trail: Shady Sands -> Mutascorpion Lair -> Petrox Camp -> Tolan Stronghold -> Paso Khans
         [
-            (2400, 9600), (6400, 13800), (10400, 13400), (14200, 10800), (8200, 7800),
+            (6500, 23500), (16000, 34500), (26500, 33500), (35000, 24500), (21500, 18500),
         ],
-        # Eastern Sierra & Kern Canyon Route: Shady Sands -> Junktown -> Bob's -> La Cuenca -> Necrópolis -> Huella Gigante
+        # Eastern Sierra & Kern Canyon Route: Shady Sands -> Junktown -> Bob's -> Necrópolis -> Huella -> El Resplandor (SE)
         [
-            (2400, 9600), (3000, 6800), (3600, 3800), (8400, 3200),
-            (12000, 800), (11850, -800), (11400, -2400),
-            (10400, -4200), (11400, -8200), (12400, -11800),
+            (6500, 23500), (7000, 14500), (7500, 5500), (14000, 5200), (20500, 5000),
+            (29000, -2000), (28000, -8000), (25500, -11500), (20000, -33500), (31500, -31500),
         ],
         # Necropolis street branch to Sala de los Muertos
-        [(11400, -2400), (12500, -2200), (13600, -2000)],
-        # Western Military & Brotherhood Route: Mariposa -> TARDIS -> Irwin Farm -> Lost Hills -> El Resplandor -> La Catedral
+        [(28000, -8000), (30800, -7500), (33500, -7000)],
+        # Western Military & Brotherhood Route: Puente Temporal -> Mariposa -> TARDIS -> Irwin Farm -> Lost Hills -> Caravana -> La Catedral
         [
-            (-6200, 13600), (-9800, 13400), (-11600, 7400), (-8600, 4800),
-            (-9200, 2200), (-9800, -2600), (-9200, -5550), (-8400, -8600), (-4800, -13180),
+            (-18000, 33500), (-31000, 31000), (-31500, 16500), (-20000, 19500),
+            (-18500, 6500), (-22500, 1200), (-24500, -7500), (-15000, -18500), (-19500, -31500),
         ],
-        # Cross-Valley Caravan Network: Lost Hills -> Granja Irwin -> Kenji -> Junktown -> Gizmo -> El Eje -> Necrópolis
+        # Cross-Valley Caravan Network: Lost Hills -> Caravana -> El Eje -> Patrick -> Junktown -> Kenji -> Irwin -> Gizmo -> El Eje -> Nuka-Cola -> Necrópolis
         [
-            (-9800, -2600), (-4800, -6180), (-800, -3800), (2600, -400), (3600, 3800),
-            (-2800, 5600), (-7400, 7600), (-9200, 2200), (-1600, 1200), (-800, -3800),
-            (4800, -5400), (10400, -4200),
+            (-24500, -7500), (-15000, -18500), (-3500, -13500), (5500, -4800), (7500, 5500),
+            (-5500, 13000), (-18500, 6500), (-4000, 2000), (-3500, -13500),
+            (10500, -15500), (25500, -11500),
         ],
-        # Southern Boneyard Highway: El Eje -> La Catedral -> Adytum -> Nido Madre Sanguinario
+        # Southern Boneyard & Glow Expedition Highway: El Eje -> La Catedral -> Adytum -> Nido Madre Sanguinario -> Huella -> El Resplandor
         [
-            (-800, -3800), (-2600, -8400), (-4800, -13180), (600, -12800), (6800, -10400), (4800, -5400),
+            (-3500, -13500), (-11500, -22500), (-19500, -31500), (-5600, -32200),
+            (8500, -28000), (20000, -33500), (31500, -31500),
         ],
     ]
     for r in roads:
@@ -377,15 +147,18 @@ def build_worldmap() -> None:
         draw.line(r_px, fill=28, width=7)
         draw.line(r_px, fill=98, width=3)
 
-    # 3. Bakersfield / Necropolis Ruined Urban Street Grid on the map
-    for ux in range(9800, 14400, 900):
-        p0 = world_to_px(ux, 1400, S)
-        p1 = world_to_px(ux, -4600, S)
+    # 3. Bakersfield / Necropolis Ruined Urban Street Grid + The Glow Crater Rings on the map
+    for ux in range(24000, 35500, 1800):
+        p0 = world_to_px(ux, 0, S)
+        p1 = world_to_px(ux, -13200, S)
         draw.line([p0, p1], fill=62, width=1)
-    for uy in range(-4400, 1600, 900):
-        p0 = world_to_px(9600, uy, S)
-        p1 = world_to_px(14200, uy, S)
+    for uy in range(-13000, 200, 1800):
+        p0 = world_to_px(23800, uy, S)
+        p1 = world_to_px(35200, uy, S)
         draw.line([p0, p1], fill=62, width=1)
+    gx_px, gy_px = world_to_px(31500, -31500, S)
+    for rad_px in (28, 46, 66):
+        draw.ellipse([gx_px - rad_px, gy_px - rad_px, gx_px + rad_px, gy_px + rad_px], outline=76, width=2)
 
     # 4. Authentic Fallout 1 Sector Grid (28 columns x 30 rows CRT World Map overlay)
     margin = 48
@@ -415,76 +188,44 @@ def build_worldmap() -> None:
         font_reg = ImageFont.load_default()
 
     draw.text((76, 68), "VAULT-TEC // SUR DE CALIFORNIA [2161] — TOPOGRAFÍA SATELITAL", fill=106, font=font_title)
-    draw.text((76, 102), "CUADRÍCULA REGIONAL 28x30 — REFUGIO 13 / SIERRA NEVADA / BONEYARD", fill=86, font=font_reg)
+    draw.text((76, 102), "CUADRÍCULA REGIONAL 28x30 — REFUGIO 13 / SIERRA NEVADA / BONEYARD / EL RESPLANDOR", fill=86, font=font_reg)
 
     region_labels = [
-        (-11200, 14100, "BASE MILITAR MARIPOSA"),
-        (-4800, 14200, "REFUGIO 13 / MT. WHITNEY"),
-        (1600, 10300, "SHADY SANDS"),
-        (5200, 14400, "GUARIDA MUTASCORPIÓN"),
-        (9400, 14000, "CAMPAMENTO DE PETROX"),
-        (11800, 11400, "FORTALEZA ESCLAVISTA (TOLAN)"),
-        (6800, 8400, "PASO DE LOS KHANS"),
-        (11200, 7600, "REFUGIO 15"),
-        (-13200, 8000, "CABINA AZUL (TARDIS)"),
-        (-8600, 8200, "PLATILLO VOLANTE"),
-        (-3800, 6200, "GUARIDA SKULZ (KENJI)"),
-        (2600, 4500, "JUNKTOWN"),
-        (7200, 3900, "COCHES DE BOB"),
-        (-10600, 2900, "GRANJA DE IRWIN"),
-        (-2600, 1800, "CASINO DE GIZMO"),
-        (1600, 250, "PATRICK EL CELTA"),
-        (10600, 1500, "LA CUENCA (REFUGIO 12)"),
-        (9800, -5100, "RUINAS DE NECRÓPOLIS"),
-        (-11400, -1900, "LOST HILLS (H. DEL ACERO)"),
-        (-1800, -3200, "EL EJE (THE HUB)"),
-        (-6400, -5600, "CARAVANA DESAPARECIDA"),
-        (3600, -4800, "CAMIÓN DE NUKA-COLA"),
-        (-10000, -8000, "EL RESPLANDOR (WEST TEK)"),
-        (-6200, -12500, "LA CATEDRAL"),
-        (-400, -12200, "ADYTUM / BONEYARD"),
-        (5200, -9800, "NIDO MADRE SANGUINARIO"),
-        (10800, -11200, "HUELLA GIGANTE"),
-        (-14800, -9800, "OCÉANO PACÍFICO"),
+        (-34500, 32800, "BASE MILITAR MARIPOSA"),
+        (-10200, 34800, "REFUGIO 13 / MT. WHITNEY"),
+        (3800, 25600, "SHADY SANDS"),
+        (12800, 36200, "GUARIDA MUTASCORPIÓN"),
+        (23600, 35200, "CAMPAMENTO DE PETROX"),
+        (29200, 26200, "FORTALEZA ESCLAVISTA (TOLAN)"),
+        (18200, 20200, "PASO DE LOS KHANS"),
+        (30500, 15200, "REFUGIO 15"),
+        (-34800, 18200, "CABINA AZUL (TARDIS)"),
+        (-23200, 21200, "PLATILLO VOLANTE"),
+        (-8600, 14800, "GUARIDA SKULZ (KENJI)"),
+        (4800, 7600, "JUNKTOWN"),
+        (17600, 6800, "COCHES DE BOB"),
+        (-21800, 8200, "GRANJA DE IRWIN"),
+        (-7000, 3800, "CASINO DE GIZMO"),
+        (2600, -3000, "PATRICK EL CELTA"),
+        (25600, -200, "LA CUENCA (REFUGIO 12)"),
+        (24800, -13200, "RUINAS DE NECRÓPOLIS"),
+        (-28500, -5600, "LOST HILLS (H. DEL ACERO)"),
+        (-6200, -11400, "EL EJE (THE HUB)"),
+        (-18800, -16800, "CARAVANA DESAPARECIDA"),
+        (7400, -13800, "CAMIÓN DE NUKA-COLA"),
+        (-22800, -29600, "LA CATEDRAL"),
+        (-7800, -29600, "ADYTUM / BONEYARD"),
+        (5200, -26200, "NIDO MADRE SANGUINARIO"),
+        (16800, -31800, "HUELLA GIGANTE"),
+        (26800, -29400, "EL RESPLANDOR (WEST TEK)"),
+        (-36500, -22500, "OCÉANO PACÍFICO"),
     ]
     for lx, ly, ltxt in region_labels:
         px_x, px_y = world_to_px(lx, ly, S)
         draw.text((px_x - 60, px_y), ltxt, fill=92, font=font_reg)
 
     # 6. Location survey rings at exact 3D Worldspace coordinates
-    loc_coords = [
-        (-6200, 13600),   # Puente Temporal (2287)
-        (-3200, 13360),   # Refugio 13
-        (-2600, 13160),   # Cueva de Entrada del Refugio 13
-        (2400, 9600),     # Shady Sands
-        (6400, 13800),    # Guarida del Mutascorpión Emperador
-        (10400, 13400),   # Campamento de Saqueadores de Petrox (Tandi)
-        (14200, 10800),   # Fortaleza Esclavista de los Khans (Tolan)
-        (8200, 7800),     # Paso Oriental de los Khans
-        (12600, 6880),    # Refugio 15
-        (3600, 3800),     # Junktown (Ciudad Chatarra)
-        (-2800, 5600),    # Guarida de los Skulz (Kenji)
-        (-1600, 1200),    # Casino de Gizmo y Vinnie
-        (8400, 3200),     # Encuentro Especial: Concesionario de Coches Usados de Bob
-        (-11600, 7400),   # Encuentro Especial: Cabina Telefónica Inusual (TARDIS)
-        (-7400, 7600),    # Encuentro Especial: Platillo Volante Estrellado
-        (2600, -400),     # Encuentro Especial: Patrick el Celta (El Bardo Viajero)
-        (-9200, 2200),    # Granja Ocupada de Irwin (Krag)
-        (-800, -3800),    # El Eje (The Hub)
-        (-4800, -6180),   # Paso Rocoso de la Caravana Desaparecida
-        (4800, -5400),    # Encuentro Especial: Camión de Nuka-Cola Volcado
-        (12000, 800),     # La Cuenca (Refugio 12)
-        (11400, -2400),   # Necrópolis — Galerías Subterráneas
-        (13600, -2000),   # Necrópolis — Sala de los Muertos
-        (10400, -4200),   # Necrópolis — Alcantarillas
-        (-9800, -2600),   # Lost Hills
-        (-8400, -8600),   # El Resplandor (West Tek)
-        (-9800, 13400),   # Base Militar Mariposa
-        (-4800, -13180),  # La Catedral
-        (600, -12800),    # Adytum — Fortaleza de los Gun Runners
-        (6800, -10400),   # Nido Industrial de la Madre Sanguinario
-        (12400, -11800),  # Encuentro Especial: La Huella Gigante de Godzilla
-    ]
+    loc_coords = [(int(ax), int(ay)) for (ax, ay, *_rest) in V13_WORLD_ANCHORS.values()]
     for cx, cy in loc_coords:
         x0, y0 = world_to_px(cx, cy, S)
         draw.ellipse([x0 - 15, y0 - 15, x0 + 15, y0 + 15], outline=106, width=2)

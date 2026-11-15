@@ -9,19 +9,25 @@ bool bStg22Notified = False
 bool bStg25Notified = False
 bool bStg30Notified = False
 bool bMenuJumpBusy = False
+bool bKenjiCampHostile = False
+bool bKenjiCampTruce = False
+bool bKenjiMenuBusy = False
 bool bSteppingCompanion = False
 int sceneWaitTicks = 0
 int DogmeatState = 0
 int IanState = 0
 int TychoState = 0
+int KatjaState = 0
 int iActiveDogFormID = 0x000035B3
 bool bDogmeatMenuBusy = False
 bool bDogmeatFirstRecruitXP = False
 bool bIanFirstRecruitXP = False
 bool bTychoFirstRecruitXP = False
+bool bKatjaFirstRecruitXP = False
 int iDogmeatScavengeIdx = 0
 int iIanSupplyIdx = 0
 int iTychoSupplyIdx = 0
+int iKatjaSupplyIdx = 0
 bool bDogmeatApproachCoolingDown = False
 bool bDogmeatSneakCoolingDown = False
 Actor rDogCombatTarget = None
@@ -32,6 +38,11 @@ bool bCompanionsSuspendedInCommonwealth = False
 int iSavedDogmeatState = 0
 int iSavedIanState = 0
 int iSavedTychoState = 0
+int iSavedKatjaState = 0
+int iDogBleedoutTicks = 0
+int iIanBleedoutTicks = 0
+int iTychoBleedoutTicks = 0
+int iKatjaBleedoutTicks = 0
 
 Function ForceQuestAlias(int aiAliasID, int aiFormID)
     ObjectReference targetRef = Game.GetFormFromFile(aiFormID, "Vault13Chronicles.esp") as ObjectReference
@@ -52,7 +63,7 @@ EndFunction
 
 Function ForceAllJunktownAliases()
     int stg = Self.GetStage()
-    if Self.IsCompleted() || stg >= 40
+    if Self.IsCompleted() || stg >= 40 || Self.IsStageDone(40) || bRewardGranted
         ClearQuestAlias(0)
         ClearQuestAlias(1)
         ClearQuestAlias(9)
@@ -96,8 +107,8 @@ Function EnsureKillianStage30Marker()
             killianAct.AllowPCDialogue(True)
             killianAct.BlockActivation(False, False)
             if !killianAct.IsInCombat() && !killianAct.IsTalking()
-                if Math.Abs(killianAct.GetPositionX() - 3850.0) > 120.0 || Math.Abs(killianAct.GetPositionY() - 3820.0) > 120.0
-                    killianAct.SetPosition(3850.0, 3820.0, 80.0)
+                if Math.Abs(killianAct.GetPositionX() - 7750.0) > 120.0 || Math.Abs(killianAct.GetPositionY() - 5520.0) > 120.0
+                    killianAct.SetPosition(7750.0, 5520.0, 80.0)
                     killianAct.SetAngle(0.0, 0.0, 225.0)
                 endif
             endif
@@ -116,11 +127,13 @@ Function EnsureKillianStage30Marker()
         Self.SetObjectiveDisplayed(25, False, False)
     endif
     Scene sLars = Game.GetFormFromFile(0x00010101, "Vault13Chronicles.esp") as Scene
-    if sLars != None && sLars.IsPlaying()
-        sLars.Stop()
-    endif
+    Actor larsAct = Game.GetFormFromFile(0x000035C1, "Vault13Chronicles.esp") as Actor
     ClearQuestAlias(1)
-    ClearQuestAlias(9)
+    if (sLars == None || !sLars.IsPlaying()) && (larsAct == None || !larsAct.IsTalking())
+        ClearQuestAlias(9)
+    else
+        ForceQuestAlias(9, 0x000035C1)
+    endif
     ForceQuestAlias(0, 0x000035C0)
     ForceQuestAlias(2, 0x00003005)
     ForceQuestAlias(3, 0x00002003)
@@ -129,15 +142,18 @@ Function EnsureKillianStage30Marker()
     ForceQuestAlias(6, 0x00003501)
     ForceQuestAlias(7, 0x00002206)
     ForceQuestAlias(8, 0x00002035)
-    if Self.IsObjectiveDisplayed(30)
-        Self.SetObjectiveDisplayed(30, False, False)
+    if !Self.IsObjectiveDisplayed(30)
+        Self.SetObjectiveDisplayed(30, True, False)
+        Self.SetActive(True)
     endif
-    Self.SetObjectiveDisplayed(30, True, True)
-    Self.SetActive(True)
 EndFunction
 
 Function EquipCustomGear(Actor akNpc, int aiOutfitID, int aiBodyArmorEsmID, int aiExtraArmorEsmID, int aiHatID)
-    if akNpc == None || akNpc.IsDead() || !akNpc.Is3DLoaded() || akNpc.IsTalking()
+    if akNpc == None || akNpc.IsDead() || !akNpc.Is3DLoaded() || akNpc.IsTalking() || akNpc.IsInDialogueWithPlayer() || akNpc.IsPlayerTeammate()
+        return
+    endif
+    Actor plDist = Game.GetPlayer()
+    if plDist != None && akNpc.GetDistance(plDist) < 2200.0
         return
     endif
     Form combatHelm = Game.GetFormFromFile(0x0011E2C8, "Fallout4.esm")
@@ -205,12 +221,20 @@ bool Function IsTychoRecruited()
     return TychoState >= 1 || iSavedTychoState >= 1
 EndFunction
 
+bool Function IsKatjaRecruited()
+    return KatjaState >= 1 || iSavedKatjaState >= 1
+EndFunction
+
 Actor Function GetIanActor()
     return Game.GetFormFromFile(0x000035A4, "Vault13Chronicles.esp") as Actor
 EndFunction
 
 Actor Function GetTychoActor()
     return Game.GetFormFromFile(0x000035C2, "Vault13Chronicles.esp") as Actor
+EndFunction
+
+Actor Function GetKatjaActor()
+    return Game.GetFormFromFile(0x00003620, "Vault13Chronicles.esp") as Actor
 EndFunction
 
 bool Function IsPlayerInVault13Space()
@@ -234,6 +258,10 @@ bool Function IsPlayerInVault13Space()
     elseif pCell == (Game.GetFormFromFile(0x00002200, "Vault13Chronicles.esp") as Cell)
         return True
     elseif pCell == (Game.GetFormFromFile(0x00002500, "Vault13Chronicles.esp") as Cell)
+        return True
+    elseif pCell == (Game.GetFormFromFile(0x00002700, "Vault13Chronicles.esp") as Cell)
+        return True
+    elseif pCell == (Game.GetFormFromFile(0x00002800, "Vault13Chronicles.esp") as Cell)
         return True
     elseif pCell == (Game.GetFormFromFile(0x00002900, "Vault13Chronicles.esp") as Cell)
         return True
@@ -351,7 +379,7 @@ Function DismissDogmeatToShadySands(bool abShowNotification)
             dogShady.MoveTo(shadyFT, 0.0, 200.0, 0.0, false)
         endif
         if v13Wrld != None && dogShady.GetWorldSpace() == v13Wrld && dogShady.Is3DLoaded()
-            dogShady.SetPosition(2600.0, 9600.0, 160.0)
+            dogShady.SetPosition(6700.0, 23500.0, 160.0)
         endif
         dogShady.EvaluatePackage(True)
     endif
@@ -405,8 +433,8 @@ Function DismissIanToShadySands(bool abShowNotification)
             ianAct.MoveTo(shadyFT, -220.0, 120.0, 0.0, false)
         endif
         if v13Wrld != None && ianAct.GetWorldSpace() == v13Wrld && ianAct.Is3DLoaded()
-            ianAct.SetPosition(1810.0, 9460.0, 160.0)
-            ianAct.SetAngle(0.0, 0.0, 180.0)
+            ianAct.SetPosition(5910.0, 23360.0, 178.0)
+            ianAct.SetAngle(0.0, 0.0, 90.0)
         endif
         ianAct.EvaluatePackage(True)
     endif
@@ -425,7 +453,7 @@ Function DismissTychoToJunktown(bool abShowNotification)
     ActorValue followerStateAV = Game.GetFormFromFile(0x00000344, "Fallout4.esm") as ActorValue
     Faction curCompFaction = Game.GetFormFromFile(0x00023C01, "Fallout4.esm") as Faction
     WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
-    ObjectReference junkFT = Game.GetFormFromFile(0x00003513, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference junkFT = Game.GetFormFromFile(0x0000351C, "Vault13Chronicles.esp") as ObjectReference
     Actor tychoAct = GetTychoActor()
     if tychoAct != None
         if tychoAct.IsDisabled()
@@ -453,13 +481,61 @@ Function DismissTychoToJunktown(bool abShowNotification)
             tychoAct.MoveTo(junkFT, 120.0, 220.0, 0.0, false)
         endif
         if v13Wrld != None && tychoAct.GetWorldSpace() == v13Wrld && tychoAct.Is3DLoaded()
-            tychoAct.SetPosition(3600.0, 4280.0, 80.0)
+            tychoAct.SetPosition(7500.0, 5980.0, 80.0)
             tychoAct.SetAngle(0.0, 0.0, 180.0)
         endif
         tychoAct.EvaluatePackage(True)
     endif
     if abShowNotification
         Debug.Notification("Ranger Tycho has left your party and returned to Junktown.")
+    endif
+EndFunction
+
+Function DismissKatjaToBoneyard(bool abShowNotification)
+    KatjaState = 0
+    if abShowNotification
+        iSavedKatjaState = 0
+    endif
+    ActorValue aggressionAV = Game.GetFormFromFile(0x000002BC, "Fallout4.esm") as ActorValue
+    ActorValue confidenceAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
+    ActorValue followerStateAV = Game.GetFormFromFile(0x00000344, "Fallout4.esm") as ActorValue
+    Faction curCompFaction = Game.GetFormFromFile(0x00023C01, "Fallout4.esm") as Faction
+    WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    ObjectReference boneyardFT = Game.GetFormFromFile(0x00003520, "Vault13Chronicles.esp") as ObjectReference
+    Actor katjaAct = GetKatjaActor()
+    if katjaAct != None
+        if katjaAct.IsDisabled()
+            katjaAct.EnableNoWait()
+        endif
+        katjaAct.StopCombat()
+        katjaAct.SetCommandState(False)
+        katjaAct.SetCanDoCommand(False)
+        if katjaAct.IsPlayerTeammate()
+            katjaAct.SetPlayerTeammate(False, False, False)
+        endif
+        if curCompFaction != None && katjaAct.IsInFaction(curCompFaction)
+            katjaAct.RemoveFromFaction(curCompFaction)
+        endif
+        if aggressionAV != None
+            katjaAct.SetValue(aggressionAV, 0.0)
+        endif
+        if confidenceAV != None
+            katjaAct.SetValue(confidenceAV, 4.0)
+        endif
+        if followerStateAV != None
+            katjaAct.SetValue(followerStateAV, 2.0)
+        endif
+        if boneyardFT != None && (v13Wrld == None || katjaAct.GetWorldSpace() != v13Wrld || katjaAct.IsInInterior() || abShowNotification)
+            katjaAct.MoveTo(boneyardFT, 4400.0, -2320.0, 0.0, false)
+        endif
+        if v13Wrld != None && katjaAct.GetWorldSpace() == v13Wrld && katjaAct.Is3DLoaded()
+            katjaAct.SetPosition(-1200.0, -34600.0, 40.0)
+            katjaAct.SetAngle(0.0, 0.0, 270.0)
+        endif
+        katjaAct.EvaluatePackage(True)
+    endif
+    if abShowNotification
+        Debug.Notification("Katja has left your party and returned to the Followers Library in The Boneyard.")
     endif
 EndFunction
 
@@ -477,10 +553,15 @@ Function SuspendCompanionsForCommonwealth()
         iSavedTychoState = TychoState
         bHadActive = True
     endif
+    if KatjaState > 0
+        iSavedKatjaState = KatjaState
+        bHadActive = True
+    endif
     WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
     Actor dogShady = Game.GetFormFromFile(0x000035B3, "Vault13Chronicles.esp") as Actor
     Actor ianAct = GetIanActor()
     Actor tychoAct = GetTychoActor()
+    Actor katjaAct = GetKatjaActor()
     if DogmeatState != 0 || (dogShady != None && (dogShady.IsPlayerTeammate() || (v13Wrld != None && dogShady.GetWorldSpace() != v13Wrld)))
         DismissDogmeatToShadySands(False)
     endif
@@ -490,7 +571,10 @@ Function SuspendCompanionsForCommonwealth()
     if TychoState != 0 || (tychoAct != None && (tychoAct.IsPlayerTeammate() || (v13Wrld != None && tychoAct.GetWorldSpace() != v13Wrld)))
         DismissTychoToJunktown(False)
     endif
-    if !bCompanionsSuspendedInCommonwealth && (bHadActive || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0)
+    if KatjaState != 0 || (katjaAct != None && (katjaAct.IsPlayerTeammate() || (v13Wrld != None && katjaAct.GetWorldSpace() != v13Wrld)))
+        DismissKatjaToBoneyard(False)
+    endif
+    if !bCompanionsSuspendedInCommonwealth && (bHadActive || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0 || iSavedKatjaState > 0)
         bCompanionsSuspendedInCommonwealth = True
         Debug.Notification("[California Party] Your 2161 companions are waiting in New California until your return.")
     endif
@@ -552,12 +636,169 @@ Function RestoreCompanionsOnReturnTo2161()
             bRestoredAny = True
         endif
     endif
+    if iSavedKatjaState > 0
+        int targetKatjaState = iSavedKatjaState
+        iSavedKatjaState = 0
+        KatjaState = targetKatjaState
+        Actor katjaAct = GetKatjaActor()
+        if katjaAct != None
+            if targetKatjaState == 1
+                SetKatjaFollowMode(katjaAct)
+            else
+                ConfigureDogmeatCombatAI(katjaAct, 4.0)
+                katjaAct.FollowerWait()
+                katjaAct.EvaluatePackage(True)
+                RefreshKatjaCompanionGear(katjaAct)
+            endif
+            bRestoredAny = True
+        endif
+    endif
     if bCompanionsSuspendedInCommonwealth
         bCompanionsSuspendedInCommonwealth = False
     endif
     if bRestoredAny
         SyncDogmeatWithPlayer()
         Debug.Notification("[California Party] Your 2161 companions have rejoined your party.")
+    endif
+EndFunction
+
+Function EnsureCompanionCombatReady(Actor akComp, Actor akPlayer, int aiWho)
+    if akComp == None || akComp.IsDead()
+        return
+    endif
+    if aiWho >= 1
+        FollowersScript vanillaFollowers = Game.GetFormFromFile(0x000289E4, "Fallout4.esm") as FollowersScript
+        if vanillaFollowers != None && vanillaFollowers.IsCompanion(akComp)
+            vanillaFollowers.ClearCompanion()
+            akComp.IgnoreFriendlyHits(True)
+            akComp.SetPlayerTeammate(True, True, True)
+            akComp.SetCanDoCommand(True)
+            akComp.FollowerFollow()
+            akComp.FollowerSetDistanceNear()
+        endif
+    endif
+    akComp.SetNoBleedoutRecovery(False)
+    akComp.EnableAI(True)
+    if akPlayer != None
+        int pLvl = akPlayer.GetLevel()
+        if pLvl < 12
+            pLvl = 12
+        endif
+        float targetHP = 340.0 + (pLvl as float) * 8.0
+        float targetDR = 95.0 + (pLvl as float) * 1.5
+        float targetER = 85.0 + (pLvl as float) * 1.5
+        if aiWho == 0
+            targetHP = 280.0 + (pLvl as float) * 7.0
+            targetDR = 85.0 + (pLvl as float) * 1.5
+            targetER = 75.0 + (pLvl as float) * 1.5
+        endif
+        ActorValue healthAV = Game.GetFormFromFile(0x000002D4, "Fallout4.esm") as ActorValue
+        if healthAV != None && akComp.GetBaseValue(healthAV) < (targetHP - 5.0)
+            akComp.SetValue(healthAV, targetHP)
+            akComp.RestoreValue(healthAV, 9999.0)
+        endif
+        ActorValue drAV = Game.GetFormFromFile(0x000002E3, "Fallout4.esm") as ActorValue
+        if drAV != None && akComp.GetBaseValue(drAV) < (targetDR - 5.0)
+            akComp.SetValue(drAV, targetDR)
+        endif
+        ActorValue erAV = Game.GetFormFromFile(0x000002EB, "Fallout4.esm") as ActorValue
+        if erAV != None && akComp.GetBaseValue(erAV) < (targetER - 5.0)
+            akComp.SetValue(erAV, targetER)
+        endif
+    endif
+EndFunction
+
+bool Function HandleCompanionBleedoutTick(Actor akComp, Actor akPlayer, int aiWho)
+    if akComp == None || akComp.IsDead()
+        return False
+    endif
+    if !akComp.IsBleedingOut()
+        if aiWho == 0
+            iDogBleedoutTicks = 0
+        elseif aiWho == 1
+            iIanBleedoutTicks = 0
+        elseif aiWho == 2
+            iTychoBleedoutTicks = 0
+        else
+            iKatjaBleedoutTicks = 0
+        endif
+        return False
+    endif
+    akComp.SetNoBleedoutRecovery(False)
+    if akPlayer == None || !akPlayer.IsInCombat()
+        if aiWho == 0
+            iDogBleedoutTicks = 0
+        elseif aiWho == 1
+            iIanBleedoutTicks = 0
+        elseif aiWho == 2
+            iTychoBleedoutTicks = 0
+        else
+            iKatjaBleedoutTicks = 0
+        endif
+        akComp.ResetHealthAndLimbs()
+        akComp.EvaluatePackage(True)
+        return False
+    endif
+    int bTicks = 0
+    if aiWho == 0
+        iDogBleedoutTicks += 1
+        bTicks = iDogBleedoutTicks
+    elseif aiWho == 1
+        iIanBleedoutTicks += 1
+        bTicks = iIanBleedoutTicks
+    elseif aiWho == 2
+        iTychoBleedoutTicks += 1
+        bTicks = iTychoBleedoutTicks
+    else
+        iKatjaBleedoutTicks += 1
+        bTicks = iKatjaBleedoutTicks
+    endif
+    if bTicks >= 8
+        if aiWho == 0
+            iDogBleedoutTicks = 0
+        elseif aiWho == 1
+            iIanBleedoutTicks = 0
+        elseif aiWho == 2
+            iTychoBleedoutTicks = 0
+        else
+            iKatjaBleedoutTicks = 0
+        endif
+        akComp.ResetHealthAndLimbs()
+        akComp.EvaluatePackage(True)
+        return False
+    endif
+    return True
+EndFunction
+
+Function ReviveBleedingOutCompanion(Actor akComp, Actor akPlayer, int aiWho)
+    if akComp == None
+        return
+    endif
+    Form stim = Game.GetFormFromFile(0x00023736, "Fallout4.esm")
+    if akPlayer != None && stim != None && akPlayer.GetItemCount(stim) > 0
+        akPlayer.RemoveItem(stim, 1, False)
+    endif
+    if aiWho == 0
+        iDogBleedoutTicks = 0
+    elseif aiWho == 1
+        iIanBleedoutTicks = 0
+    elseif aiWho == 2
+        iTychoBleedoutTicks = 0
+    else
+        iKatjaBleedoutTicks = 0
+    endif
+    akComp.SetNoBleedoutRecovery(False)
+    akComp.ResetHealthAndLimbs()
+    akComp.EvaluatePackage(True)
+    if aiWho == 0
+        PlayDogmeatVocal(akComp, 1)
+        Debug.Notification("You revived Dogmeat (2161); he is back in the fight.")
+    elseif aiWho == 1
+        Debug.Notification("You revived Ian; he is back covering your flank.")
+    elseif aiWho == 2
+        Debug.Notification("You revived Ranger Tycho; he is back on the front line.")
+    else
+        Debug.Notification("You revived Katja; she is back in the fight.")
     endif
 EndFunction
 
@@ -568,6 +809,7 @@ Function RefreshIanCompanionGear(Actor akIan)
     if akIan.IsDisabled()
         akIan.EnableNoWait()
     endif
+    EnsureCompanionCombatReady(akIan, Game.GetPlayer(), 1)
     RegisterForRemoteEvent(akIan as ObjectReference, "OnActivate")
     RegisterForRemoteEvent(akIan, "OnCommandModeGiveCommand")
     RegisterForRemoteEvent(akIan, "OnCompanionDismiss")
@@ -583,6 +825,8 @@ Function RefreshIanCompanionGear(Actor akIan)
     if coltPistol != None
         if akIan.GetItemCount(coltPistol) == 0
             akIan.AddItem(coltPistol, 1, True)
+        endif
+        if akIan.GetEquippedWeapon() == None
             akIan.EquipItem(coltPistol, False, True)
         endif
     endif
@@ -599,6 +843,7 @@ Function RefreshTychoCompanionGear(Actor akTycho)
     if akTycho.IsDisabled()
         akTycho.EnableNoWait()
     endif
+    EnsureCompanionCombatReady(akTycho, Game.GetPlayer(), 2)
     RegisterForRemoteEvent(akTycho as ObjectReference, "OnActivate")
     RegisterForRemoteEvent(akTycho, "OnCommandModeGiveCommand")
     RegisterForRemoteEvent(akTycho, "OnCompanionDismiss")
@@ -611,9 +856,13 @@ Function RefreshTychoCompanionGear(Actor akTycho)
     endif
     EquipCustomGear(akTycho, 0x00001022, 0x001153DB, 0, 0x00001315)
     Form cShotgun = Game.GetFormFromFile(0x0014831C, "Fallout4.esm")
-    if cShotgun != None && akTycho.GetItemCount(cShotgun) == 0
-        akTycho.AddItem(cShotgun, 1, True)
-        akTycho.EquipItem(cShotgun, False, True)
+    if cShotgun != None
+        if akTycho.GetItemCount(cShotgun) == 0
+            akTycho.AddItem(cShotgun, 1, True)
+        endif
+        if akTycho.GetEquippedWeapon() == None
+            akTycho.EquipItem(cShotgun, False, True)
+        endif
     endif
     Form shells = Game.GetFormFromFile(0x0001F673, "Fallout4.esm")
     if shells != None && akTycho.GetItemCount(shells) < 50
@@ -622,6 +871,44 @@ Function RefreshTychoCompanionGear(Actor akTycho)
     Form ammo308 = Game.GetFormFromFile(0x0001F66B, "Fallout4.esm")
     if ammo308 != None && akTycho.GetItemCount(ammo308) < 30
         akTycho.AddItem(ammo308, 60, True)
+    endif
+EndFunction
+
+Function RefreshKatjaCompanionGear(Actor akKatja)
+    if akKatja == None || akKatja.IsDead()
+        return
+    endif
+    if akKatja.IsDisabled()
+        akKatja.EnableNoWait()
+    endif
+    EnsureCompanionCombatReady(akKatja, Game.GetPlayer(), 3)
+    RegisterForRemoteEvent(akKatja as ObjectReference, "OnActivate")
+    RegisterForRemoteEvent(akKatja, "OnCommandModeGiveCommand")
+    RegisterForRemoteEvent(akKatja, "OnCompanionDismiss")
+    if !akKatja.Is3DLoaded()
+        return
+    endif
+    akKatja.BlockActivation(False, False)
+    if !akKatja.IsDoingFavor()
+        akKatja.AllowPCDialogue(False)
+    endif
+    EquipCustomGear(akKatja, 0x00001037, 0x0014BF50, 0, 0)
+    Form smgWeap = Game.GetFormFromFile(0x0015B043, "Fallout4.esm")
+    if smgWeap != None
+        if akKatja.GetItemCount(smgWeap) == 0
+            akKatja.AddItem(smgWeap, 1, True)
+        endif
+        if akKatja.GetEquippedWeapon() == None
+            akKatja.EquipItem(smgWeap, False, True)
+        endif
+    endif
+    Form ammo45 = Game.GetFormFromFile(0x0001F66A, "Fallout4.esm")
+    if ammo45 != None && akKatja.GetItemCount(ammo45) < 80
+        akKatja.AddItem(ammo45, 160, True)
+    endif
+    Form knifeWeap = Game.GetFormFromFile(0x000913CA, "Fallout4.esm")
+    if knifeWeap != None && akKatja.GetItemCount(knifeWeap) == 0
+        akKatja.AddItem(knifeWeap, 1, True)
     endif
 EndFunction
 
@@ -636,19 +923,23 @@ Function SetIanFollowMode(Actor akIan)
     if akIan.IsDisabled()
         akIan.EnableNoWait()
     endif
+    Actor player = Game.GetPlayer()
     IanState = 1
-    ConfigureDogmeatCombatAI(akIan, 2.0)
+    iIanBleedoutTicks = 0
+    EnsureCompanionCombatReady(akIan, player, 1)
+    if akIan.IsBleedingOut()
+        akIan.ResetHealthAndLimbs()
+    endif
+    ConfigureDogmeatCombatAI(akIan, 3.0)
     akIan.SetCommandState(False)
     akIan.AllowPCDialogue(False)
     akIan.IgnoreFriendlyHits(True)
     akIan.SetPlayerTeammate(True, True, True)
     akIan.SetCanDoCommand(True)
-    akIan.AllowCompanion(True, True)
     akIan.FollowerFollow()
     akIan.FollowerSetDistanceNear()
     akIan.EvaluatePackage(True)
     RefreshIanCompanionGear(akIan)
-    Actor player = Game.GetPlayer()
     if player != None
         RegisterForRemoteEvent(player, "OnCombatStateChanged")
         RegisterForHitEvent(player)
@@ -669,19 +960,60 @@ Function SetTychoFollowMode(Actor akTycho)
     if akTycho.IsDisabled()
         akTycho.EnableNoWait()
     endif
+    Actor player = Game.GetPlayer()
     TychoState = 1
-    ConfigureDogmeatCombatAI(akTycho, 2.0)
+    iTychoBleedoutTicks = 0
+    EnsureCompanionCombatReady(akTycho, player, 2)
+    if akTycho.IsBleedingOut()
+        akTycho.ResetHealthAndLimbs()
+    endif
+    ConfigureDogmeatCombatAI(akTycho, 3.0)
     akTycho.SetCommandState(False)
     akTycho.AllowPCDialogue(False)
     akTycho.IgnoreFriendlyHits(True)
     akTycho.SetPlayerTeammate(True, True, True)
     akTycho.SetCanDoCommand(True)
-    akTycho.AllowCompanion(True, True)
     akTycho.FollowerFollow()
     akTycho.FollowerSetDistanceNear()
     akTycho.EvaluatePackage(True)
     RefreshTychoCompanionGear(akTycho)
+    if player != None
+        RegisterForRemoteEvent(player, "OnCombatStateChanged")
+        RegisterForHitEvent(player)
+    endif
+    RegisterForPlayerTeleport()
+    StartTimer(3.0, 96)
+    StartTimer(0.75, 98)
+EndFunction
+
+Function SetKatjaFollowMode(Actor akKatja)
+    if akKatja == None
+        return
+    endif
+    if !IsPlayerInVault13Space()
+        DismissKatjaToBoneyard(False)
+        return
+    endif
+    if akKatja.IsDisabled()
+        akKatja.EnableNoWait()
+    endif
     Actor player = Game.GetPlayer()
+    KatjaState = 1
+    iKatjaBleedoutTicks = 0
+    EnsureCompanionCombatReady(akKatja, player, 3)
+    if akKatja.IsBleedingOut()
+        akKatja.ResetHealthAndLimbs()
+    endif
+    ConfigureDogmeatCombatAI(akKatja, 3.0)
+    akKatja.SetCommandState(False)
+    akKatja.AllowPCDialogue(False)
+    akKatja.IgnoreFriendlyHits(True)
+    akKatja.SetPlayerTeammate(True, True, True)
+    akKatja.SetCanDoCommand(True)
+    akKatja.FollowerFollow()
+    akKatja.FollowerSetDistanceNear()
+    akKatja.EvaluatePackage(True)
+    RefreshKatjaCompanionGear(akKatja)
     if player != None
         RegisterForRemoteEvent(player, "OnCombatStateChanged")
         RegisterForHitEvent(player)
@@ -716,7 +1048,7 @@ Function RefreshDogmeatAppearance(Actor akDog)
     if akDog.IsDisabled()
         akDog.EnableNoWait()
     endif
-    akDog.EnableAI(True)
+    EnsureCompanionCombatReady(akDog, Game.GetPlayer(), 0)
     RegisterForRemoteEvent(akDog as ObjectReference, "OnActivate")
     RegisterForRemoteEvent(akDog, "OnCommandModeGiveCommand")
     RegisterForRemoteEvent(akDog, "OnCompanionDismiss")
@@ -776,25 +1108,30 @@ Function ConfigureDogmeatCombatAI(Actor akDog, float afConfidence)
         return
     endif
     akDog.EnableAI(True)
+    akDog.SetNoBleedoutRecovery(False)
+    float targetConf = afConfidence
+    if targetConf < 3.5
+        targetConf = 3.0
+    endif
     ActorValue aggressionAV = Game.GetFormFromFile(0x000002BC, "Fallout4.esm") as ActorValue
     ActorValue confidenceAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
     ActorValue assistanceAV = Game.GetFormFromFile(0x000002BF, "Fallout4.esm") as ActorValue
     ActorValue followerStateAV = Game.GetFormFromFile(0x00000344, "Fallout4.esm") as ActorValue
     if aggressionAV != None
-        if afConfidence >= 3.0
+        if targetConf >= 3.5
             akDog.SetValue(aggressionAV, 0.0)
         else
             akDog.SetValue(aggressionAV, 1.0)
         endif
     endif
     if confidenceAV != None
-        akDog.SetValue(confidenceAV, afConfidence)
+        akDog.SetValue(confidenceAV, targetConf)
     endif
     if assistanceAV != None
         akDog.SetValue(assistanceAV, 2.0)
     endif
     if followerStateAV != None
-        if afConfidence < 2.5
+        if targetConf < 3.5
             akDog.SetValue(followerStateAV, 1.0)
         else
             akDog.SetValue(followerStateAV, 2.0)
@@ -806,9 +1143,9 @@ Function ConfigureDogmeatCombatAI(Actor akDog, float afConfidence)
     endif
     Faction curCompFaction = Game.GetFormFromFile(0x00023C01, "Fallout4.esm") as Faction
     if curCompFaction != None
-        if afConfidence < 2.5 && !akDog.IsInFaction(curCompFaction)
+        if targetConf < 3.5 && !akDog.IsInFaction(curCompFaction)
             akDog.AddToFaction(curCompFaction)
-        elseif afConfidence >= 2.5 && akDog.IsInFaction(curCompFaction)
+        elseif targetConf >= 3.5 && akDog.IsInFaction(curCompFaction)
             akDog.RemoveFromFaction(curCompFaction)
         endif
     endif
@@ -869,10 +1206,10 @@ Function SyncDogmeatWithPlayer()
         SuspendCompanionsForCommonwealth()
         return
     endif
-    if bCompanionsSuspendedInCommonwealth || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0
+    if bCompanionsSuspendedInCommonwealth || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0 || iSavedKatjaState > 0
         RestoreCompanionsOnReturnTo2161()
     endif
-    if DogmeatState < 1 && IanState < 1 && TychoState < 1
+    if DogmeatState < 1 && IanState < 1 && TychoState < 1 && KatjaState < 1
         return
     endif
     Actor player = Game.GetPlayer()
@@ -971,6 +1308,37 @@ Function SyncDogmeatWithPlayer()
             endif
         endif
         RefreshTychoCompanionGear(tychoAct)
+    endif
+
+    Actor katjaAct = GetKatjaActor()
+    if KatjaState >= 1 && katjaAct != None && !katjaAct.IsDead()
+        if katjaAct.IsDisabled()
+            katjaAct.EnableNoWait()
+        endif
+        if KatjaState == 1
+            ConfigureDogmeatCombatAI(katjaAct, 2.0)
+            if !katjaAct.IsPlayerTeammate()
+                katjaAct.SetPlayerTeammate(True, True, True)
+                katjaAct.SetCanDoCommand(True)
+            endif
+            bool bKatjaTp = False
+            if katjaAct.GetWorldSpace() != player.GetWorldSpace()
+                bKatjaTp = True
+            elseif katjaAct.IsInInterior() != player.IsInInterior()
+                bKatjaTp = True
+            elseif katjaAct.GetDistance(player) > 2200.0 && !katjaAct.IsInCombat()
+                bKatjaTp = True
+            endif
+            if bKatjaTp
+                katjaAct.StopCombat()
+                float offXK = -145.0 * Math.Sin(angZ) + 75.0 * Math.Cos(angZ)
+                float offYK = -145.0 * Math.Cos(angZ) - 75.0 * Math.Sin(angZ)
+                katjaAct.MoveTo(player, offXK, offYK, 0.0, false)
+                katjaAct.SetAngle(0.0, 0.0, angZ)
+                katjaAct.EvaluatePackage(False)
+            endif
+        endif
+        RefreshKatjaCompanionGear(katjaAct)
     endif
 
     StartTimer(4.0, 96)
@@ -1172,6 +1540,54 @@ Function GrantTychoSupplyFind()
     endif
 EndFunction
 
+Function GrantKatjaSupplyFind()
+    Actor player = Game.GetPlayer()
+    if player == None
+        return
+    endif
+    iKatjaSupplyIdx += 1
+    int idx = iKatjaSupplyIdx % 3
+    if idx == 1
+        Form bpin = Game.GetFormFromFile(0x0000000A, "Fallout4.esm")
+        Form ammo45 = Game.GetFormFromFile(0x0001F66A, "Fallout4.esm")
+        if bpin != None
+            player.AddItem(bpin, 8, False)
+        endif
+        if ammo45 != None
+            player.AddItem(ammo45, 24, False)
+        endif
+        Debug.Notification("Katja picked a hidden stash: +8 Bobby Pins and +24 .45 caliber rounds.")
+    elseif idx == 2
+        Form stim = Game.GetFormFromFile(0x00023736, "Fallout4.esm")
+        Form knife = Game.GetFormFromFile(0x000913CA, "Fallout4.esm")
+        Form caps = Game.GetFormFromFile(0x0000000F, "Fallout4.esm")
+        if stim != None
+            player.AddItem(stim, 2, False)
+        endif
+        if knife != None
+            player.AddItem(knife, 2, False)
+        endif
+        if caps != None
+            player.AddItem(caps, 50, False)
+        endif
+        Debug.Notification("Katja shares her scavenger haul: +2 Stimpaks, +2 Throwing Knives, and +50 Caps.")
+    else
+        Form ammo45 = Game.GetFormFromFile(0x0001F66A, "Fallout4.esm")
+        Form bpin = Game.GetFormFromFile(0x0000000A, "Fallout4.esm")
+        Form radaway = Game.GetFormFromFile(0x00023742, "Fallout4.esm")
+        if ammo45 != None
+            player.AddItem(ammo45, 30, False)
+        endif
+        if bpin != None
+            player.AddItem(bpin, 6, False)
+        endif
+        if radaway != None
+            player.AddItem(radaway, 1, False)
+        endif
+        Debug.Notification("Katja hands you infiltration supplies: +30 .45 caliber rounds, +6 Bobby Pins, and +1 RadAway.")
+    endif
+EndFunction
+
 Function StepDogmeatInExterior(Actor akDog, ObjectReference akTarget, float afStopDist, float afSpeed)
     if bSteppingCompanion || akDog == None || akTarget == None || akDog.IsDead() || akDog.IsInInterior()
         return
@@ -1194,8 +1610,10 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
     int cState = 0
     if aiWho == 1
         cState = IanState
-    else
+    elseif aiWho == 2
         cState = TychoState
+    else
+        cState = KatjaState
     endif
     if cState == 0
         if akComp.Is3DLoaded()
@@ -1207,6 +1625,7 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
     if akComp.IsDisabled()
         akComp.EnableNoWait()
     endif
+    EnsureCompanionCombatReady(akComp, akPlayer, aiWho)
     ActorValue followerStateAV = Game.GetFormFromFile(0x00000344, "Fallout4.esm") as ActorValue
     if followerStateAV != None
         float fsVal = akComp.GetValue(followerStateAV)
@@ -1214,8 +1633,10 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
             cState = 2
             if aiWho == 1
                 IanState = 2
-            else
+            elseif aiWho == 2
                 TychoState = 2
+            else
+                KatjaState = 2
             endif
             ConfigureDogmeatCombatAI(akComp, 4.0)
             akComp.EvaluatePackage(True)
@@ -1223,10 +1644,12 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
             cState = 1
             if aiWho == 1
                 IanState = 1
-            else
+            elseif aiWho == 2
                 TychoState = 1
+            else
+                KatjaState = 1
             endif
-            ConfigureDogmeatCombatAI(akComp, 2.0)
+            ConfigureDogmeatCombatAI(akComp, 3.0)
             akComp.EvaluatePackage(True)
         endif
     endif
@@ -1236,15 +1659,38 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
         endif
         return
     endif
+    if HandleCompanionBleedoutTick(akComp, akPlayer, aiWho)
+        return
+    endif
     if !akComp.IsDoingFavor()
         akComp.AllowPCDialogue(False)
+    endif
+    if akComp.GetEquippedWeapon() == None
+        if aiWho == 1
+            RefreshIanCompanionGear(akComp)
+        elseif aiWho == 2
+            RefreshTychoCompanionGear(akComp)
+        else
+            RefreshKatjaCompanionGear(akComp)
+        endif
     endif
     if cState == 2
         return
     endif
-    if rDogCombatTarget != None && !rDogCombatTarget.IsDead() && !akComp.IsDead()
-        if akComp.GetCombatTarget() != rDogCombatTarget
-            akComp.StartCombat(rDogCombatTarget)
+    ConfigureDogmeatCombatAI(akComp, 3.0)
+    Actor compEnemy = rDogCombatTarget
+    if compEnemy == None || compEnemy.IsDead() || compEnemy.IsDisabled()
+        compEnemy = FindDogmeatCombatTarget(akPlayer, akComp)
+        if compEnemy != None
+            rDogCombatTarget = compEnemy
+        endif
+    endif
+    if compEnemy != None && !compEnemy.IsDead() && !akComp.IsDead()
+        if akComp.GetCombatTarget() != compEnemy
+            akComp.StartCombat(compEnemy)
+        endif
+        if akComp.GetDistance(compEnemy) > 950.0
+            StepDogmeatInExterior(akComp, compEnemy as ObjectReference, 620.0, 290.0)
         endif
         return
     endif
@@ -1256,9 +1702,12 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
         if aiWho == 1
             offX = -145.0 * Math.Sin(angZ) - 75.0 * Math.Cos(angZ)
             offY = -145.0 * Math.Cos(angZ) + 75.0 * Math.Sin(angZ)
-        else
+        elseif aiWho == 2
             offX = -195.0 * Math.Sin(angZ)
             offY = -195.0 * Math.Cos(angZ)
+        else
+            offX = -150.0 * Math.Sin(angZ) + 75.0 * Math.Cos(angZ)
+            offY = -150.0 * Math.Cos(angZ) - 75.0 * Math.Sin(angZ)
         endif
         akComp.StopCombat()
         akComp.MoveTo(akPlayer, offX, offY, 0.0, false)
@@ -1280,6 +1729,7 @@ Function CheckDogmeatProximity()
     Actor dogShady = Game.GetFormFromFile(0x000035B3, "Vault13Chronicles.esp") as Actor
     Actor ianAct = GetIanActor()
     Actor tychoAct = GetTychoActor()
+    Actor katjaAct = GetKatjaActor()
 
     if dogJunktown != None && !dogJunktown.IsDisabled()
         dogJunktown.DisableNoWait()
@@ -1290,12 +1740,13 @@ Function CheckDogmeatProximity()
         return
     endif
 
-    if bCompanionsSuspendedInCommonwealth || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0
+    if bCompanionsSuspendedInCommonwealth || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0 || iSavedKatjaState > 0
         RestoreCompanionsOnReturnTo2161()
     endif
 
     UpdateHumanCompanionTick(ianAct, player, 1)
     UpdateHumanCompanionTick(tychoAct, player, 2)
+    UpdateHumanCompanionTick(katjaAct, player, 3)
 
     Form redBandana = Game.GetFormFromFile(0x0009C05B, "Fallout4.esm")
     Form medArmor = Game.GetFormFromFile(0x001C32C8, "Fallout4.esm")
@@ -1307,8 +1758,8 @@ Function CheckDogmeatProximity()
                 dogShady.EnableNoWait()
             endif
             if dogShady.Is3DLoaded()
-                if !dogShady.IsInCombat() && (Math.Abs(dogShady.GetPositionX() - 2600.0) > 220.0 || Math.Abs(dogShady.GetPositionY() - 9600.0) > 220.0)
-                    dogShady.SetPosition(2600.0, 9600.0, 160.0)
+                if !dogShady.IsInCombat() && (Math.Abs(dogShady.GetPositionX() - 6700.0) > 220.0 || Math.Abs(dogShady.GetPositionY() - 23500.0) > 220.0)
+                    dogShady.SetPosition(6700.0, 23500.0, 160.0)
                 endif
                 if (redBandana != None && dogShady.IsEquipped(redBandana)) || (medArmor != None && !dogShady.IsEquipped(medArmor)) || (reinfCollar != None && !dogShady.IsEquipped(reinfCollar))
                     RefreshDogmeatAppearance(dogShady)
@@ -1350,6 +1801,12 @@ Function CheckDogmeatProximity()
         if DogmeatState == 1
             SyncDogmeatWithPlayer()
         endif
+        StartTimer(1.2, 98)
+        return
+    endif
+
+    EnsureCompanionCombatReady(activeDog, player, 0)
+    if HandleCompanionBleedoutTick(activeDog, player, 0)
         StartTimer(1.2, 98)
         return
     endif
@@ -1458,6 +1915,11 @@ Function HandleDogmeatActivation(Actor akDog)
             Debug.Notification("Dogmeat (2161) has joined you! Press [E]/[A] on him anytime to issue commands or dismiss him.")
         endif
     else
+        if akDog.IsBleedingOut()
+            ReviveBleedingOutCompanion(akDog, Game.GetPlayer(), 0)
+            bDogmeatMenuBusy = False
+            return
+        endif
         Message cmdMsg = Game.GetFormFromFile(0x000011C1, "Vault13Chronicles.esp") as Message
         int cChoice = 0
         if cmdMsg != None
@@ -1546,6 +2008,11 @@ Function HandleIanActivation(Actor akIan)
             Debug.Notification("Ian: 'I used to guard Hub caravans until the Khans shot me up. Junktown lies south and The Hub beyond that.'")
         endif
     else
+        if akIan.IsBleedingOut()
+            ReviveBleedingOutCompanion(akIan, player, 1)
+            bDogmeatMenuBusy = False
+            return
+        endif
         Message cmdMsg = Game.GetFormFromFile(0x000011C3, "Vault13Chronicles.esp") as Message
         int cChoice = 6
         if cmdMsg != None
@@ -1623,6 +2090,11 @@ Function HandleTychoActivation(Actor akTycho)
             endif
         endif
     else
+        if akTycho.IsBleedingOut()
+            ReviveBleedingOutCompanion(akTycho, Game.GetPlayer(), 2)
+            bDogmeatMenuBusy = False
+            return
+        endif
         Message cmdMsg = Game.GetFormFromFile(0x000011C5, "Vault13Chronicles.esp") as Message
         int cChoice = 6
         if cmdMsg != None
@@ -1657,11 +2129,82 @@ Function HandleTychoActivation(Actor akTycho)
     bDogmeatMenuBusy = False
 EndFunction
 
+Function HandleKatjaActivation(Actor akKatja)
+    if akKatja == None || bDogmeatMenuBusy
+        return
+    endif
+    if !IsPlayerInVault13Space()
+        DismissKatjaToBoneyard(True)
+        return
+    endif
+    bDogmeatMenuBusy = True
+    RefreshKatjaCompanionGear(akKatja)
+    if KatjaState == 0
+        Message recruitMsg = Game.GetFormFromFile(0x000011C6, "Vault13Chronicles.esp") as Message
+        int rChoice = 2
+        if recruitMsg != None
+            rChoice = recruitMsg.Show()
+        endif
+        if rChoice == 0
+            SetKatjaFollowMode(akKatja)
+            SyncDogmeatWithPlayer()
+            if !bKatjaFirstRecruitXP
+                bKatjaFirstRecruitXP = True
+                Game.RewardPlayerXP(200)
+            endif
+            Debug.Notification("Katja has joined your party! You can travel with Ian, Tycho, Katja, and Dogmeat simultaneously.")
+        elseif rChoice == 1
+            V13SideQuestFollowersSpyScript spyQ = Game.GetFormFromFile(0x000D4000, "Vault13Chronicles.esp") as V13SideQuestFollowersSpyScript
+            if spyQ != None
+                spyQ.StartKatjaLoreDialogue()
+            endif
+        endif
+    else
+        if akKatja.IsBleedingOut()
+            ReviveBleedingOutCompanion(akKatja, Game.GetPlayer(), 3)
+            bDogmeatMenuBusy = False
+            return
+        endif
+        Message cmdMsg = Game.GetFormFromFile(0x000011C7, "Vault13Chronicles.esp") as Message
+        int cChoice = 6
+        if cmdMsg != None
+            cChoice = cmdMsg.Show()
+        endif
+        if cChoice == 0
+            SetKatjaFollowMode(akKatja)
+            Debug.Notification("Katja (The Boneyard): Covering your flank from the shadows.")
+        elseif cChoice == 1
+            akKatja.AllowPCDialogue(True)
+            akKatja.SetPlayerTeammate(True, True, True)
+            akKatja.SetCanDoCommand(True)
+            if !akKatja.IsDoingFavor()
+                akKatja.SetCommandState(True)
+            endif
+        elseif cChoice == 2
+            GrantKatjaSupplyFind()
+        elseif cChoice == 3
+            akKatja.OpenInventory(True)
+        elseif cChoice == 4
+            KatjaState = 2
+            ConfigureDogmeatCombatAI(akKatja, 4.0)
+            akKatja.FollowerWait()
+            akKatja.EvaluatePackage(True)
+            Debug.Notification("Katja (The Boneyard): Watching the shadows from here.")
+        elseif cChoice == 5
+            DismissKatjaToBoneyard(True)
+        elseif cChoice == 6
+            akKatja.ResetHealthAndLimbs()
+        endif
+    endif
+    bDogmeatMenuBusy = False
+EndFunction
+
 Event Actor.OnCommandModeGiveCommand(Actor akSender, int aeCommandType, ObjectReference akTarget)
     Actor activeDog = GetActiveDogmeatActor()
     Actor ianAct = GetIanActor()
     Actor tychoAct = GetTychoActor()
-    if akSender != activeDog && akSender != ianAct && akSender != tychoAct
+    Actor katjaAct = GetKatjaActor()
+    if akSender != activeDog && akSender != ianAct && akSender != tychoAct && akSender != katjaAct
         return
     endif
     if aeCommandType == 1 || aeCommandType == 2
@@ -1677,6 +2220,9 @@ Event Actor.OnCommandModeGiveCommand(Actor akSender, int aeCommandType, ObjectRe
         elseif akSender == tychoAct
             TychoState = 1
             Debug.Notification("Ranger Tycho: Following closely.")
+        elseif akSender == katjaAct
+            KatjaState = 1
+            Debug.Notification("Katja: Following close behind.")
         endif
         ConfigureDogmeatCombatAI(akSender, 2.0)
         akSender.FollowerFollow()
@@ -1696,6 +2242,9 @@ Event Actor.OnCommandModeGiveCommand(Actor akSender, int aeCommandType, ObjectRe
         elseif akSender == tychoAct
             TychoState = 2
             Debug.Notification("Ranger Tycho: Waiting at this position.")
+        elseif akSender == katjaAct
+            KatjaState = 2
+            Debug.Notification("Katja: Holding this position.")
         endif
         ConfigureDogmeatCombatAI(akSender, 4.0)
         akSender.FollowerWait()
@@ -1713,6 +2262,8 @@ Event Actor.OnCommandModeGiveCommand(Actor akSender, int aeCommandType, ObjectRe
                 IanState = 1
             elseif akSender == tychoAct
                 TychoState = 1
+            elseif akSender == katjaAct
+                KatjaState = 1
             endif
             ConfigureDogmeatCombatAI(akSender, 2.0)
             if !akSender.IsDead() && !targetEnemy.IsDead()
@@ -1733,6 +2284,8 @@ Event Actor.OnCommandModeGiveCommand(Actor akSender, int aeCommandType, ObjectRe
                 GrantIanSupplyFind()
             elseif akSender == tychoAct && (aeCommandType == 5 || aeCommandType == 6)
                 GrantTychoSupplyFind()
+            elseif akSender == katjaAct && (aeCommandType == 5 || aeCommandType == 6)
+                GrantKatjaSupplyFind()
             endif
         endif
     elseif aeCommandType == 9
@@ -1747,17 +2300,20 @@ Event Actor.OnCompanionDismiss(Actor akSender)
     Actor activeDog = GetActiveDogmeatActor()
     Actor ianAct = GetIanActor()
     Actor tychoAct = GetTychoActor()
+    Actor katjaAct = GetKatjaActor()
     if akSender == activeDog
         DismissDogmeatToShadySands(True)
     elseif akSender == ianAct
         DismissIanToShadySands(True)
     elseif akSender == tychoAct
         DismissTychoToJunktown(True)
+    elseif akSender == katjaAct
+        DismissKatjaToBoneyard(True)
     endif
 EndEvent
 
 Event Actor.OnCombatStateChanged(Actor akSender, Actor akTarget, int aeCombatState)
-    if akSender == Game.GetPlayer() && (DogmeatState == 1 || IanState == 1 || TychoState == 1)
+    if akSender == Game.GetPlayer() && (DogmeatState == 1 || IanState == 1 || TychoState == 1 || KatjaState == 1)
         if aeCombatState >= 1 && akTarget != None && !akTarget.IsDead()
             rDogCombatTarget = akTarget
         elseif aeCombatState == 0
@@ -1766,14 +2322,106 @@ Event Actor.OnCombatStateChanged(Actor akSender, Actor akTarget, int aeCombatSta
     endif
 EndEvent
 
+Function SanitizeKenjiCampPeace()
+    if bKenjiCampHostile
+        return
+    endif
+    Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
+    ActorValue aggrAV = Game.GetAggressionAV()
+    Actor kenjiAct = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as Actor
+    Actor skullAct = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as Actor
+    Actor player = Game.GetPlayer()
+    if kenjiAct != None && !kenjiAct.IsDead()
+        if raiderFact != None && kenjiAct.IsInFaction(raiderFact)
+            kenjiAct.RemoveFromFaction(raiderFact)
+        endif
+        if aggrAV != None
+            kenjiAct.SetValue(aggrAV, 0.0)
+        endif
+        if !kenjiAct.IsInCombat() || kenjiAct.GetCombatTarget() != player
+            kenjiAct.StopCombat()
+        endif
+        kenjiAct.EvaluatePackage()
+    endif
+    if skullAct != None && !skullAct.IsDead()
+        if raiderFact != None && skullAct.IsInFaction(raiderFact)
+            skullAct.RemoveFromFaction(raiderFact)
+        endif
+        if aggrAV != None
+            skullAct.SetValue(aggrAV, 0.0)
+        endif
+        if !skullAct.IsInCombat() || skullAct.GetCombatTarget() != player
+            skullAct.StopCombat()
+        endif
+        skullAct.EvaluatePackage()
+    endif
+EndFunction
+
+Function TriggerKenjiCampHostile()
+    bKenjiCampHostile = True
+    Scene confStopJk = Game.GetFormFromFile(0x000D7200, "Vault13Chronicles.esp") as Scene
+    if confStopJk != None && confStopJk.IsPlaying()
+        confStopJk.Stop()
+    endif
+    if Self.GetStage() < 20
+        EnsureJunktownStage20Active()
+    endif
+    Actor player = Game.GetPlayer()
+    Faction playerFact = Game.GetFormFromFile(0x0001C21C, "Fallout4.esm") as Faction
+    ActorValue aggrAV = Game.GetAggressionAV()
+    ActorValue confAV = Game.GetConfidenceAV()
+    Actor kenjiAct = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as Actor
+    Actor skullAct = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as Actor
+    if kenjiAct != None && !kenjiAct.IsDead()
+        if playerFact != None && kenjiAct.IsInFaction(playerFact)
+            kenjiAct.RemoveFromFaction(playerFact)
+        endif
+        if aggrAV != None
+            kenjiAct.SetValue(aggrAV, 2.0)
+        endif
+        if confAV != None
+            kenjiAct.SetValue(confAV, 4.0)
+        endif
+        if player != None && kenjiAct.Is3DLoaded()
+            kenjiAct.StartCombat(player)
+        endif
+    endif
+    if skullAct != None && !skullAct.IsDead()
+        if playerFact != None && skullAct.IsInFaction(playerFact)
+            skullAct.RemoveFromFaction(playerFact)
+        endif
+        if aggrAV != None
+            skullAct.SetValue(aggrAV, 2.0)
+        endif
+        if confAV != None
+            skullAct.SetValue(confAV, 4.0)
+        endif
+        if player != None && skullAct.Is3DLoaded()
+            skullAct.StartCombat(player)
+        endif
+    endif
+EndFunction
+
 Event OnHit(ObjectReference akTarget, ObjectReference akAggressor, Form akSource, Projectile akProjectile, bool abPowerAttack, bool abSneakAttack, bool abBashAttack, bool abHitBlocked, string asMaterialName)
     Actor player = Game.GetPlayer()
-    if akTarget == player && (DogmeatState == 1 || IanState == 1 || TychoState == 1)
+    ObjectReference kenjiHitRef = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference skullHitRef = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as ObjectReference
+    if akTarget != None && (akTarget == kenjiHitRef || akTarget == skullHitRef)
+        RegisterForHitEvent(akTarget)
+        Actor hitAgg = akAggressor as Actor
+        bool isPlayerHit = (player != None && akAggressor == (player as ObjectReference)) || (hitAgg != None && hitAgg.IsPlayerTeammate())
+        if isPlayerHit && !bKenjiCampHostile
+            TriggerKenjiCampHostile()
+        endif
+        return
+    endif
+    if akTarget == player && (DogmeatState == 1 || IanState == 1 || TychoState == 1 || KatjaState == 1)
         Actor attacker = akAggressor as Actor
         Actor activeDog = GetActiveDogmeatActor()
         Actor ianAct = GetIanActor()
         Actor tychoAct = GetTychoActor()
-        if attacker != None && attacker != player && attacker != activeDog && attacker != ianAct && attacker != tychoAct && !attacker.IsDead()
+        Actor katjaAct = GetKatjaActor()
+        if attacker != None && attacker != player && attacker != activeDog && attacker != ianAct && attacker != tychoAct && attacker != katjaAct && !attacker.IsDead()
             rDogCombatTarget = attacker
         endif
     endif
@@ -1783,6 +2431,9 @@ Event OnHit(ObjectReference akTarget, ObjectReference akAggressor, Form akSource
 EndEvent
 
 Function RefreshJunktownSettlementLayout()
+    if !IsPlayerInVault13Space()
+        return
+    endif
     Actor killianAct = Game.GetFormFromFile(0x000035C0, "Vault13Chronicles.esp") as Actor
     if killianAct != None && !killianAct.IsDead()
         if killianAct.IsDisabled()
@@ -1792,8 +2443,8 @@ Function RefreshJunktownSettlementLayout()
             killianAct.AllowPCDialogue(True)
             killianAct.BlockActivation(False, False)
             if !killianAct.IsInCombat() && !killianAct.IsTalking()
-                if Math.Abs(killianAct.GetPositionX() - 3850.0) > 45.0 || Math.Abs(killianAct.GetPositionY() - 3820.0) > 45.0
-                    killianAct.SetPosition(3850.0, 3820.0, 80.0)
+                if Math.Abs(killianAct.GetPositionX() - 7750.0) > 45.0 || Math.Abs(killianAct.GetPositionY() - 5520.0) > 45.0
+                    killianAct.SetPosition(7750.0, 5520.0, 80.0)
                     killianAct.SetAngle(0.0, 0.0, 225.0)
                     killianAct.EvaluatePackage()
                 elseif Math.Abs(killianAct.GetAngleZ() - 225.0) > 35.0 && Math.Abs(killianAct.GetAngleZ() - 225.0) < 325.0
@@ -1813,8 +2464,8 @@ Function RefreshJunktownSettlementLayout()
             larsAct.AllowPCDialogue(True)
             larsAct.BlockActivation(False, False)
             if !larsAct.IsInCombat() && !larsAct.IsTalking()
-                if Math.Abs(larsAct.GetPositionX() - 3310.0) > 45.0 || Math.Abs(larsAct.GetPositionY() - 3820.0) > 45.0
-                    larsAct.SetPosition(3310.0, 3820.0, 80.0)
+                if Math.Abs(larsAct.GetPositionX() - 7210.0) > 45.0 || Math.Abs(larsAct.GetPositionY() - 5520.0) > 45.0
+                    larsAct.SetPosition(7210.0, 5520.0, 80.0)
                     larsAct.SetAngle(0.0, 0.0, 90.0)
                     larsAct.EvaluatePackage()
                 elseif Math.Abs(larsAct.GetAngleZ() - 90.0) > 35.0 && Math.Abs(larsAct.GetAngleZ() - 90.0) < 325.0
@@ -1834,9 +2485,28 @@ Function RefreshJunktownSettlementLayout()
         if IsPlayerInVault13Space()
             RefreshTychoCompanionGear(tychoAct)
             if TychoState == 0 && iSavedTychoState == 0 && tychoAct.Is3DLoaded() && !tychoAct.IsInCombat()
-                if Math.Abs(tychoAct.GetPositionX() - 3600.0) > 600.0 || Math.Abs(tychoAct.GetPositionY() - 4280.0) > 600.0
-                    tychoAct.SetPosition(3600.0, 4280.0, 80.0)
+                if Math.Abs(tychoAct.GetPositionX() - 7500.0) > 600.0 || Math.Abs(tychoAct.GetPositionY() - 5980.0) > 600.0
+                    tychoAct.SetPosition(7500.0, 5980.0, 80.0)
                     tychoAct.SetAngle(0.0, 0.0, 180.0)
+                endif
+            endif
+        else
+            SuspendCompanionsForCommonwealth()
+        endif
+    endif
+
+    Actor katjaAct = GetKatjaActor()
+    if katjaAct != None && !katjaAct.IsDead()
+        if katjaAct.Is3DLoaded()
+            katjaAct.AllowPCDialogue(True)
+            katjaAct.BlockActivation(False, False)
+        endif
+        if IsPlayerInVault13Space()
+            RefreshKatjaCompanionGear(katjaAct)
+            if KatjaState == 0 && iSavedKatjaState == 0 && katjaAct.Is3DLoaded() && !katjaAct.IsInCombat()
+                if Math.Abs(katjaAct.GetPositionX() + 1200.0) > 600.0 || Math.Abs(katjaAct.GetPositionY() + 34600.0) > 600.0
+                    katjaAct.SetPosition(-1200.0, -34600.0, 40.0)
+                    katjaAct.SetAngle(0.0, 0.0, 270.0)
                 endif
             endif
         else
@@ -1857,8 +2527,8 @@ Function RefreshJunktownSettlementLayout()
         if IsPlayerInVault13Space()
             RefreshDogmeatAppearance(dogShady)
             if DogmeatState == 0 && iSavedDogmeatState == 0 && dogShady.Is3DLoaded() && !dogShady.IsInCombat()
-                if Math.Abs(dogShady.GetPositionX() - 2600.0) > 220.0 || Math.Abs(dogShady.GetPositionY() - 9600.0) > 220.0
-                    dogShady.SetPosition(2600.0, 9600.0, 160.0)
+                if Math.Abs(dogShady.GetPositionX() - 6700.0) > 220.0 || Math.Abs(dogShady.GetPositionY() - 23500.0) > 220.0
+                    dogShady.SetPosition(6700.0, 23500.0, 160.0)
                 endif
             endif
         else
@@ -1868,9 +2538,9 @@ Function RefreshJunktownSettlementLayout()
 
     Form noteBase = Game.GetFormFromFile(0x0000114A, "Vault13Chronicles.esp")
     if noteBase != None
-        ObjectReference noteRef = Game.FindClosestReferenceOfType(noteBase, 3920.0, 4000.0, 80.0, 400.0)
+        ObjectReference noteRef = Game.FindClosestReferenceOfType(noteBase, 7920.0, 5700.0, 80.0, 400.0)
         if noteRef != None && noteRef.GetContainer() == None
-            noteRef.SetPosition(3950.0, 3996.0, 136.5)
+            noteRef.SetPosition(7950.0, 5696.0, 136.5)
         endif
     endif
 EndFunction
@@ -1932,62 +2602,89 @@ Function EnsureJunktownStage20Active()
     if Self.GetStage() < 20
         Self.SetStage(20)
     endif
+    if IsObjectiveDisplayed(12)
+        SetObjectiveCompleted(12, True)
+        SetObjectiveDisplayed(12, False, False)
+    endif
     ForceQuestAlias(1, 0x000035C4)
     if !IsObjectiveDisplayed(20)
         SetObjectiveDisplayed(20, True, False)
+        Self.SetActive(True)
     endif
-    Self.SetActive(True)
     if !bStg20Notified
         bStg20Notified = True
         Debug.Notification("Side Quest: Justice in Junktown - Eliminate Gizmo's hitman Kenji at Gizmo's casino to the west.")
     endif
 EndFunction
 
-Function BindJunktownListeners()
+Function BindJunktownListeners(bool abRefreshLayout = True)
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        bRewardGranted = True
+        bItemDelivered = True
+        bProofRecovered = True
+        bProofSeeded = True
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+    endif
     ForceAllJunktownAliases()
-    if !IsPlayerInVault13Space()
-        SuspendCompanionsForCommonwealth()
-        RefreshJunktownSettlementLayout()
-    else
-        RestoreCompanionsOnReturnTo2161()
-        RefreshJunktownSettlementLayout()
-        if DogmeatState >= 1
-            Actor activeDog = GetActiveDogmeatActor()
-            if activeDog != None
-                if DogmeatState == 1
-                    SetDogmeatFollowMode(activeDog)
-                else
-                    ConfigureDogmeatCombatAI(activeDog, 4.0)
-                    RefreshDogmeatAppearance(activeDog)
+    bool inV13 = IsPlayerInVault13Space()
+    if abRefreshLayout
+        if !inV13
+            SuspendCompanionsForCommonwealth()
+        else
+            RestoreCompanionsOnReturnTo2161()
+            RefreshJunktownSettlementLayout()
+            if DogmeatState >= 1
+                Actor activeDog = GetActiveDogmeatActor()
+                if activeDog != None
+                    if DogmeatState == 1
+                        SetDogmeatFollowMode(activeDog)
+                    else
+                        ConfigureDogmeatCombatAI(activeDog, 4.0)
+                        RefreshDogmeatAppearance(activeDog)
+                    endif
                 endif
             endif
-        endif
-        if IanState >= 1
-            Actor ianAct = GetIanActor()
-            if ianAct != None
-                if IanState == 1
-                    SetIanFollowMode(ianAct)
-                else
-                    ConfigureDogmeatCombatAI(ianAct, 4.0)
-                    RefreshIanCompanionGear(ianAct)
+            if IanState >= 1
+                Actor ianAct = GetIanActor()
+                if ianAct != None
+                    if IanState == 1
+                        SetIanFollowMode(ianAct)
+                    else
+                        ConfigureDogmeatCombatAI(ianAct, 4.0)
+                        RefreshIanCompanionGear(ianAct)
+                    endif
                 endif
             endif
-        endif
-        if TychoState >= 1
-            Actor tychoAct = GetTychoActor()
-            if tychoAct != None
-                if TychoState == 1
-                    SetTychoFollowMode(tychoAct)
-                else
-                    ConfigureDogmeatCombatAI(tychoAct, 4.0)
-                    RefreshTychoCompanionGear(tychoAct)
+            if TychoState >= 1
+                Actor tychoAct = GetTychoActor()
+                if tychoAct != None
+                    if TychoState == 1
+                        SetTychoFollowMode(tychoAct)
+                    else
+                        ConfigureDogmeatCombatAI(tychoAct, 4.0)
+                        RefreshTychoCompanionGear(tychoAct)
+                    endif
                 endif
             endif
+            if KatjaState >= 1
+                Actor katjaAct = GetKatjaActor()
+                if katjaAct != None
+                    if KatjaState == 1
+                        SetKatjaFollowMode(katjaAct)
+                    else
+                        ConfigureDogmeatCombatAI(katjaAct, 4.0)
+                        RefreshKatjaCompanionGear(katjaAct)
+                    endif
+                endif
+            endif
+            if DogmeatState >= 1 || IanState >= 1 || TychoState >= 1 || KatjaState >= 1
+                SyncDogmeatWithPlayer()
+            endif
+            StartTimer(0.8, 98)
         endif
-        if DogmeatState >= 1 || IanState >= 1 || TychoState >= 1
-            SyncDogmeatWithPlayer()
-        endif
-        StartTimer(0.8, 98)
     endif
 
     Actor player = Game.GetPlayer()
@@ -2010,7 +2707,9 @@ Function BindJunktownListeners()
     ObjectReference killianRef = Game.GetFormFromFile(0x000035C0, "Vault13Chronicles.esp") as ObjectReference
     if killianRef != None
         RegisterForRemoteEvent(killianRef, "OnActivate")
-        EnsureKillianVendorReady(killianRef as Actor)
+        if abRefreshLayout && inV13
+            EnsureKillianVendorReady(killianRef as Actor)
+        endif
     endif
     ObjectReference larsRef = Game.GetFormFromFile(0x000035C1, "Vault13Chronicles.esp") as ObjectReference
     if larsRef != None
@@ -2028,6 +2727,12 @@ Function BindJunktownListeners()
         RegisterForRemoteEvent(ianRef as Actor, "OnCommandModeGiveCommand")
         RegisterForRemoteEvent(ianRef as Actor, "OnCompanionDismiss")
     endif
+    ObjectReference katjaRef = Game.GetFormFromFile(0x00003620, "Vault13Chronicles.esp") as ObjectReference
+    if katjaRef != None
+        RegisterForRemoteEvent(katjaRef, "OnActivate")
+        RegisterForRemoteEvent(katjaRef as Actor, "OnCommandModeGiveCommand")
+        RegisterForRemoteEvent(katjaRef as Actor, "OnCompanionDismiss")
+    endif
     ObjectReference dogRef = Game.GetFormFromFile(0x000035C3, "Vault13Chronicles.esp") as ObjectReference
     if dogRef != None
         RegisterForRemoteEvent(dogRef, "OnActivate")
@@ -2041,54 +2746,56 @@ Function BindJunktownListeners()
         RegisterForRemoteEvent(dogShadyRef as Actor, "OnCompanionDismiss")
     endif
     Faction playerFact = Game.GetFormFromFile(0x0001C21C, "Fallout4.esm") as Faction
-    Actor gizmoRef = Game.GetFormFromFile(0x000035DE, "Vault13Chronicles.esp") as Actor
-    if gizmoRef != None && playerFact != None && gizmoRef.IsInFaction(playerFact) && !gizmoRef.IsInCombat()
-        gizmoRef.RemoveFromFaction(playerFact)
-    endif
-    Actor izoRef = Game.GetFormFromFile(0x000035DF, "Vault13Chronicles.esp") as Actor
-    if izoRef != None && playerFact != None && izoRef.IsInFaction(playerFact) && !izoRef.IsInCombat()
-        izoRef.RemoveFromFaction(playerFact)
-    endif
-    Actor vinnieRef = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
-    if vinnieRef != None && playerFact != None && vinnieRef.IsInFaction(playerFact) && !vinnieRef.IsInCombat()
-        vinnieRef.RemoveFromFaction(playerFact)
+    if abRefreshLayout && inV13
+        Actor gizmoRef = Game.GetFormFromFile(0x000035DE, "Vault13Chronicles.esp") as Actor
+        if gizmoRef != None && gizmoRef.Is3DLoaded() && playerFact != None && gizmoRef.IsInFaction(playerFact) && !gizmoRef.IsInCombat()
+            gizmoRef.RemoveFromFaction(playerFact)
+        endif
+        Actor izoRef = Game.GetFormFromFile(0x000035DF, "Vault13Chronicles.esp") as Actor
+        if izoRef != None && izoRef.Is3DLoaded() && playerFact != None && izoRef.IsInFaction(playerFact) && !izoRef.IsInCombat()
+            izoRef.RemoveFromFaction(playerFact)
+        endif
+        Actor vinnieRef = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
+        if vinnieRef != None && vinnieRef.Is3DLoaded() && playerFact != None && vinnieRef.IsInFaction(playerFact) && !vinnieRef.IsInCombat()
+            vinnieRef.RemoveFromFaction(playerFact)
+        endif
     endif
     Actor kenjiRef = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as Actor
     if kenjiRef != None
         RegisterForRemoteEvent(kenjiRef, "OnDeath")
         RegisterForRemoteEvent(kenjiRef as ObjectReference, "OnActivate")
+        if !kenjiRef.IsDead()
+            RegisterForHitEvent(kenjiRef)
+        endif
         if proofBase != None
             AddInventoryEventFilter(proofBase)
         endif
         RegisterForRemoteEvent(kenjiRef as ObjectReference, "OnItemRemoved")
-        V13WastelandCreatureAIScript kenjiAI = (kenjiRef as ObjectReference) as V13WastelandCreatureAIScript
-        if kenjiAI != None
-            kenjiAI.InitCreatureAI()
-        endif
-        if kenjiRef.IsDead() && Self.GetStage() < 25 && !bProofRecovered && (player == None || player.GetDistance(kenjiRef) > 2200.0)
-            kenjiRef.Resurrect()
-            Utility.Wait(0.1)
-            kenjiRef.StopCombat()
-            kenjiRef.SetValue(Game.GetAggressionAV(), 0.0)
-            kenjiRef.SetPosition(-2760.0, 5480.0, 86.0)
-            ForceQuestAlias(1, 0x000035C4)
-        endif
-        float kx = kenjiRef.GetPositionX()
-        float ky = kenjiRef.GetPositionY()
-        float kz = kenjiRef.GetPositionZ()
-        if !kenjiRef.IsDead()
-            if (kz < 68.0 || kz > 190.0) && Self.GetStage() < 25
-                kenjiRef.SetPosition(-2760.0, 5480.0, 86.0)
+        if abRefreshLayout && inV13 && kenjiRef.Is3DLoaded()
+            if kenjiRef.IsDead() && Self.GetStage() < 25 && !bProofRecovered && !bRewardGranted && !Self.IsStageDone(40) && (player == None || player.GetDistance(kenjiRef) > 2200.0)
+                kenjiRef.Resurrect()
+                kenjiRef.StopCombat()
+                kenjiRef.SetValue(Game.GetAggressionAV(), 0.0)
+                kenjiRef.SetPosition(-5460.0, 12880.0, 86.0)
                 ForceQuestAlias(1, 0x000035C4)
-            elseif !kenjiRef.IsInCombat() && Self.GetStage() < 25
-                if Math.Abs(kx + 2760.0) > 450.0 || Math.Abs(ky - 5480.0) > 450.0
-                    kenjiRef.StopCombat()
-                    kenjiRef.SetPosition(-2760.0, 5480.0, 86.0)
+            endif
+            float kx = kenjiRef.GetPositionX()
+            float ky = kenjiRef.GetPositionY()
+            float kz = kenjiRef.GetPositionZ()
+            if !kenjiRef.IsDead()
+                if (kz < 68.0 || kz > 190.0) && Self.GetStage() < 25 && !bRewardGranted && !Self.IsStageDone(40)
+                    kenjiRef.SetPosition(-5460.0, 12880.0, 86.0)
                     ForceQuestAlias(1, 0x000035C4)
+                elseif !kenjiRef.IsInCombat() && Self.GetStage() < 25 && !bRewardGranted && !Self.IsStageDone(40)
+                    if Math.Abs(kx + 5460.0) > 450.0 || Math.Abs(ky - 12880.0) > 450.0
+                        kenjiRef.StopCombat()
+                        kenjiRef.SetPosition(-5460.0, 12880.0, 86.0)
+                        ForceQuestAlias(1, 0x000035C4)
+                    endif
                 endif
             endif
         endif
-        if bProofRecovered || bItemDelivered || Self.GetStage() >= 25 || (player != None && proofBase != None && player.GetItemCount(proofBase) > 0)
+        if bProofRecovered || bItemDelivered || bRewardGranted || Self.IsStageDone(40) || Self.GetStage() >= 25 || (player != None && proofBase != None && player.GetItemCount(proofBase) > 0)
             bProofRecovered = True
             bProofSeeded = True
             if proofBase != None && kenjiRef.GetItemCount(proofBase) > 0
@@ -2100,7 +2807,7 @@ Function BindJunktownListeners()
             endif
             bProofSeeded = True
         endif
-        if Self.GetStage() == 20 && kenjiRef.IsDead()
+        if !Self.IsCompleted() && !bRewardGranted && !Self.IsStageDone(40) && (Self.GetStage() == 20 || Self.GetStage() == 21) && kenjiRef.IsDead()
             if bProofRecovered || (player != None && proofBase != None && player.GetItemCount(proofBase) > 0)
                 Self.SetStage(25)
             else
@@ -2108,9 +2815,9 @@ Function BindJunktownListeners()
             endif
         endif
     endif
-    if Self.GetStage() == 20 && !IsObjectiveDisplayed(20)
+    if !Self.IsCompleted() && !bRewardGranted && !Self.IsStageDone(40) && (Self.GetStage() == 20 || Self.GetStage() == 21) && !IsObjectiveDisplayed(20)
         EnsureJunktownStage20Active()
-    elseif Self.GetStage() == 30 && !Self.IsCompleted()
+    elseif Self.GetStage() == 30 && !Self.IsCompleted() && !bRewardGranted && !Self.IsStageDone(40)
         ForceQuestAlias(0, 0x000035C0)
         if !IsObjectiveDisplayed(30)
             SetObjectiveDisplayed(30, True, False)
@@ -2119,28 +2826,32 @@ Function BindJunktownListeners()
     endif
     Actor skullRef = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as Actor
     if skullRef != None
-        V13WastelandCreatureAIScript skullAI = (skullRef as ObjectReference) as V13WastelandCreatureAIScript
-        if skullAI != None
-            skullAI.InitCreatureAI()
+        RegisterForRemoteEvent(skullRef as ObjectReference, "OnActivate")
+        if !skullRef.IsDead()
+            RegisterForHitEvent(skullRef)
         endif
-        if skullRef.IsDead() && Self.GetStage() < 25 && (player == None || player.GetDistance(skullRef) > 2200.0)
-            skullRef.Resurrect()
-            Utility.Wait(0.1)
-            skullRef.StopCombat()
-            skullRef.SetValue(Game.GetAggressionAV(), 0.0)
-            skullRef.SetPosition(-2600.0, 5480.0, 86.0)
+        if abRefreshLayout && inV13 && skullRef.Is3DLoaded()
+            if skullRef.IsDead() && Self.GetStage() < 25 && !bRewardGranted && !Self.IsStageDone(40) && (player == None || player.GetDistance(skullRef) > 2200.0)
+                skullRef.Resurrect()
+                skullRef.StopCombat()
+                skullRef.SetValue(Game.GetAggressionAV(), 0.0)
+                skullRef.SetPosition(-5300.0, 12880.0, 86.0)
+            endif
+            float sz = skullRef.GetPositionZ()
+            if !skullRef.IsDead() && (sz < 68.0 || sz > 190.0 || (!skullRef.IsInCombat() && (Math.Abs(skullRef.GetPositionX() + 5300.0) > 450.0 || Math.Abs(skullRef.GetPositionY() - 12880.0) > 450.0)))
+                skullRef.StopCombat()
+                skullRef.SetPosition(-5300.0, 12880.0, 86.0)
+            endif
         endif
-        float sz = skullRef.GetPositionZ()
-        if !skullRef.IsDead() && (sz < 68.0 || sz > 190.0 || (!skullRef.IsInCombat() && (Math.Abs(skullRef.GetPositionX() + 2600.0) > 450.0 || Math.Abs(skullRef.GetPositionY() - 5480.0) > 450.0)))
-            skullRef.StopCombat()
-            skullRef.SetPosition(-2600.0, 5480.0, 86.0)
-        endif
+    endif
+    if abRefreshLayout && inV13
+        SanitizeKenjiCampPeace()
     endif
     Quest syndQ = Game.GetFormFromFile(0x00019000, "Vault13Chronicles.esp") as Quest
     if syndQ != None
         V13SideQuestJunktownSyndicateScript syndS = syndQ as V13SideQuestJunktownSyndicateScript
         if syndS != None
-            syndS.BindSyndicateListeners()
+            syndS.BindSyndicateListeners(abRefreshLayout)
         endif
     endif
 EndFunction
@@ -2232,15 +2943,18 @@ Function OpenKillianBarter()
 EndFunction
 
 Event OnInit()
-    BindJunktownListeners()
+    BindJunktownListeners(False)
+    StartTimer(2.5, 106)
 EndEvent
 
 Event OnQuestInit()
-    BindJunktownListeners()
+    BindJunktownListeners(False)
+    StartTimer(2.5, 106)
 EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
-    BindJunktownListeners()
+    BindJunktownListeners(False)
+    StartTimer(2.5, 106)
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
@@ -2251,7 +2965,7 @@ Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLo
     endif
     BindJunktownListeners()
     StartTimer(1.0, 97)
-    if DogmeatState == 1 || IanState == 1 || TychoState == 1 || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0
+    if DogmeatState == 1 || IanState == 1 || TychoState == 1 || KatjaState == 1 || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0 || iSavedKatjaState > 0
         StartTimer(0.4, 96)
     endif
 EndEvent
@@ -2262,7 +2976,7 @@ Event OnPlayerTeleport()
     else
         RestoreCompanionsOnReturnTo2161()
     endif
-    if DogmeatState == 1 || IanState == 1 || TychoState == 1 || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0
+    if DogmeatState == 1 || IanState == 1 || TychoState == 1 || KatjaState == 1 || iSavedDogmeatState > 0 || iSavedIanState > 0 || iSavedTychoState > 0 || iSavedKatjaState > 0
         StartTimer(0.4, 96)
     endif
 EndEvent
@@ -2331,7 +3045,7 @@ Event Actor.OnDeath(Actor akSender, Actor akKiller)
             Utility.Wait(0.1)
             kenjiRef.StopCombat()
             kenjiRef.SetValue(Game.GetAggressionAV(), 0.0)
-            kenjiRef.SetPosition(-2760.0, 5480.0, 86.0)
+            kenjiRef.SetPosition(-5460.0, 12880.0, 86.0)
             if !bProofSeeded && proofBase != None && kenjiRef.GetItemCount(proofBase) == 0
                 kenjiRef.AddItem(proofBase, 1, True)
                 bProofSeeded = True
@@ -2343,6 +3057,9 @@ Event Actor.OnDeath(Actor akSender, Actor akKiller)
             bProofSeeded = True
         endif
         ForceQuestAlias(1, 0x000035C4)
+        if Self.GetStage() < 20
+            Self.SetStage(20)
+        endif
         if bProofRecovered || (proofBase != None && player != None && player.GetItemCount(proofBase) > 0)
             if Self.GetStage() < 25
                 Self.SetStage(25)
@@ -2374,10 +3091,16 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         HandleTychoActivation(akSender as Actor)
         return
     endif
+    ObjectReference katjaRef = Game.GetFormFromFile(0x00003620, "Vault13Chronicles.esp") as ObjectReference
+    if katjaRef != None && akSender == katjaRef
+        HandleKatjaActivation(akSender as Actor)
+        return
+    endif
 
     ObjectReference killianRef = Game.GetFormFromFile(0x000035C0, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference larsRef = Game.GetFormFromFile(0x000035C1, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference kenjiObjRef = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference skullObjRef = Game.GetFormFromFile(0x000035C5, "Vault13Chronicles.esp") as ObjectReference
     Actor kenjiAct = kenjiObjRef as Actor
     Form proofBase = Game.GetFormFromFile(0x00001451, "Vault13Chronicles.esp")
     Actor player = Game.GetPlayer()
@@ -2391,6 +3114,44 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
                 player.AddItem(proofBase, 1, False)
             endif
             NotifyJunktownProofRecovered()
+            return
+        endif
+        if kenjiAct != None && !kenjiAct.IsDead() && !kenjiAct.IsInCombat() && !bKenjiCampHostile
+            int curKenjiStg = Self.GetStage()
+            if curKenjiStg < 20
+                if curKenjiStg < 12
+                    Self.SetStage(12)
+                endif
+                ForceQuestAlias(0, 0x000035C0)
+                if !IsObjectiveDisplayed(12)
+                    SetObjectiveDisplayed(12, True, False)
+                    Self.SetActive(True)
+                endif
+                Debug.Notification("Kenji: 'Get out of my sight, outsider. Go talk to Mayor Killian Darkwater or Captain Lars in Junktown if you're looking for trouble.'")
+                return
+            elseif curKenjiStg < 25 && !bKenjiCampTruce && !bProofRecovered && !bKenjiCampHostile
+                ForceQuestAlias(1, 0x000035C4)
+                kenjiAct.AllowPCDialogue(True)
+                StartTimer(1.2, 105)
+            endif
+        endif
+        return
+    elseif skullObjRef != None && akSender == skullObjRef
+        Actor skullAct = skullObjRef as Actor
+        if skullAct != None && !skullAct.IsDead() && !skullAct.IsInCombat() && !bKenjiCampHostile && !Self.IsCompleted() && !Self.IsStageDone(40) && !bRewardGranted
+            if Self.GetStage() < 20
+                if Self.GetStage() < 12
+                    Self.SetStage(12)
+                endif
+                ForceQuestAlias(0, 0x000035C0)
+                if !IsObjectiveDisplayed(12)
+                    SetObjectiveDisplayed(12, True, False)
+                    Self.SetActive(True)
+                endif
+                Debug.Notification("Hired Thug: 'Talk to Killian or Captain Lars in Junktown if you want to know our business here.'")
+            else
+                Debug.Notification("Hired Thug: 'Kenji handles all business. Speak directly with him by the sign.'")
+            endif
         endif
         return
     endif
@@ -2403,25 +3164,21 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         endif
     endif
     int curStage = Self.GetStage()
+    if Self.IsCompleted() || Self.IsStageDone(40) || bRewardGranted
+        bRewardGranted = True
+        curStage = 40
+    endif
     if akSender == larsRef && (curStage == 22 || curStage == 25 || (proofBase != None && player.GetItemCount(proofBase) > 0 && curStage < 30) || (kenjiAct != None && kenjiAct.IsDead() && curStage >= 20 && curStage < 30))
         SilenceJunktownActorsExcept(larsRef as Actor, 0)
         NotifyJunktownProofRecovered()
         DeliverProofToLars()
         EnsureKillianStage30Marker()
-        Topic helloTopLars = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
-        if helloTopLars != None && (larsRef as Actor) != None && !(larsRef as Actor).IsTalking()
-            (larsRef as Actor).Say(helloTopLars, None, false, None)
-        endif
     elseif akSender == larsRef && (curStage == 30 || (bItemDelivered && curStage < 40))
         SilenceJunktownActorsExcept(larsRef as Actor, 0)
         if Self.GetStage() < 30
             Self.SetStage(30)
         endif
         EnsureKillianStage30Marker()
-        Topic helloTopLars30 = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
-        if helloTopLars30 != None && (larsRef as Actor) != None && !(larsRef as Actor).IsTalking()
-            (larsRef as Actor).Say(helloTopLars30, None, false, None)
-        endif
         Debug.Notification("Captain Lars: 'Head to the General Store and report to Mayor Killian Darkwater to collect your reward.'")
     elseif akSender == killianRef && (curStage == 25 || curStage == 30 || (bItemDelivered && curStage < 40) || (proofBase != None && player.GetItemCount(proofBase) > 0 && curStage < 40))
         SilenceJunktownActorsExcept(killianRef as Actor, 0)
@@ -2431,51 +3188,40 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         if Self.GetStage() < 40
             Self.SetStage(40)
         endif
-        Topic helloTopKillian30 = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
-        if helloTopKillian30 != None && (killianRef as Actor) != None && !(killianRef as Actor).IsTalking()
-            (killianRef as Actor).Say(helloTopKillian30, None, false, None)
-        endif
     elseif akSender == killianRef
-        Message barterMsg = Game.GetFormFromFile(0x00001C70, "Vault13Chronicles.esp") as Message
-        if barterMsg != None
-            int choice = barterMsg.Show()
-            if choice == 0
-                OpenKillianBarter()
-                return
-            elseif choice == 2
-                return
+        if curStage >= 25 || player.IsSneaking()
+            Message barterMsg = Game.GetFormFromFile(0x00001C70, "Vault13Chronicles.esp") as Message
+            if barterMsg != None
+                int choice = barterMsg.Show()
+                if choice == 0
+                    OpenKillianBarter()
+                    return
+                elseif choice == 2
+                    return
+                endif
             endif
         endif
         SilenceJunktownActorsExcept(killianRef as Actor, 1)
-        Topic helloTop = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (killianRef as Actor) != None && !(killianRef as Actor).IsTalking()
-            (killianRef as Actor).Say(helloTop, None, false, None)
-        endif
         if curStage < 25
             EnsureJunktownStage20Active()
             CancelTimer(92)
             CancelTimer(93)
             sceneWaitTicks = 0
-            StartTimer(0.5, 91)
+            StartTimer(1.2, 91)
             StartTimer(2.0, 94)
         endif
     elseif akSender == larsRef && curStage < 25
-        SilenceJunktownActorsExcept(larsRef as Actor, 2)
-        Topic helloTop = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (larsRef as Actor) != None && !(larsRef as Actor).IsTalking()
-            (larsRef as Actor).Say(helloTop, None, false, None)
+        Quest syndQChk = Game.GetFormFromFile(0x00019000, "Vault13Chronicles.esp") as Quest
+        if syndQChk != None && (syndQChk.IsStageDone(26) || syndQChk.IsStageDone(27) || syndQChk.IsStageDone(28))
+            Debug.Notification("Captain Lars is looking for proof of Kenji's contract against Killian (Neal's Gizmo/Skum Pitt quest is separate).")
         endif
+        SilenceJunktownActorsExcept(larsRef as Actor, 2)
         EnsureJunktownStage20Active()
         CancelTimer(91)
         CancelTimer(93)
         sceneWaitTicks = 0
-        StartTimer(0.6, 92)
+        StartTimer(1.2, 92)
         StartTimer(2.0, 94)
-    elseif akSender == larsRef
-        Topic helloTopDone = Game.GetFormFromFile(0x00010001, "Vault13Chronicles.esp") as Topic
-        if helloTopDone != None && (larsRef as Actor) != None && !(larsRef as Actor).IsTalking()
-            (larsRef as Actor).Say(helloTopDone, None, false, None)
-        endif
     endif
 EndEvent
 
@@ -2516,12 +3262,7 @@ Event OnTimer(int aiTimerID)
         Scene introScene = Game.GetFormFromFile(0x00010100, "Vault13Chronicles.esp") as Scene
         Actor killianActor = Game.GetFormFromFile(0x000035C0, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && introScene != None && Self.GetStage() < 25
-            if introScene.IsPlaying()
-                return
-            elseif killianActor != None && killianActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 91)
-            else
+            if !introScene.IsPlaying() && !Utility.IsInMenuMode() && (killianActor == None || (!killianActor.IsInDialogueWithPlayer() && !killianActor.IsTalking()))
                 ForceAllJunktownAliases()
                 SilenceJunktownActorsExcept(killianActor, 1)
                 if Self.IsRunning()
@@ -2533,12 +3274,7 @@ Event OnTimer(int aiTimerID)
         Scene larsScene = Game.GetFormFromFile(0x00010101, "Vault13Chronicles.esp") as Scene
         Actor larsActor = Game.GetFormFromFile(0x000035C1, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && larsScene != None && Self.GetStage() < 25
-            if larsScene.IsPlaying()
-                return
-            elseif larsActor != None && larsActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 92)
-            else
+            if !larsScene.IsPlaying() && !Utility.IsInMenuMode() && (larsActor == None || (!larsActor.IsInDialogueWithPlayer() && !larsActor.IsTalking()))
                 ForceAllJunktownAliases()
                 SilenceJunktownActorsExcept(larsActor, 2)
                 if Self.IsRunning()
@@ -2550,17 +3286,22 @@ Event OnTimer(int aiTimerID)
         Scene tychoScene = Game.GetFormFromFile(0x00010102, "Vault13Chronicles.esp") as Scene
         Actor tychoActor = Game.GetFormFromFile(0x000035C2, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && tychoScene != None && Self.GetStage() < 30
-            if tychoScene.IsPlaying()
-                return
-            elseif tychoActor != None && tychoActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 93)
-            else
+            if !tychoScene.IsPlaying() && !Utility.IsInMenuMode() && (tychoActor == None || (!tychoActor.IsInDialogueWithPlayer() && !tychoActor.IsTalking()))
                 ForceAllJunktownAliases()
                 SilenceJunktownActorsExcept(tychoActor, 3)
                 if Self.IsRunning()
                     tychoScene.Start()
                 endif
+            endif
+        endif
+    elseif aiTimerID == 105
+        Scene confSceneJk = Game.GetFormFromFile(0x000D7200, "Vault13Chronicles.esp") as Scene
+        Actor kenjiActor = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as Actor
+        if Self.IsRunning() && confSceneJk != None && Self.GetStage() < 25 && !bKenjiCampTruce && !bProofRecovered && !bKenjiCampHostile
+            if !confSceneJk.IsPlaying() && !Utility.IsInMenuMode() && kenjiActor != None && !kenjiActor.IsDead() && !kenjiActor.IsInCombat() && !kenjiActor.IsInDialogueWithPlayer() && !kenjiActor.IsTalking()
+                ForceQuestAlias(1, 0x000035C4)
+                kenjiActor.AllowPCDialogue(True)
+                confSceneJk.Start()
             endif
         endif
     elseif aiTimerID == 94
@@ -2609,6 +3350,14 @@ Event OnTimer(int aiTimerID)
         RefreshJunktownSettlementLayout()
     elseif aiTimerID == 98
         CheckDogmeatProximity()
+    elseif aiTimerID == 99
+        Scene confStopJkT = Game.GetFormFromFile(0x000D7200, "Vault13Chronicles.esp") as Scene
+        if confStopJkT != None && confStopJkT.IsPlaying()
+            confStopJkT.Stop()
+        endif
+        TriggerKenjiCampHostile()
+    elseif aiTimerID == 106
+        BindJunktownListeners(True)
     endif
 EndEvent
 
@@ -2648,7 +3397,92 @@ Event OnStageSet(int auiStageID, int auiItemID)
     Actor player = Game.GetPlayer()
     Form proofBase = Game.GetFormFromFile(0x00001451, "Vault13Chronicles.esp")
 
-    if auiStageID == 20
+    if auiStageID == 11
+        if Self.GetStage() < 12 && !Self.IsCompleted()
+            ForceQuestAlias(0, 0x000035C0)
+            ForceQuestAlias(9, 0x000035C1)
+            bool bNeedTrack11 = False
+            if !IsObjectiveDisplayed(11)
+                SetObjectiveDisplayed(11, True, False)
+                bNeedTrack11 = True
+            endif
+            if !IsObjectiveDisplayed(13)
+                SetObjectiveDisplayed(13, True, False)
+                bNeedTrack11 = True
+            endif
+            if bNeedTrack11
+                Self.SetActive(True)
+            endif
+        endif
+    elseif auiStageID == 12
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(13)
+            SetObjectiveCompleted(13, True)
+            SetObjectiveDisplayed(13, False, False)
+        endif
+        ForceQuestAlias(0, 0x000035C0)
+        if !IsObjectiveDisplayed(12)
+            SetObjectiveDisplayed(12, True, False)
+            Self.SetActive(True)
+        endif
+    elseif auiStageID == 16 || auiStageID == 17 || auiStageID == 18
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(12)
+            SetObjectiveCompleted(12, True)
+            SetObjectiveDisplayed(12, False, False)
+        endif
+        if IsObjectiveDisplayed(13)
+            SetObjectiveCompleted(13, True)
+            SetObjectiveDisplayed(13, False, False)
+        endif
+        if !bKenjiCampTruce
+            bKenjiCampTruce = True
+            if auiStageID == 18
+                Form capsJk = Game.GetFormFromFile(0x0000000F, "Fallout4.esm")
+                if capsJk != None && player != None && player.GetItemCount(capsJk) >= 200
+                    player.RemoveItem(capsJk, 200, False)
+                endif
+            endif
+            Actor kenjiTruce = Game.GetFormFromFile(0x000035C4, "Vault13Chronicles.esp") as Actor
+            if proofBase != None && kenjiTruce != None && kenjiTruce.GetItemCount(proofBase) > 0
+                kenjiTruce.RemoveItem(proofBase, kenjiTruce.GetItemCount(proofBase), True)
+            endif
+            if proofBase != None && player != None && player.GetItemCount(proofBase) == 0 && !bItemDelivered
+                player.AddItem(proofBase, 1, False)
+            endif
+            NotifyJunktownProofRecovered()
+            SanitizeKenjiCampPeace()
+            if auiStageID == 16
+                Debug.Notification("[Speech] Kenji drops Gizmo's tape and abandons the camp before Captain Lars arrives.")
+            elseif auiStageID == 17
+                Debug.Notification("[Intimidation] Cowed by your strength, Kenji hands over Gizmo's contract and confession tape to save his own skin.")
+            else
+                Debug.Notification("[Bribe - 200 Caps] Kenji pockets the caps and hands over Gizmo's confession tape.")
+            endif
+        endif
+    elseif auiStageID == 21
+        if !bKenjiCampHostile
+            StartTimer(0.25, 99)
+        endif
+    elseif auiStageID == 20
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(12)
+            SetObjectiveCompleted(12, True)
+            SetObjectiveDisplayed(12, False, False)
+        endif
+        if IsObjectiveDisplayed(13)
+            SetObjectiveCompleted(13, True)
+            SetObjectiveDisplayed(13, False, False)
+        endif
         ObjectReference mapMarker = Game.GetFormFromFile(0x0000341C, "Vault13Chronicles.esp") as ObjectReference
         if mapMarker != None
             mapMarker.EnableNoWait()
@@ -2666,8 +3500,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         ForceQuestAlias(1, 0x000035C4)
         if !IsObjectiveDisplayed(20)
             SetObjectiveDisplayed(20, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg20
             Debug.Notification("Side Quest: Justice in Junktown - Eliminate Gizmo's hitman Kenji at Gizmo's casino to the west.")
         endif
@@ -2685,8 +3519,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(20, True)
         if !IsObjectiveDisplayed(22)
             SetObjectiveDisplayed(22, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg22
             Debug.Notification("Kenji eliminated! Recover Gizmo's Contract and Confession Tape from his corpse.")
         endif
@@ -2704,8 +3538,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         ForceQuestAlias(9, 0x000035C1)
         if !IsObjectiveDisplayed(25)
             SetObjectiveDisplayed(25, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg25
             Debug.Notification("Evidence against Gizmo obtained. Deliver it to Captain Lars in Junktown.")
         endif

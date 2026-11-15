@@ -9,6 +9,9 @@ bool bStg22Notified = False
 bool bStg25Notified = False
 bool bStg30Notified = False
 bool bMenuJumpBusy = False
+bool bTolanCampHostile = False
+bool bTolanCampTruce = False
+bool bTolanMenuBusy = False
 int sceneWaitTicks = 0
 
 Function ForceQuestAlias(int aiAliasID, int aiFormID)
@@ -22,6 +25,9 @@ Function ForceQuestAlias(int aiAliasID, int aiFormID)
 EndFunction
 
 Function ForceAllKhansAliases()
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        return
+    endif
     ForceQuestAlias(0, 0x000035CB)
     ForceQuestAlias(1, 0x000035CE)
     ForceQuestAlias(2, 0x00003005)
@@ -36,7 +42,11 @@ Function ForceAllKhansAliases()
 EndFunction
 
 Function EquipKhansActorGear(Actor akAct, int aiOutfitID, int aiBodyArmorID, int aiHatID)
-    if akAct == None || akAct.IsDead() || !akAct.Is3DLoaded() || akAct.IsTalking()
+    if akAct == None || akAct.IsDead() || !akAct.Is3DLoaded() || akAct.IsTalking() || akAct.IsInDialogueWithPlayer()
+        return
+    endif
+    Actor plDist = Game.GetPlayer()
+    if plDist != None && akAct.GetDistance(plDist) < 2200.0
         return
     endif
     Form bodyArmor = None
@@ -69,24 +79,29 @@ Function EquipKhansActorGear(Actor akAct, int aiOutfitID, int aiBodyArmorID, int
 EndFunction
 
 Function RefreshKhansSettlementLayout()
+    Actor pKh = Game.GetPlayer()
+    WorldSpace caliKh = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pKh == None || caliKh == None || pKh.GetWorldSpace() != caliKh
+        return
+    endif
     Actor dianaAct = Game.GetFormFromFile(0x000035CB, "Vault13Chronicles.esp") as Actor
     if dianaAct != None
         if dianaAct.IsDisabled()
             dianaAct.EnableNoWait()
         endif
-        if dianaAct.IsDead()
-            dianaAct.Resurrect()
-        endif
         if dianaAct.Is3DLoaded()
-            float dx = Math.Abs(dianaAct.GetPositionX() - 8060.0)
-            float dy = Math.Abs(dianaAct.GetPositionY() - 7740.0)
+            if dianaAct.IsDead()
+                dianaAct.Resurrect()
+            endif
+            float dx = Math.Abs(dianaAct.GetPositionX() - 21360.0)
+            float dy = Math.Abs(dianaAct.GetPositionY() - 18440.0)
             float dz = dianaAct.GetPositionZ()
             if dianaAct.IsInCombat() && (dx > 750.0 || dy > 750.0 || dz < 185.0)
                 dianaAct.StopCombat()
-                dianaAct.SetPosition(8060.0, 7740.0, 200.0)
+                dianaAct.SetPosition(21360.0, 18440.0, 200.0)
                 dianaAct.EvaluatePackage()
             elseif !dianaAct.IsInCombat() && (dx > 240.0 || dy > 240.0 || dz < 185.0)
-                dianaAct.SetPosition(8060.0, 7740.0, 200.0)
+                dianaAct.SetPosition(21360.0, 18440.0, 200.0)
                 dianaAct.EvaluatePackage()
             endif
             EquipKhansActorGear(dianaAct, 0x00001028, 0x000DDB80, 0x00001315)
@@ -97,40 +112,40 @@ Function RefreshKhansSettlementLayout()
         if gwenAct.IsDisabled()
             gwenAct.EnableNoWait()
         endif
-        if gwenAct.IsDead()
-            gwenAct.Resurrect()
-        endif
         if gwenAct.Is3DLoaded()
-            float gx = Math.Abs(gwenAct.GetPositionX() - 8280.0)
-            float gy = Math.Abs(gwenAct.GetPositionY() - 7740.0)
+            if gwenAct.IsDead()
+                gwenAct.Resurrect()
+            endif
+            float gx = Math.Abs(gwenAct.GetPositionX() - 21580.0)
+            float gy = Math.Abs(gwenAct.GetPositionY() - 18440.0)
             float gz = gwenAct.GetPositionZ()
             if gwenAct.IsInCombat() && (gx > 750.0 || gy > 750.0 || gz < 185.0)
                 gwenAct.StopCombat()
-                gwenAct.SetPosition(8280.0, 7740.0, 200.0)
+                gwenAct.SetPosition(21580.0, 18440.0, 200.0)
                 gwenAct.EvaluatePackage()
             elseif !gwenAct.IsInCombat() && (gx > 240.0 || gy > 240.0 || gz < 185.0)
-                gwenAct.SetPosition(8280.0, 7740.0, 200.0)
+                gwenAct.SetPosition(21580.0, 18440.0, 200.0)
                 gwenAct.EvaluatePackage()
             endif
-            EquipKhansActorGear(gwenAct, 0x00001024, 0x00146174, 0)
+            EquipKhansActorGear(gwenAct, 0x0000103F, 0x00146174, 0)
         endif
     endif
 
     Form noteBase = Game.GetFormFromFile(0x0000114C, "Vault13Chronicles.esp")
     if noteBase != None
-        ObjectReference noteRef = Game.FindClosestReferenceOfType(noteBase, 8340.0, 7880.0, 200.0, 400.0)
-        if noteRef != None && noteRef.GetContainer() == None
-            noteRef.SetPosition(8370.0, 7876.0, 256.5)
+        ObjectReference noteRef = Game.FindClosestReferenceOfType(noteBase, 21640.0, 18580.0, 200.0, 400.0)
+        if noteRef != None && noteRef.Is3DLoaded() && noteRef.GetContainer() == None
+            noteRef.SetPosition(21670.0, 18576.0, 256.5)
         endif
     endif
     Actor tolanAct = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as Actor
-    if tolanAct != None && !tolanAct.IsDead()
+    if tolanAct != None && tolanAct.Is3DLoaded() && !tolanAct.IsDead()
         float tz = tolanAct.GetPositionZ()
         if (tz < 188.0 || tz > 310.0) && Self.GetStage() < 25
-            tolanAct.SetPosition(14200.0, 10800.0, 206.0)
+            tolanAct.SetPosition(35000.0, 24500.0, 206.0)
             ForceQuestAlias(1, 0x000035CE)
-        elseif !tolanAct.IsInCombat() && (Math.Abs(tolanAct.GetPositionX() - 14200.0) > 450.0 || Math.Abs(tolanAct.GetPositionY() - 10800.0) > 450.0)
-            tolanAct.SetPosition(14200.0, 10800.0, 206.0)
+        elseif !tolanAct.IsInCombat() && (Math.Abs(tolanAct.GetPositionX() - 35000.0) > 450.0 || Math.Abs(tolanAct.GetPositionY() - 24500.0) > 450.0)
+            tolanAct.SetPosition(35000.0, 24500.0, 206.0)
             ForceQuestAlias(1, 0x000035CE)
         endif
     endif
@@ -151,7 +166,19 @@ Function SilenceKhansActorsExcept(Actor akSpeaker)
     endif
 EndFunction
 
-Function SetupKhansListeners()
+Function SetupKhansListeners(bool abRefreshLayout = True)
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        bRewardGranted = True
+        bItemDelivered = True
+        bKeyRecovered = True
+        bKeySeeded = True
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+        ForceAllKhansAliases()
+        return
+    endif
     if !Self.IsRunning() && !Self.IsCompleted()
         Self.Start()
     endif
@@ -159,9 +186,13 @@ Function SetupKhansListeners()
         Self.SetStage(10)
     endif
     ForceAllKhansAliases()
-    RefreshKhansSettlementLayout()
-
     Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    bool inCali = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
+    if abRefreshLayout && inCali
+        RefreshKhansSettlementLayout()
+    endif
+
     Form keyBase = Game.GetFormFromFile(0x00001453, "Vault13Chronicles.esp")
     Self.RemoveAllInventoryEventFilters()
     if keyBase != None
@@ -193,21 +224,20 @@ Function SetupKhansListeners()
     if tolanRef != None
         RegisterForRemoteEvent(tolanRef, "OnDeath")
         RegisterForRemoteEvent(tolanRef as ObjectReference, "OnActivate")
-        RegisterForRemoteEvent(tolanRef as ObjectReference, "OnItemRemoved")
-        V13WastelandCreatureAIScript tolAI = tolanRef as V13WastelandCreatureAIScript
-        if tolAI != None
-            tolAI.InitCreatureAI()
-        endif
-        float tx = tolanRef.GetPositionX()
-        float ty = tolanRef.GetPositionY()
-        float tz = tolanRef.GetPositionZ()
         if !tolanRef.IsDead()
+            RegisterForHitEvent(tolanRef)
+        endif
+        RegisterForRemoteEvent(tolanRef as ObjectReference, "OnItemRemoved")
+        if abRefreshLayout && inCali && tolanRef.Is3DLoaded() && !tolanRef.IsDead()
+            float tx = tolanRef.GetPositionX()
+            float ty = tolanRef.GetPositionY()
+            float tz = tolanRef.GetPositionZ()
             if (tz < 188.0 || tz > 310.0) && Self.GetStage() < 25
-                tolanRef.SetPosition(14200.0, 10800.0, 206.0)
+                tolanRef.SetPosition(35000.0, 24500.0, 206.0)
                 ForceQuestAlias(1, 0x000035CE)
             elseif !tolanRef.IsInCombat()
-                if Math.Abs(tx - 14200.0) > 450.0 || Math.Abs(ty - 10800.0) > 450.0
-                    tolanRef.SetPosition(14200.0, 10800.0, 206.0)
+                if Math.Abs(tx - 35000.0) > 450.0 || Math.Abs(ty - 24500.0) > 450.0
+                    tolanRef.SetPosition(35000.0, 24500.0, 206.0)
                     ForceQuestAlias(1, 0x000035CE)
                 endif
             endif
@@ -224,7 +254,7 @@ Function SetupKhansListeners()
             endif
             bKeySeeded = True
         endif
-        if Self.GetStage() == 20 && tolanRef.IsDead()
+        if (Self.GetStage() == 20 || Self.GetStage() == 21) && tolanRef.IsDead()
             if bKeyRecovered || (player != None && keyBase != None && player.GetItemCount(keyBase) > 0)
                 Self.SetStage(25)
             else
@@ -233,34 +263,58 @@ Function SetupKhansListeners()
         endif
     endif
     Actor khanRef = Game.GetFormFromFile(0x000035CF, "Vault13Chronicles.esp") as Actor
-    if khanRef != None && !khanRef.IsDead()
-        V13WastelandCreatureAIScript khAI = khanRef as V13WastelandCreatureAIScript
-        if khAI != None
-            khAI.InitCreatureAI()
-        endif
-        float kz = khanRef.GetPositionZ()
-        if kz < 188.0 || kz > 310.0 || (!khanRef.IsInCombat() && (Math.Abs(khanRef.GetPositionX() - 14040.0) > 450.0 || Math.Abs(khanRef.GetPositionY() - 10700.0) > 450.0))
-            khanRef.SetPosition(14040.0, 10700.0, 206.0)
+    if khanRef != None
+        RegisterForRemoteEvent(khanRef as ObjectReference, "OnActivate")
+        if !khanRef.IsDead()
+            RegisterForHitEvent(khanRef)
+            if abRefreshLayout && inCali && khanRef.Is3DLoaded()
+                float kz = khanRef.GetPositionZ()
+                if kz < 188.0 || kz > 310.0 || (!khanRef.IsInCombat() && (Math.Abs(khanRef.GetPositionX() - 34840.0) > 450.0 || Math.Abs(khanRef.GetPositionY() - 24400.0) > 450.0))
+                    khanRef.SetPosition(34840.0, 24400.0, 206.0)
+                endif
+            endif
         endif
     endif
-    StartTimer(3.5, 97)
+    if abRefreshLayout && inCali
+        SanitizeTolanCampPeace()
+        StartTimer(3.5, 97)
+    endif
 EndFunction
 
 Event OnInit()
-    SetupKhansListeners()
+    SetupKhansListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 99)
+    endif
 EndEvent
 
 Event OnQuestInit()
-    SetupKhansListeners()
+    SetupKhansListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 99)
+    endif
 EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
-    SetupKhansListeners()
+    SetupKhansListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 99)
+    endif
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
     SetupKhansListeners()
-    StartTimer(1.0, 97)
+    Actor pLoc = Game.GetPlayer()
+    WorldSpace caliLoc = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pLoc != None && caliLoc != None && pLoc.GetWorldSpace() == caliLoc
+        StartTimer(1.0, 97)
+    endif
 EndEvent
 
 Function NotifyKhanKeyRecovered()
@@ -328,6 +382,106 @@ Event ObjectReference.OnItemRemoved(ObjectReference akSender, Form akBaseItem, i
     endif
 EndEvent
 
+Function SanitizeTolanCampPeace()
+    if bTolanCampHostile
+        return
+    endif
+    Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
+    ActorValue aggrAV = Game.GetAggressionAV()
+    Actor tolanAct = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as Actor
+    Actor khanAct = Game.GetFormFromFile(0x000035CF, "Vault13Chronicles.esp") as Actor
+    Actor player = Game.GetPlayer()
+    if tolanAct != None && !tolanAct.IsDead()
+        if raiderFact != None && tolanAct.IsInFaction(raiderFact)
+            tolanAct.RemoveFromFaction(raiderFact)
+        endif
+        if aggrAV != None
+            tolanAct.SetValue(aggrAV, 0.0)
+        endif
+        if !tolanAct.IsInCombat() || tolanAct.GetCombatTarget() != player
+            tolanAct.StopCombat()
+        endif
+        tolanAct.EvaluatePackage()
+    endif
+    if khanAct != None && !khanAct.IsDead()
+        if raiderFact != None && khanAct.IsInFaction(raiderFact)
+            khanAct.RemoveFromFaction(raiderFact)
+        endif
+        if aggrAV != None
+            khanAct.SetValue(aggrAV, 0.0)
+        endif
+        if !khanAct.IsInCombat() || khanAct.GetCombatTarget() != player
+            khanAct.StopCombat()
+        endif
+        khanAct.EvaluatePackage()
+    endif
+EndFunction
+
+Function TriggerTolanCampHostile()
+    bTolanCampHostile = True
+    Scene confSceneKh = Game.GetFormFromFile(0x000D7000, "Vault13Chronicles.esp") as Scene
+    if confSceneKh != None && confSceneKh.IsPlaying()
+        confSceneKh.Stop()
+    endif
+    if Self.GetStage() < 20
+        Self.SetStage(20)
+    endif
+    Actor player = Game.GetPlayer()
+    Faction playerFact = Game.GetFormFromFile(0x0001C21C, "Fallout4.esm") as Faction
+    ActorValue aggrAV = Game.GetAggressionAV()
+    ActorValue confAV = Game.GetConfidenceAV()
+    Actor tolanAct = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as Actor
+    Actor khanAct = Game.GetFormFromFile(0x000035CF, "Vault13Chronicles.esp") as Actor
+    if tolanAct != None && !tolanAct.IsDead()
+        if playerFact != None && tolanAct.IsInFaction(playerFact)
+            tolanAct.RemoveFromFaction(playerFact)
+        endif
+        if aggrAV != None
+            tolanAct.SetValue(aggrAV, 2.0)
+        endif
+        if confAV != None
+            tolanAct.SetValue(confAV, 4.0)
+        endif
+        if player != None && tolanAct.Is3DLoaded()
+            tolanAct.StartCombat(player)
+        endif
+    endif
+    if khanAct != None && !khanAct.IsDead()
+        if playerFact != None && khanAct.IsInFaction(playerFact)
+            khanAct.RemoveFromFaction(playerFact)
+        endif
+        if aggrAV != None
+            khanAct.SetValue(aggrAV, 2.0)
+        endif
+        if confAV != None
+            khanAct.SetValue(confAV, 4.0)
+        endif
+        if player != None && khanAct.Is3DLoaded()
+            khanAct.StartCombat(player)
+        endif
+    endif
+EndFunction
+
+Event OnHit(ObjectReference akTarget, ObjectReference akAggressor, Form akSource, Projectile akProjectile, bool abPowerAttack, bool abSneakAttack, bool abBashAttack, bool abHitBlocked, string asMaterialName)
+    if akTarget != None
+        RegisterForHitEvent(akTarget)
+    endif
+    if bTolanCampHostile || akTarget == None || akAggressor == None
+        return
+    endif
+    Actor player = Game.GetPlayer()
+    Actor aggAct = akAggressor as Actor
+    bool isPlayerHit = (player != None && akAggressor == (player as ObjectReference)) || (aggAct != None && aggAct.IsPlayerTeammate())
+    if !isPlayerHit
+        return
+    endif
+    ObjectReference tolanHit = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference khanHit = Game.GetFormFromFile(0x000035CF, "Vault13Chronicles.esp") as ObjectReference
+    if (tolanHit != None && akTarget == tolanHit) || (khanHit != None && akTarget == khanHit)
+        TriggerTolanCampHostile()
+    endif
+EndEvent
+
 Event Actor.OnDeath(Actor akSender, Actor akKiller)
     Actor tolanRef = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as Actor
     if akSender == tolanRef
@@ -338,6 +492,9 @@ Event Actor.OnDeath(Actor akSender, Actor akKiller)
             bKeySeeded = True
         endif
         ForceQuestAlias(1, 0x000035CE)
+        if Self.GetStage() < 20
+            Self.SetStage(20)
+        endif
         if bKeyRecovered || (keyBase != None && player != None && player.GetItemCount(keyBase) > 0)
             if Self.GetStage() < 25
                 Self.SetStage(25)
@@ -356,14 +513,60 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
     ObjectReference dianaRef = Game.GetFormFromFile(0x000035CB, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference gwenRef = Game.GetFormFromFile(0x000035CC, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference tolanObjRef = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference khanObjRef = Game.GetFormFromFile(0x000035CF, "Vault13Chronicles.esp") as ObjectReference
     Form keyBase = Game.GetFormFromFile(0x00001453, "Vault13Chronicles.esp")
     Actor player = Game.GetPlayer()
+    Actor tolanAct = tolanObjRef as Actor
 
-    if akSender == tolanObjRef && (tolanObjRef as Actor) != None && (tolanObjRef as Actor).IsDead()
-        if keyBase != None && player != None && player.GetItemCount(keyBase) == 0
-            player.AddItem(keyBase, 1, False)
+    if akSender == tolanObjRef
+        if tolanAct != None && tolanAct.IsDead()
+            if keyBase != None && player != None && player.GetItemCount(keyBase) == 0
+                player.AddItem(keyBase, 1, False)
+            endif
+            NotifyKhanKeyRecovered()
+            return
         endif
-        NotifyKhanKeyRecovered()
+        if tolanAct != None && !tolanAct.IsDead() && !tolanAct.IsInCombat() && !bTolanCampHostile
+            int curTolanStg = Self.GetStage()
+            if curTolanStg < 20
+                if curTolanStg < 12
+                    Self.SetStage(12)
+                endif
+                ForceQuestAlias(0, 0x000035CB)
+                if !IsObjectiveDisplayed(12)
+                    SetObjectiveDisplayed(12, True, False)
+                    Self.SetActive(True)
+                endif
+                Debug.Notification("Warden Tolan: 'What are you staring at, outsider? Speak with Diana or Gwen on the trail if you're looking for captives.'")
+                return
+            elseif curTolanStg < 25 && !bTolanCampTruce && !bKeyRecovered && !bTolanCampHostile
+                Scene introSceneKh = Game.GetFormFromFile(0x00012100, "Vault13Chronicles.esp") as Scene
+                if introSceneKh != None && introSceneKh.IsPlaying()
+                    introSceneKh.Stop()
+                endif
+                ForceQuestAlias(1, 0x000035CE)
+                tolanAct.AllowPCDialogue(True)
+                StartTimer(1.2, 92)
+            endif
+        endif
+        return
+    elseif khanObjRef != None && akSender == khanObjRef
+        Actor khanAct = khanObjRef as Actor
+        if khanAct != None && !khanAct.IsDead() && !khanAct.IsInCombat() && !bTolanCampHostile
+            if Self.GetStage() < 20
+                if Self.GetStage() < 12
+                    Self.SetStage(12)
+                endif
+                ForceQuestAlias(0, 0x000035CB)
+                if !IsObjectiveDisplayed(12)
+                    SetObjectiveDisplayed(12, True, False)
+                    Self.SetActive(True)
+                endif
+                Debug.Notification("Khan Warrior: 'Stay away from the pens if you haven't spoken with the Shady Sands scouts first.'")
+            else
+                Debug.Notification("Khan Warrior: 'If you're here to negotiate or fight for the captives, talk to Warden Tolan.'")
+            endif
+        endif
         return
     endif
 
@@ -399,17 +602,22 @@ Event OnTimer(int aiTimerID)
         Scene introScene = Game.GetFormFromFile(0x00012100, "Vault13Chronicles.esp") as Scene
         Actor dianaActor = Game.GetFormFromFile(0x000035CB, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && introScene != None && Self.GetStage() < 25
-            if introScene.IsPlaying()
-                return
-            elseif dianaActor != None && dianaActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.35, 91)
-            else
+            if !introScene.IsPlaying() && !Utility.IsInMenuMode() && (dianaActor == None || (!dianaActor.IsInDialogueWithPlayer() && !dianaActor.IsTalking()))
                 ForceAllKhansAliases()
                 SilenceKhansActorsExcept(dianaActor)
                 if Self.IsRunning()
                     introScene.Start()
                 endif
+            endif
+        endif
+    elseif aiTimerID == 92
+        Scene confSceneKh = Game.GetFormFromFile(0x000D7000, "Vault13Chronicles.esp") as Scene
+        Actor tolanActor = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as Actor
+        if Self.IsRunning() && confSceneKh != None && Self.GetStage() < 25 && !bTolanCampTruce && !bKeyRecovered && !bTolanCampHostile
+            if !confSceneKh.IsPlaying() && !Utility.IsInMenuMode() && tolanActor != None && !tolanActor.IsDead() && !tolanActor.IsInCombat() && !tolanActor.IsInDialogueWithPlayer() && !tolanActor.IsTalking()
+                ForceQuestAlias(1, 0x000035CE)
+                tolanActor.AllowPCDialogue(True)
+                confSceneKh.Start()
             endif
         endif
     elseif aiTimerID == 93
@@ -467,6 +675,14 @@ Event OnTimer(int aiTimerID)
         if dianaChk != None && dianaChk.Is3DLoaded()
             StartTimer(3.5, 97)
         endif
+    elseif aiTimerID == 98
+        Scene confStopKh = Game.GetFormFromFile(0x000D7000, "Vault13Chronicles.esp") as Scene
+        if confStopKh != None && confStopKh.IsPlaying()
+            confStopKh.Stop()
+        endif
+        TriggerTolanCampHostile()
+    elseif aiTimerID == 99
+        SetupKhansListeners(True)
     endif
 EndEvent
 
@@ -507,7 +723,71 @@ Event OnStageSet(int auiStageID, int auiItemID)
     Actor player = Game.GetPlayer()
     Form keyBase = Game.GetFormFromFile(0x00001453, "Vault13Chronicles.esp")
 
-    if auiStageID == 20
+    if auiStageID == 11
+        if Self.GetStage() < 12 && !Self.IsCompleted()
+            ForceQuestAlias(0, 0x000035CB)
+            if !IsObjectiveDisplayed(11)
+                SetObjectiveDisplayed(11, True, False)
+                Self.SetActive(True)
+            endif
+        endif
+    elseif auiStageID == 12
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        ForceQuestAlias(0, 0x000035CB)
+        if !IsObjectiveDisplayed(12)
+            SetObjectiveDisplayed(12, True, False)
+            Self.SetActive(True)
+        endif
+    elseif auiStageID == 16 || auiStageID == 17 || auiStageID == 18
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(12)
+            SetObjectiveCompleted(12, True)
+            SetObjectiveDisplayed(12, False, False)
+        endif
+        if !bTolanCampTruce
+            bTolanCampTruce = True
+            if auiStageID == 18
+                Form capsKh = Game.GetFormFromFile(0x0000000F, "Fallout4.esm")
+                if capsKh != None && player != None && player.GetItemCount(capsKh) >= 300
+                    player.RemoveItem(capsKh, 300, False)
+                endif
+            endif
+            Actor tolanTruce = Game.GetFormFromFile(0x000035CE, "Vault13Chronicles.esp") as Actor
+            if keyBase != None && tolanTruce != None && tolanTruce.GetItemCount(keyBase) > 0
+                tolanTruce.RemoveItem(keyBase, tolanTruce.GetItemCount(keyBase), True)
+            endif
+            if keyBase != None && player != None && player.GetItemCount(keyBase) == 0 && !bItemDelivered
+                player.AddItem(keyBase, 1, False)
+            endif
+            NotifyKhanKeyRecovered()
+            SanitizeTolanCampPeace()
+            if auiStageID == 16
+                Debug.Notification("[Speech] Tolan agrees to avoid bloodshed and hands over the Master Cage Key.")
+            elseif auiStageID == 17
+                Debug.Notification("[Intimidation] Tolan shrinks back in fear of your strength and tosses you the Master Key.")
+            else
+                Debug.Notification("[Ransom - 300 Caps] Tolan pockets the payment and hands over the captives' Master Key.")
+            endif
+        endif
+    elseif auiStageID == 21
+        if !bTolanCampHostile
+            StartTimer(0.25, 98)
+        endif
+    elseif auiStageID == 20
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(12)
+            SetObjectiveCompleted(12, True)
+            SetObjectiveDisplayed(12, False, False)
+        endif
         ObjectReference mapMarker = Game.GetFormFromFile(0x0000341E, "Vault13Chronicles.esp") as ObjectReference
         if mapMarker != None
             mapMarker.EnableNoWait()
@@ -525,8 +805,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         ForceQuestAlias(1, 0x000035CE)
         if !IsObjectiveDisplayed(20)
             SetObjectiveDisplayed(20, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg20
             Debug.Notification("Side Quest: Captives of the Khans - Eliminate Jailer Tolan at the northern Khan camp.")
         endif
@@ -539,8 +819,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(20, True)
         if !IsObjectiveDisplayed(22)
             SetObjectiveDisplayed(22, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg22
             Debug.Notification("Jailer Tolan slain! Recover the Master Key and Khan War Seal from his corpse.")
         endif
@@ -549,8 +829,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(22, True)
         if !IsObjectiveDisplayed(25)
             SetObjectiveDisplayed(25, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg25
             Debug.Notification("Master Key obtained. Deliver it to Gwen at the Eastern Pass Outpost.")
         endif
@@ -563,8 +843,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(25, True)
         if !IsObjectiveDisplayed(30)
             SetObjectiveDisplayed(30, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg30
             Debug.Notification("Gwen unlocked the shackles! Report to Diana at the Eastern Pass Outpost.")
         endif
@@ -593,6 +873,7 @@ Event OnStageSet(int auiStageID, int auiItemID)
             Game.RewardPlayerXP(350)
             Debug.Notification("Side Quest completed: Captives of the Khans! (+500 Caps, Hunting Rifle, .308 Ammo, and +350 XP)")
         endif
+        Self.CompleteAllObjectives()
         Self.CompleteQuest()
     endif
 EndEvent

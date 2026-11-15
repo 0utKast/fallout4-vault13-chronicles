@@ -1,0 +1,344 @@
+{
+  "corrugated": {
+    "bgsm": "Materials\\Architecture\\DiamondCity\\CorrugatedMetal01.BGSM",
+    "diffuse": "Textures\\architecture\\diamondcity\\corrugatedmetal01_d.dds",
+    "normal": "Textures\\architecture\\diamondcity\\corrugatedmetal01_n.dds",
+    "spec": "Textures\\architecture\\diamondcity\\corrugatedmetal01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\corrugated_d.dds",
+    "alpha_blend": false
+  },
+  "shack_metal": {
+    "bgsm": "Materials\\Architecture\\Shacks\\ShackMetal01NoAlpha.BGSM",
+    "diffuse": "Textures\\architecture\\shacks\\shackmetal01_d.dds",
+    "normal": "Textures\\architecture\\shacks\\shackmetal01_n.dds",
+    "spec": "Textures\\architecture\\shacks\\shackmetal01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\shack_metal_d.dds",
+    "alpha_blend": false
+  },
+  "plywood": {
+    "bgsm": "Materials\\Architecture\\Shacks\\ShackPlywood01.BGSM",
+    "diffuse": "Textures\\architecture\\shacks\\shackplywood01_d.dds",
+    "normal": "Textures\\architecture\\shacks\\shackplywood01_n.dds",
+    "spec": "Textures\\architecture\\shacks\\shackplywood01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\plywood_d.dds",
+    "alpha_blend": false
+  },
+  "assorted_rust": {
+    "bgsm": "Materials\\SetDressing\\Boats\\BoatBeamsRust01.BGSM",
+    "diffuse": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_d.dds",
+    "normal": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_n.dds",
+    "spec": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\assorted_rust_d.dds",
+    "alpha_blend": false
+  },
+  "catwalk_rust": {
+    "bgsm": "Materials\\Architecture\\Quarry\\QuarryCatwalksRust01.BGSM",
+    "diffuse": "Textures\\architecture\\quarry\\qrycatwalksrust01_d.dds",
+    "normal": "Textures\\architecture\\quarry\\qrycatwalksrust01_n.dds",
+    "spec": "Textures\\architecture\\quarry\\qrycatwalksrust01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\catwalk_rust_d.dds",
+    "alpha_blend": false
+  },
+  "tires": {
+    "bgsm": "Materials\\SetDressing\\Tires\\tires01.bgsm",
+    "diffuse": "Textures\\setdressing\\tires\\tires01_d.dds",
+    "normal": "Textures\\setdressing\\tires\\tires01_n.dds",
+    "spec": "Textures\\setdressing\\tires\\tires01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\tires_d.dds",
+    "alpha_blend": false
+  },
+  "tarpaper": {
+    "bgsm": "Materials\\Architecture\\Warehouse\\WrhsTarpaper.BGSM",
+    "diffuse": "Textures\\architecture\\warehouse\\wrhsrooftarpaper01_d.dds",
+    "normal": "Textures\\architecture\\warehouse\\wrhsrooftarpaper01_n.dds",
+    "spec": "Textures\\architecture\\warehouse\\wrhsrooftarpaper01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\tarpaper_d.dds",
+    "alpha_blend": false
+  },
+  "bunker_conc1": {
+    "bgsm": "Materials\\Architecture\\Bunkers\\BunConcrete01.BGSM",
+    "diffuse": "Textures\\Architecture\\Bunkers\\BunConcrete01_d.dds",
+    "normal": "Textures\\Architecture\\Bunkers\\BunConcrete01_n.dds",
+    "spec": "Textures\\Architecture\\Bunkers\\BunConcrete01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\bunker_conc1_d.dds",
+    "alpha_blend": false
+  },
+  "bunker_conc2": {
+    "bgsm": "Materials\\Architecture\\Bunkers\\BunConcrete02.BGSM",
+    "diffuse": "Textures\\Architecture\\Bunkers\\BunConcrete02_d.dds",
+    "normal": "Textures\\Architecture\\Bunkers\\BunConcrete02_n.dds",
+    "spec": "Textures\\Architecture\\Bunkers\\BunConcrete02_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\bunker_conc2_d.dds",
+    "alpha_blend": false
+  },
+  "diamond_pipes": {
+    "bgsm": "Materials\\Architecture\\DiamondCity\\DiamondPipes01.BGSM",
+    "diffuse": "Textures\\architecture\\diamondcity\\diamondpipes01_d.dds",
+    "normal": "Textures\\architecture\\diamondcity\\diamondpipes01_n.dds",
+    "spec": "Textures\\architecture\\diamondcity\\diamondpipes01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\diamond_pipes_d.dds",
+    "alpha_blend": false
+  },
+  "church_stone": {
+    "bgsm": "Materials\\Architecture\\Buildings\\ChurchStoneWall01.BGSM",
+    "diffuse": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_n.dds",
+    "spec": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\church_stone_d.dds",
+    "alpha_blend": false
+  },
+  "concrete01": {
+    "bgsm": "Materials\\Architecture\\Buildings\\Concrete01.BGSM",
+    "diffuse": "Textures\\architecture\\buildings\\concrete01a_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\Concrete01A_n.dds",
+    "spec": "Textures\\architecture\\buildings\\concrete01a_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\concrete01_d.dds",
+    "alpha_blend": false
+  },
+  "concrete02": {
+    "bgsm": "Materials\\Architecture\\Buildings\\Concrete02.BGSM",
+    "diffuse": "Textures\\architecture\\buildings\\concrete02_d.dds",
+    "normal": "Textures\\architecture\\buildings\\concrete02_n.dds",
+    "spec": "Textures\\architecture\\buildings\\concrete02_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\concrete02_d.dds",
+    "alpha_blend": false
+  },
+  "roof_slate": {
+    "bgsm": "Materials\\Architecture\\Buildings\\RoofSlate01.BGSM",
+    "diffuse": "Textures\\architecture\\buildings\\roofslate01_d.dds",
+    "normal": "Textures\\architecture\\buildings\\roofslate01_n.dds",
+    "spec": "Textures\\architecture\\buildings\\roofslate01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\roof_slate_d.dds",
+    "alpha_blend": false
+  },
+  "adobe_plaster": {
+    "bgsm": "Materials\\Architecture\\Buildings\\Plaster01.BGSM",
+    "diffuse": "Textures\\architecture\\buildings\\plaster01_d.dds",
+    "normal": "Textures\\architecture\\buildings\\plaster01_n.dds",
+    "spec": "Textures\\architecture\\buildings\\plaster01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\adobe_plaster_d.dds",
+    "alpha_blend": false
+  },
+  "cracked_mud": {
+    "bgsm": "Materials\\Landscape\\Ground\\GlowingSeaCrackedMud01.BGSM",
+    "diffuse": "Textures\\Landscape\\Ground\\GlowingSeaCrackedMud01_d.dds",
+    "normal": "Textures\\Landscape\\Ground\\GlowingSeaCrackedMud01_n.dds",
+    "spec": "Textures\\Landscape\\Ground\\GlowingSeaCrackedMud01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\cracked_mud_d.dds",
+    "alpha_blend": false
+  },
+  "corrosion": {
+    "bgsm": "Materials\\Landscape\\Ground\\GlowingSeaCorrosion01.BGSM",
+    "diffuse": "Textures\\Landscape\\Ground\\GlowingSeaCorrosion01_d.dds",
+    "normal": "Textures\\Landscape\\Ground\\GlowingSeaCorrosion01_n.dds",
+    "spec": "Textures\\Landscape\\Ground\\GlowingSeaCorrosion01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\corrosion_d.dds",
+    "alpha_blend": false
+  },
+  "vault_blue": {
+    "bgsm": "Materials\\Interiors\\Vault\\V111Struct01Blue.BGSM",
+    "diffuse": "Textures\\interiors\\vault\\vstruct01blue_d.dds",
+    "normal": "Textures\\interiors\\vault\\vault111\\v111struct01_n.dds",
+    "spec": "Textures\\interiors\\vault\\vault111\\v111struct01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\vault_blue_d.dds",
+    "alpha_blend": false
+  },
+  "gore_meat": {
+    "bgsm": "Materials\\Gore\\GoreBaseBitsRed.BGSM",
+    "diffuse": "Textures\\gore\\gorebasebits_d.dds",
+    "normal": "Textures\\gore\\gorebasebits_n.dds",
+    "spec": "Textures\\gore\\gorebasebits_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\_vanilla_preview_tex\\gore_meat_d.dds",
+    "alpha_blend": false
+  },
+  "custom_cathedral": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\CathedralMonument.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\CathedralStone_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_n.dds",
+    "spec": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\CathedralStone_d.dds",
+    "alpha_blend": false
+  },
+  "custom_losthills": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\LostHillsBunker.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\LostHillsConcrete_d.dds",
+    "normal": "Textures\\Architecture\\Bunkers\\BunConcrete01_n.dds",
+    "spec": "Textures\\Architecture\\Bunkers\\BunConcrete01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\LostHillsConcrete_d.dds",
+    "alpha_blend": false
+  },
+  "custom_mariposa": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\MariposaBunker.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\MariposaMilitary_d.dds",
+    "normal": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_n.dds",
+    "spec": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\MariposaMilitary_d.dds",
+    "alpha_blend": false
+  },
+  "custom_glow": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\GlowCrater.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\GlowCrater_d.dds",
+    "normal": "Textures\\Landscape\\Ground\\GlowingSeaCorrosion01_n.dds",
+    "spec": "Textures\\Landscape\\Ground\\GlowingSeaCorrosion01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\GlowCrater_d.dds",
+    "alpha_blend": false
+  },
+  "custom_shady_adobe": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\ShadyAdobe.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\ShadyAdobe_d.dds",
+    "normal": "Textures\\architecture\\buildings\\plaster01_n.dds",
+    "spec": "Textures\\architecture\\buildings\\plaster01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\ShadyAdobe_d.dds",
+    "alpha_blend": false
+  },
+  "custom_shady_plaque": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\ShadyPlaque.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\ShadyPlaque_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\Concrete01A_n.dds",
+    "spec": "Textures\\architecture\\buildings\\concrete01a_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\ShadyPlaque_d.dds",
+    "alpha_blend": false
+  },
+  "custom_junktown_gate": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\JunktownGate.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\JunktownGate_d.dds",
+    "normal": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_n.dds",
+    "spec": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\JunktownGate_d.dds",
+    "alpha_blend": false
+  },
+  "custom_hub_tower": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\HubWaterTower.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\HubWaterTower_d.dds",
+    "normal": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_n.dds",
+    "spec": "Textures\\SetDressing\\Boats\\BoatBeamsRust01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\HubWaterTower_d.dds",
+    "alpha_blend": false
+  },
+  "custom_master": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\MasterThrone.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\MasterThrone_d.dds",
+    "normal": "Textures\\interiors\\vault\\vault111\\v111struct01_n.dds",
+    "spec": "Textures\\interiors\\vault\\vault111\\v111struct01_s.dds",
+    "env": "Textures\\Shared\\Cubemaps\\mipblur_DefaultOutside1.dds",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\MasterThrone_d.dds",
+    "alpha_blend": false
+  },
+  "custom_cathedral_banner": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\CathedralBanner.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\CathedralBanner_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_n.dds",
+    "spec": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\CathedralBanner_d.dds",
+    "alpha_blend": false
+  },
+  "custom_stained_glass": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\CathedralStainedGlass.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\CathedralStainedGlass_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_n.dds",
+    "spec": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\CathedralStainedGlass_d.dds",
+    "alpha_blend": false
+  },
+  "custom_altar_relief": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\CathedralAltarRelief.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\CathedralAltarRelief_d.dds",
+    "normal": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_n.dds",
+    "spec": "Textures\\Architecture\\Buildings\\ChurchStoneWall01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\CathedralAltarRelief_d.dds",
+    "alpha_blend": false
+  },
+  "custom_master_plaque": {
+    "bgsm": "Materials\\V13Chronicles\\Monuments\\MasterVaultPlaque.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Monuments\\MasterVaultPlaque_d.dds",
+    "normal": "Textures\\Interiors\\Vault\\Vault111\\V111Struct01_n.dds",
+    "spec": "Textures\\Interiors\\Vault\\Vault111\\V111Struct01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\monuments_3d\\Textures\\V13Chronicles\\Monuments\\MasterVaultPlaque_d.dds",
+    "alpha_blend": false
+  },
+  "custom_credit_card_01": {
+    "bgsm": "Materials\\V13Chronicles\\Credits\\V13CreditCard01.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Credits\\V13CreditCard01_d.dds",
+    "normal": "Textures\\Shared\\FlatFlat_n.dds",
+    "spec": "Textures\\interiors\\building\\bldconcreteceilinggross01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\textures\\V13Chronicles\\Credits\\V13CreditCard01_d.dds",
+    "alpha_blend": true
+  },
+  "custom_credit_card_02": {
+    "bgsm": "Materials\\V13Chronicles\\Credits\\V13CreditCard02.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Credits\\V13CreditCard02_d.dds",
+    "normal": "Textures\\Shared\\FlatFlat_n.dds",
+    "spec": "Textures\\interiors\\building\\bldconcreteceilinggross01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\textures\\V13Chronicles\\Credits\\V13CreditCard02_d.dds",
+    "alpha_blend": true
+  },
+  "custom_credit_card_03": {
+    "bgsm": "Materials\\V13Chronicles\\Credits\\V13CreditCard03.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Credits\\V13CreditCard03_d.dds",
+    "normal": "Textures\\Shared\\FlatFlat_n.dds",
+    "spec": "Textures\\interiors\\building\\bldconcreteceilinggross01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\textures\\V13Chronicles\\Credits\\V13CreditCard03_d.dds",
+    "alpha_blend": true
+  },
+  "custom_credit_card_04": {
+    "bgsm": "Materials\\V13Chronicles\\Credits\\V13CreditCard04.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Credits\\V13CreditCard04_d.dds",
+    "normal": "Textures\\Shared\\FlatFlat_n.dds",
+    "spec": "Textures\\interiors\\building\\bldconcreteceilinggross01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\textures\\V13Chronicles\\Credits\\V13CreditCard04_d.dds",
+    "alpha_blend": true
+  },
+  "custom_credit_card_05": {
+    "bgsm": "Materials\\V13Chronicles\\Credits\\V13CreditCard05.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Credits\\V13CreditCard05_d.dds",
+    "normal": "Textures\\Shared\\FlatFlat_n.dds",
+    "spec": "Textures\\interiors\\building\\bldconcreteceilinggross01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\textures\\V13Chronicles\\Credits\\V13CreditCard05_d.dds",
+    "alpha_blend": true
+  },
+  "custom_credit_card_06": {
+    "bgsm": "Materials\\V13Chronicles\\Credits\\V13CreditCard06.BGSM",
+    "diffuse": "Textures\\V13Chronicles\\Credits\\V13CreditCard06_d.dds",
+    "normal": "Textures\\Shared\\FlatFlat_n.dds",
+    "spec": "Textures\\interiors\\building\\bldconcreteceilinggross01_s.dds",
+    "env": "",
+    "preview_dds": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\assets\\textures\\V13Chronicles\\Credits\\V13CreditCard06_d.dds",
+    "alpha_blend": true
+  }
+}

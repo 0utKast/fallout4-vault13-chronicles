@@ -7,63 +7,94 @@ Event OnActivate(ObjectReference akActionRef)
         return
     endif
     Actor player = Game.GetPlayer()
-    if akActionRef != player
+    if akActionRef != player || player == None
         return
     endif
     bMasterMenuBusy = True
 
     Quest q5 = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
-    Actor theMaster = Game.GetFormFromFile(0x00002D11, "Vault13Chronicles.esp") as Actor
-    Actor morpheus = Game.GetFormFromFile(0x00002D12, "Vault13Chronicles.esp") as Actor
-    Actor praet1 = Game.GetFormFromFile(0x00002D20, "Vault13Chronicles.esp") as Actor
-    Actor praet2 = Game.GetFormFromFile(0x00002D21, "Vault13Chronicles.esp") as Actor
-    Form masterCore = Game.GetFormFromFile(0x00001115, "Vault13Chronicles.esp")
-    Form report5 = Game.GetFormFromFile(0x00001145, "Vault13Chronicles.esp")
-    Form pulseExpl = Game.GetFormFromFile(0x000C32DA, "Fallout4.esm")
+    V13Act5QuestScript act5S = q5 as V13Act5QuestScript
+    Terminal warheadBase = Game.GetFormFromFile(0x000015AA, "Vault13Chronicles.esp") as Terminal
+    Terminal caveRelayBase = Game.GetFormFromFile(0x000015AB, "Vault13Chronicles.esp") as Terminal
 
-    Utility.Wait(0.8)
+    Utility.Wait(0.55)
+
+    if caveRelayBase != None && Self.GetBaseObject() == caveRelayBase
+        Message relayMenu = Game.GetFormFromFile(0x000015AD, "Vault13Chronicles.esp") as Message
+        if relayMenu != None
+            int rChoice = relayMenu.Show(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            if rChoice == 0
+                V13Act1QuestScript act1S = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as V13Act1QuestScript
+                if act1S != None
+                    act1S.ReturnPlayerToCommonwealthFromTerminal()
+                else
+                    ObjectReference mnemoDest = Game.GetFormFromFile(0x00002002, "Vault13Chronicles.esp") as ObjectReference
+                    if mnemoDest != None
+                        player.MoveTo(mnemoDest, 0.0, 0.0, 0.0, true)
+                    endif
+                endif
+            endif
+        endif
+        bMasterMenuBusy = False
+        return
+    endif
+
+    if warheadBase != None && Self.GetBaseObject() == warheadBase
+        Message warheadMenu = Game.GetFormFromFile(0x000015AC, "Vault13Chronicles.esp") as Message
+        if warheadMenu != None
+            int wChoice = warheadMenu.Show(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            if wChoice == 0
+                Form mariposaCodes = Game.GetFormFromFile(0x00001114, "Vault13Chronicles.esp")
+                Form lauraKey = Game.GetFormFromFile(0x000015A7, "Vault13Chronicles.esp")
+                Form morpheusBadge = Game.GetFormFromFile(0x000015A8, "Vault13Chronicles.esp")
+                bool hasAuth = ((mariposaCodes != None && player.GetItemCount(mariposaCodes) > 0) || (lauraKey != None && player.GetItemCount(lauraKey) > 0) || (morpheusBadge != None && player.GetItemCount(morpheusBadge) > 0))
+                if hasAuth
+                    if act5S != None
+                        act5S.StartCathedralNuclearCountdown(2)
+                    endif
+                else
+                    Debug.Notification("[Pre-War Warhead] Requires the Mariposa Codes, Morpheus's Badge, or Sister Laura's Key.")
+                endif
+            elseif wChoice == 1
+                Perk sciPerk = Game.GetFormFromFile(0x000264D9, "Fallout4.esm") as Perk
+                ActorValue intAV = Game.GetFormFromFile(0x000002C5, "Fallout4.esm") as ActorValue
+                bool canHack = ((sciPerk != None && player.HasPerk(sciPerk)) || (intAV != None && player.GetValue(intAV) >= 7.0))
+                if canHack
+                    if act5S != None
+                        act5S.StartCathedralNuclearCountdown(2)
+                    endif
+                else
+                    Debug.Notification("[Pre-War Warhead] You need the Science perk or Intelligence 7+ to bypass the nuclear trigger.")
+                endif
+            endif
+        endif
+        bMasterMenuBusy = False
+        return
+    endif
 
     Message masterMenu = Game.GetFormFromFile(0x00001159, "Vault13Chronicles.esp") as Message
     if masterMenu != None
         int choice = masterMenu.Show(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         if choice == 0
-            if theMaster != None && !theMaster.IsDead()
-                if pulseExpl != None
-                    theMaster.PlaceAtMe(pulseExpl, 1, false, false)
+            Form vreeHolo = Game.GetFormFromFile(0x00001113, "Vault13Chronicles.esp")
+            if vreeHolo != None && player.GetItemCount(vreeHolo) > 0
+                if act5S != None
+                    act5S.StartCathedralNuclearCountdown(1)
                 endif
-                theMaster.KillEssential(None)
+            else
+                Debug.Notification("[Neural Console] You need Scribe Vree's Autopsy Holotape (Lost Hills) to prove mutant sterility.")
             endif
-            if morpheus != None && !morpheus.IsDead()
-                morpheus.Kill(None)
-            endif
-            if praet1 != None && !praet1.IsDead()
-                praet1.Kill(None)
-            endif
-            if praet2 != None && !praet2.IsDead()
-                praet2.Kill(None)
-            endif
-            player.StopCombatAlarm()
-            if masterCore != None && player.GetItemCount(masterCore) == 0
-                player.AddItem(masterCore, 1, false)
-            endif
-            if report5 != None && player.GetItemCount(report5) == 0
-                player.AddItem(report5, 1, false)
-            endif
-            if q5 != None && q5.GetStage() < 30
-                q5.SetStage(30)
-            endif
-            Debug.Notification("[The Master]: 'It cannot be... All of our mutants are sterile! Leave now, while you still have hope...'")
         elseif choice == 1
-            if masterCore != None && player.GetItemCount(masterCore) == 0
-                player.AddItem(masterCore, 1, false)
+            Actor theMaster = Game.GetFormFromFile(0x00002D11, "Vault13Chronicles.esp") as Actor
+            Form mariposaCodes = Game.GetFormFromFile(0x00001114, "Vault13Chronicles.esp")
+            Form morpheusBadge = Game.GetFormFromFile(0x000015A8, "Vault13Chronicles.esp")
+            if (theMaster == None || theMaster.IsDead()) || (mariposaCodes != None && player.GetItemCount(mariposaCodes) > 0) || (morpheusBadge != None && player.GetItemCount(morpheusBadge) > 0)
+                if act5S != None
+                    act5S.StartCathedralNuclearCountdown(2)
+                endif
+            else
+                Debug.Notification("[Neural Console] The Master's neural link blocks manual arming; defeat him, use the Mariposa Codes, or sabotage the Sublevel IV warhead.")
             endif
-            if report5 != None && player.GetItemCount(report5) == 0
-                player.AddItem(report5, 1, false)
-            endif
-            if q5 != None && q5.GetStage() < 30
-                q5.SetStage(30)
-            endif
-            Debug.Notification("[Cathedral Warhead] Nuclear detonation core extracted! Evacuate to Vault 13!")
         endif
     endif
     bMasterMenuBusy = False

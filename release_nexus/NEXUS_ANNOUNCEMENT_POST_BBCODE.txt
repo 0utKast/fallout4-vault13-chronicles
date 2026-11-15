@@ -1,0 +1,19 @@
+[b]Vault 13 Chronicles / Crónicas del Refugio 13 — v1.0.0 Complete Edition is Live! / ¡Ya disponible la Edición Completa v1.0.0![/b]
+
+[b][EN] Major Milestone — Full 5-Act Story Now Complete & Playable:[/b]
+With [b]v1.0.0 Complete Edition[/b], the entire [b]1997 Fallout 1[/b] recreation becomes playable from start to finish in standalone English and Spanish editions ([b]v0.9.3 Beta stays available in Old Files[/b]):
+[list]
+[*][b]Full Chapter 2 (Acts III–V + Exile):[/b] Multi-level [b]Lost Hills Bunker[/b] & [b]The Glow / ZAX 1.2[/b], [b]Adytum Civil War & Forge[/b], [b]Mariposa Military Base[/b] (Nightkin, Lou & 180s FEV self-destruct), [b]The Cathedral[/b], all [b]3 canonical endings against The Master[/b] (Tri-Voice), [b]1997 Mutant Invasions[/b], and the playable [b]Arroyo Exile Epilogue[/b] (Theresa, Lyle & Final Chronicle).
+[*][b]Massive Expansion Over v0.9:[/b] Worldspace expanded [b]6.25×[/b] from 64 to [b]400 exterior cells[/b] (32 MapMarkers, 40 custom 3D [font=Courier New].nif[/font] assets), 4th simultaneous companion [b]Katja[/b] (joining Ian, Tycho & Dogmeat with Survival scaling & instant revival), [b]28 quests[/b], [b]78 dialogue wheels[/b], [b]1,544+ lip-synced voices[/b], and [b]Hub Radio 84.5[/b] expanded to [b]41 songs, 18 jingles, 8 dramas & 110 reactive DJ news[/b].
+[*][b]IMPORTANT — Save Compatibility & v0.9.3 Preserved in Old Files:[/b] Because the worldspace grew from 64 to 400 cells and persistent FormIDs changed, [b]v1.0.0 is NOT compatible with v0.9.x saves[/b] — please start v1.0.0 on a clean Fallout 4 save (without v0.9.x history). Still finishing a v0.9 run? Both [b]v0.9.3 Beta (EN/ES)[/b] files remain downloadable in [b]Old Files[/b] (and on the GitHub [font=Courier New]release/v0.9.x[/font] branch). Native [font=Courier New]1.10.163[/font] + Next-Gen/AE with zero DLC/CC/F4SE.
+[/list]
+Playthrough feedback and bug reports on Acts III–V and the ending routes are very welcome — thank you for helping polish every corner of 2161 Southern California!
+
+[b][ES] Gran Hito — Historia Completa de los 5 Actos Jugable de Principio a Fin:[/b]
+Con la [b]Edición Completa v1.0.0[/b] entregamos la campaña íntegra de [b]Fallout 1 (1997)[/b] doblada al español y en inglés ([b]conservando la Beta v0.9.3 en Old Files[/b]):
+[list]
+[*][b]Capítulo 2 Completo (Actos III–V y Exilio):[/b] Búnker multinivel de [b]Lost Hills[/b], [b]El Resplandor y ZAX 1.2[/b], [b]Adytum[/b] (Rifle de Plasma Turbo y T-51b Endurecida), [b]Mariposa[/b], [b]La Catedral[/b], las [b]3 vías canónicas ante El Maestro[/b], [b]Invasiones Mutantes (1997)[/b] y el [b]Epílogo del Exilio rumbo a Arroyo[/b] junto a Theresa, Lyle y la Crónica Final.
+[*][b]Salto Masivo Frente a la v0.9:[/b] Mapa ampliado [b]6,25×[/b] (de 64 a [b]400 celdas exteriores[/b]), cuarta compañera simultánea [b]Katja[/b] junto a Ian, Tycho y Albóndiga, [b]28 misiones[/b], [b]1.544+ líneas dobladas (.fuz)[/b] y [b]Radio El Eje (84.5 kHz)[/b] con [b]41 canciones, 18 cuñas, 8 radionovelas y 110 boletines reactivos[/b].
+[*][b]IMPORTANTE — Incompatibilidad de Partidas v0.9 y Rama v0.9.3 Conservada:[/b] Al ampliar el mundo exterior de 64 a 400 celdas y reorganizar FormIDs, [b]la v1.0.0 NO es compatible con partidas guardadas de la v0.9.x[/b]; inicia una partida limpia sin historial previo de la Beta. Para quienes estéis acabando una campaña anterior, [b]v0.9.3 (ES y EN) sigue disponible en Old Files[/b] (y en la rama [font=Courier New]release/v0.9.x[/font] de GitHub). Compatible con [font=Courier New]1.10.163[/font] y Next-Gen/AE sin DLC, CC ni F4SE.
+[/list]
+¡Vuestros comentarios probando los Actos III–V y las rutas finales nos ayudarán muchísimo a seguir puliendo hasta el último detalle!

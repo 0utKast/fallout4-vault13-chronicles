@@ -47,12 +47,71 @@ Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLo
     endif
 EndEvent
 
-Event Actor.OnPlayerLoadGame(Actor akSender)
-    Scene kHubScene = Game.GetFormFromFile(0x00008511, "Vault13Chronicles.esp") as Scene
-    if kHubScene != None && kHubScene.IsPlaying()
-        kHubScene.Stop()
-        Utility.Wait(0.25)
+bool Function IsAnyHubRadioScenePlaying()
+    Scene kSc01 = Game.GetFormFromFile(0x00008511, "Vault13Chronicles.esp") as Scene
+    if kSc01 != None && kSc01.IsPlaying()
+        return true
     endif
+    Scene kSc02 = Game.GetFormFromFile(0x00008512, "Vault13Chronicles.esp") as Scene
+    if kSc02 != None && kSc02.IsPlaying()
+        return true
+    endif
+    Scene kSc03 = Game.GetFormFromFile(0x00008513, "Vault13Chronicles.esp") as Scene
+    if kSc03 != None && kSc03.IsPlaying()
+        return true
+    endif
+    Scene kSc04 = Game.GetFormFromFile(0x00008514, "Vault13Chronicles.esp") as Scene
+    if kSc04 != None && kSc04.IsPlaying()
+        return true
+    endif
+    Scene kSc05 = Game.GetFormFromFile(0x00008515, "Vault13Chronicles.esp") as Scene
+    if kSc05 != None && kSc05.IsPlaying()
+        return true
+    endif
+    Scene kSc06 = Game.GetFormFromFile(0x00008516, "Vault13Chronicles.esp") as Scene
+    if kSc06 != None && kSc06.IsPlaying()
+        return true
+    endif
+    return false
+EndFunction
+
+bool Function StopAllHubRadioScenes()
+    bool bAnyStopped = false
+    Scene kSc01 = Game.GetFormFromFile(0x00008511, "Vault13Chronicles.esp") as Scene
+    if kSc01 != None && kSc01.IsPlaying()
+        kSc01.Stop()
+        bAnyStopped = true
+    endif
+    Scene kSc02 = Game.GetFormFromFile(0x00008512, "Vault13Chronicles.esp") as Scene
+    if kSc02 != None && kSc02.IsPlaying()
+        kSc02.Stop()
+        bAnyStopped = true
+    endif
+    Scene kSc03 = Game.GetFormFromFile(0x00008513, "Vault13Chronicles.esp") as Scene
+    if kSc03 != None && kSc03.IsPlaying()
+        kSc03.Stop()
+        bAnyStopped = true
+    endif
+    Scene kSc04 = Game.GetFormFromFile(0x00008514, "Vault13Chronicles.esp") as Scene
+    if kSc04 != None && kSc04.IsPlaying()
+        kSc04.Stop()
+        bAnyStopped = true
+    endif
+    Scene kSc05 = Game.GetFormFromFile(0x00008515, "Vault13Chronicles.esp") as Scene
+    if kSc05 != None && kSc05.IsPlaying()
+        kSc05.Stop()
+        bAnyStopped = true
+    endif
+    Scene kSc06 = Game.GetFormFromFile(0x00008516, "Vault13Chronicles.esp") as Scene
+    if kSc06 != None && kSc06.IsPlaying()
+        kSc06.Stop()
+        bAnyStopped = true
+    endif
+    return bAnyStopped
+EndFunction
+
+Event Actor.OnPlayerLoadGame(Actor akSender)
+    StopAllHubRadioScenes()
     SyncRadioEnvironment()
     if IsPlayerIn2161(Game.GetPlayer())
         StartTimer(1.5, 1)
@@ -81,6 +140,10 @@ bool Function IsPlayerIn2161(Actor akPlayer)
     elseif kCell == (Game.GetFormFromFile(0x00002200, "Vault13Chronicles.esp") as Cell)
         return true
     elseif kCell == (Game.GetFormFromFile(0x00002500, "Vault13Chronicles.esp") as Cell)
+        return true
+    elseif kCell == (Game.GetFormFromFile(0x00002700, "Vault13Chronicles.esp") as Cell)
+        return true
+    elseif kCell == (Game.GetFormFromFile(0x00002800, "Vault13Chronicles.esp") as Cell)
         return true
     elseif kCell == (Game.GetFormFromFile(0x00002900, "Vault13Chronicles.esp") as Cell)
         return true
@@ -114,7 +177,7 @@ Function SyncRadioEnvironment()
     bool bIn2161 = IsPlayerIn2161(kPlayer)
     if bIn2161
         if kHubTx != None && kHubTx.IsDisabled()
-            kHubTx.Enable(false)
+            kHubTx.EnableNoWait()
         endif
         if !Self.IsRunning()
             Self.Start()
@@ -125,7 +188,7 @@ Function SyncRadioEnvironment()
         if kTxAlias != None && kHubTx != None && kTxAlias.GetReference() != kHubTx
             kTxAlias.ForceRefTo(kHubTx)
         endif
-        if kHubScene != None && !kHubScene.IsPlaying()
+        if !IsAnyHubRadioScenePlaying() && kHubScene != None
             kHubScene.Start()
         endif
 
@@ -295,9 +358,7 @@ Function SyncRadioEnvironment()
             endif
         endif
 
-        if kHubScene != None && kHubScene.IsPlaying()
-            kHubScene.Stop()
-        endif
+        StopAllHubRadioScenes()
         if kTxAlias != None && kTxAlias.GetReference() != None
             kTxAlias.Clear()
         endif
@@ -307,8 +368,13 @@ Function SyncRadioEnvironment()
     endif
 
     Quest kShadyQ = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
-    if kShadyQ != None && !kShadyQ.IsCompleted()
-        if !kShadyQ.IsRunning()
+    if kShadyQ != None
+        if kShadyQ.IsCompleted() || kShadyQ.GetStage() >= 40 || kShadyQ.IsStageDone(40)
+            if !kShadyQ.IsCompleted()
+                kShadyQ.CompleteAllObjectives()
+                kShadyQ.CompleteQuest()
+            endif
+        elseif !kShadyQ.IsRunning()
             kShadyQ.Start()
             if kShadyQ.GetStage() < 10
                 kShadyQ.SetStage(10)
@@ -339,7 +405,9 @@ Event OnTimer(int aiTimerID)
     if aiTimerID == 1
         SyncRadioEnvironment()
         if IsPlayerIn2161(Game.GetPlayer())
-            StartTimer(3.0, 1)
+            StartTimer(6.0, 1)
+        else
+            StartTimer(12.0, 1)
         endif
     endif
 EndEvent

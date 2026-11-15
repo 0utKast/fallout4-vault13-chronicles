@@ -8,7 +8,7 @@ Event OnActivate(ObjectReference akActionRef)
 
     Quest q1 = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as Quest
     Quest q2 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-    Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     Quest q4 = Game.GetFormFromFile(0x00007000, "Vault13Chronicles.esp") as Quest
     Quest q5 = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
 
@@ -55,6 +55,15 @@ Event OnActivate(ObjectReference akActionRef)
         ObjectReference dest15 = Game.GetFormFromFile(0x00002502, "Vault13Chronicles.esp") as ObjectReference
         if dest15 != None
             player.MoveTo(dest15, 0.0, 0.0, 0.0, true)
+            return
+        endif
+    elseif q5 != None && q5.GetStage() >= 35
+        ObjectReference destExileCave = Game.GetFormFromFile(0x0000223D, "Vault13Chronicles.esp") as ObjectReference
+        if destExileCave == None
+            destExileCave = Game.GetFormFromFile(0x00002205, "Vault13Chronicles.esp") as ObjectReference
+        endif
+        if destExileCave != None
+            player.MoveTo(destExileCave, 0.0, 0.0, 0.0, true)
             return
         endif
     endif

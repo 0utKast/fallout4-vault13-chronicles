@@ -4,8 +4,8 @@
 Complete Builder for 'Vault 13 Chronicles (2161)' — 100% English Edition
 (cronicas_refugio_13/edition_en/build_out/):
   - Vault13Chronicles.esp (HEDR v1.0, 100% English texts across all 5 Acts, Side Quests, Companions & 6 Special Encounters)
-  - Vault13Chronicles - Main.ba2 (GNRL v1: 50 English .pex scripts, 1,050+ ElevenLabs English lip-synced .fuz voices, 24 English Hub Radio DJ broadcasts, zlib-compressed custom 3D .nif meshes & .bgsm/.bgem materials)
-  - Vault13Chronicles - Textures.ba2 (DX10 v1: custom .dds textures including 12-mip English Pip-Boy World Map, 7 English Location Signs, English Vault 13 Quartermaster Cabinet, English Velvet Elvis Painting, Lars Guard Helmet, Nuka-Cola Crates & isolated Vault 13 Jumpsuit numbers)
+  - Vault13Chronicles - Main.ba2 (GNRL v1: 57 English .pex scripts, 1,250+ ElevenLabs English lip-synced .fuz/.xwm voices, 25 English Hub Radio DJ broadcasts, zlib-compressed custom 3D .nif meshes & .bgsm/.bgem materials)
+  - Vault13Chronicles - Textures.ba2 (DX10 v1: custom .dds textures including 12-mip English Pip-Boy World Map, 7 English Location Signs, English Vault 13 Quartermaster Cabinet, English Velvet Elvis Painting, Lars Guard Helmet, Nuka-Cola Crates, 11 custom 3D monument/Throne textures & isolated Vault 13 Jumpsuit numbers)
 """
 
 import json
@@ -184,8 +184,8 @@ def transform_esp_to_english(src_esp_path: str, dst_esp_path: str, trans_map: di
 def main() -> None:
     os.makedirs(BUILD_OUT_EN_DIR, exist_ok=True)
 
-    # 1. Synchronize and compile all 50 English Papyrus scripts (.psc -> .pex)
-    print("=== [1/5] Synchronizing & Compiling 50 English Papyrus Scripts ===")
+    # 1. Synchronize and compile all 57 English Papyrus scripts (.psc -> .pex)
+    print("=== [1/5] Synchronizing & Compiling 57 English Papyrus Scripts ===")
     sync_papyrus_en.sync_and_compile_papyrus_en()
 
     # 2. Generate/verify all English custom .dds textures, maps, signs & 3D decals
@@ -240,18 +240,23 @@ def main() -> None:
     ba2_sfx = es_builder.synthesize_all_sfx(api_key)
     ba2_files.update(ba2_sfx)
 
-    # 5c. Collect English Radio DJ broadcasts + songs
+    # 5c. Collect English Radio DJ broadcasts + songs + jingles + English dramatizations
     es_builder.RADIO_DJ_DIR = RADIO_DJ_EN_DIR
     es_builder.V13_RADIO_DJ_DEFS = synthesize_voices_and_radio_en.V13_RADIO_DJ_DEFS_EN
+    es_builder.RADIO_DRAMAS_SRC_DIR = os.path.join(THIS_DIR, "radio_dramas_en")
+    es_builder.RADIO_DRAMAS_CACHE_DIR = os.path.join(THIS_DIR, "assets", "radio_dramas_en_cache")
+    es_builder.RADIO_DRAMAS_LANG = "en"
     ba2_radio, _, _ = es_builder.synthesize_all_radio_tracks(api_key)
     ba2_files.update(ba2_radio)
 
     # 5d. Collect custom 3D .nif meshes and .bgsm/.bgem materials
-    ba2_files.update(es_builder.build_clean_vault_entrance_nifs())
+    ba2_files.update(es_builder.build_clean_vault_entrance_nifs(lang="en"))
     junktown_main_map, _ = es_builder.ensure_junktown_3d_assets()
     ba2_files.update(junktown_main_map)
+    monuments_main_map, _ = es_builder.ensure_monuments_3d_assets()
+    ba2_files.update(monuments_main_map)
 
-    # 5e. Collect all 50 compiled English .pex scripts
+    # 5e. Collect all compiled English .pex scripts (57 scripts)
     for fn in sorted(os.listdir(PAPYRUS_OUT_EN_DIR)):
         if fn.endswith(".pex"):
             src_pex = os.path.join(PAPYRUS_OUT_EN_DIR, fn)

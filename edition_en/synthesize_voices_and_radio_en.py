@@ -24,6 +24,7 @@ ROOT_DIR = os.path.dirname(THIS_DIR)
 sys.path.insert(0, ROOT_DIR)
 
 import build_cronicas_refugio_13 as es_builder
+from v13_radio_reactive_defs import NEW_RADIO_DJ_DEFS
 
 FO4_ROOT = es_builder.FO4_ROOT
 FFMPEG_BIN = es_builder.FFMPEG_BIN
@@ -45,6 +46,58 @@ VOICE_ID_MAP_EN = {
     "NPCMSetNecropolis": "VR6AewLTigWG4xSOukaG",         # Arnold (deep gritty Set / Super Mutant)
     "V13HarrySuperMutantVoice": "VR6AewLTigWG4xSOukaG",  # Arnold + pitch-shifted Super Mutant filter
     "CrSuperMutant": "VR6AewLTigWG4xSOukaG",             # Arnold + pitch-shifted Super Mutant filter
+    "V13ZAX12Voice": "onwK4e9ZLuTAKqWW03F9",             # Daniel + ZAX 1.2 synthetic AI filter
+    "V13TheMasterTriVoice": "VR6AewLTigWG4xSOukaG",      # Tri-Voice (Arnold [M] + Matilda [F] + Daniel [E])
+}
+
+MASTER_TRIVOICE_TTS_EN: dict[tuple[int, int], str] = {
+    (0x00008019, 1): "[M] So, you stand before the Unity... || [F] Join! || [E] Die! || [M] Join! || [E] Die!",
+    (0x00008360, 1): (
+        "[M] So... at last we meet face to face. || [F] Join! || [E] Die! || [M] Join! || [E] Die! "
+        "|| [F] You crossed the wasteland to defy the Unity, || [M] when we are the only peace left for this world."
+    ),
+    (0x00008365, 1): (
+        "[M] Sterile? || [E] Preposterous! The Forced Evolutionary Virus repairs every cellular strand. "
+        "|| [F] Prove such an absurd claim right now, || [M] or we shall dip you in the vats!"
+    ),
+    (0x00008366, 1): (
+        "[M] As long as there are differences among humans, there will always be another nuclear war. "
+        "|| [F] Only by becoming a single superior race || [E] will we survive the wasteland."
+    ),
+    (0x00008367, 1): (
+        "[E] What a pitiful waste of intact chromosomes. || [F] If you reject the Unity... "
+        "|| [M] then die! Praetorians, tear the intruder apart!"
+    ),
+    (0x00008368, 1): "[E] Die! || [F] No one stops evolution! || [M] Nightkin Guard, annihilate them!",
+    (0x0000836D, 1): (
+        "[E] Processing Brotherhood holotape... truncated diploid gametes, zero fertility across all subjects... "
+        "|| [M] But it cannot be! || [F] This would mean that all my work has been for nothing!"
+    ),
+    (0x0000836D, 2): (
+        "[M] All the lives taken... to create a race doomed to die out in a single generation. "
+        "|| [F] I don't think I can continue... || [M] Leave now, || [F] while you still have hope..."
+    ),
+    (0x00008371, 1): (
+        "[E] Your hands are empty! || [F] You bring no scientific holotape, only desperate lies! || [M] Die!"
+    ),
+    (0x0000836E, 1): (
+        "[E] Querying our female lieutenants... not a single viable pregnancy in all these years... "
+        "|| [M] Dear God, you are right! || [F] My race will perish after this single generation!"
+    ),
+    (0x0000836E, 2): (
+        "[M] I have committed unforgivable atrocities for a lie. "
+        "|| [E] There is no hope... || [M] Leave now, || [F] while you still have hope..."
+    ),
+    (0x00008372, 1): (
+        "[E] Enough baseless conjecture! "
+        "|| [F] Had there been a reproductive flaw, my laboratories would have corrected it! || [M] Destroy them!"
+    ),
+    (0x0000836F, 1): (
+        "[F] Your pulse betrays your fear... || [E] yet our curiosity is patient. "
+        "|| [M] Speak with real proof, or you shall never leave this chamber."
+    ),
+    (0x00008373, 1): "[M] Do you think you can mock three minds joined as one?! || [E] Annihilate the human!",
+    (0x00008370, 1): "[E] Then choose death! || [M] Praetorians, tear them to pieces!",
 }
 
 RADIO_DJ_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"  # George (warm gravelly radio host)
@@ -335,6 +388,14 @@ V13_RADIO_DJ_DEFS_EN = [
             "Patrick the Celt performing the Ballad of Na Fianna, The Wanderer of Vault Thirteen."
         ),
     },
+] + [
+    {
+        "name": _d["name"],
+        "sndr_fid": _d["sndr_fid"],
+        "edid": _d["edid"],
+        "tts": _d["tts_en"],
+    }
+    for _d in NEW_RADIO_DJ_DEFS
 ]
 
 
@@ -377,13 +438,118 @@ def synthesize_clip_worker(task: tuple) -> str:
         "00005015_1",
         "00005032_1",
     }
-    cache_sig = f"{tts_text}|sfx_mix_v2" if fname_base in sfx_mix_FNAME_SET else tts_text
+    if vtyp_edid == "V13TheMasterTriVoice":
+        cache_sig = f"{tts_text}|trivoice_en_v1"
+    elif fname_base in sfx_mix_FNAME_SET:
+        cache_sig = f"{tts_text}|sfx_mix_v2"
+    else:
+        cache_sig = tts_text
 
-    if os.path.exists(xwm_path) and os.path.getsize(xwm_path) > 100:
+    cached_txt = None
+    if os.path.exists(txt_cache):
+        with open(txt_cache, "r", encoding="utf-8") as tf:
+            cached_txt = tf.read()
+
+    if os.path.exists(xwm_path) and os.path.getsize(xwm_path) > 100 and (
+        cached_txt is None or cached_txt == cache_sig
+    ):
+        return fname_base
+
+    if vtyp_edid == "V13TheMasterTriVoice":
+        raw_parts = [p.strip() for p in tts_text.split("||") if p.strip()]
+        seg_wavs: list[str] = []
+        cycle_tags = ("[M]", "[F]", "[E]")
+        for s_idx, raw_part in enumerate(raw_parts):
+            tag = cycle_tags[s_idx % 3]
+            clean_part = raw_part
+            for cand_tag in ("[M]", "[F]", "[E]"):
+                if raw_part.startswith(cand_tag):
+                    tag = cand_tag
+                    clean_part = raw_part[len(cand_tag):].strip()
+                    break
+            if tag == "[F]":
+                seg_vid = VOICE_ID_MAP_EN["NPCFVault13Resident"]
+                seg_af = "highpass=f=90,lowpass=f=7800,acompressor=threshold=-16dB:ratio=2.5:makeup=3.5dB,volume=1.28"
+            elif tag == "[E]":
+                seg_vid = VOICE_ID_MAP_EN["V13ZAX12Voice"]
+                seg_af = "highpass=f=240,lowpass=f=4200,aecho=0.8:0.85:18:0.25,acompressor=threshold=-16dB:ratio=3.0:makeup=4.5dB,volume=1.35"
+            else:
+                seg_vid = VOICE_ID_MAP_EN["NPCMSetNecropolis"]
+                seg_af = "asetrate=44100*0.82,aresample=44100,atempo=1.14,highpass=f=60,lowpass=f=6200,acompressor=threshold=-16dB:ratio=3.0:makeup=4dB,volume=1.35"
+            seg_mp3 = os.path.join(vtyp_cache_dir, f"{fname_base}_seg{s_idx}.mp3")
+            seg_wav = os.path.join(vtyp_cache_dir, f"{fname_base}_seg{s_idx}.wav")
+            url_tv = f"https://api.elevenlabs.io/v1/text-to-speech/{seg_vid}?output_format=mp3_44100_128"
+            payload_tv = {
+                "text": clean_tts_text_en(clean_part),
+                "model_id": "eleven_turbo_v2_5",
+                "voice_settings": {
+                    "stability": 0.62 if tag != "[E]" else 0.85,
+                    "similarity_boost": 0.84,
+                    "style": 0.14 if tag != "[E]" else 0.02,
+                    "use_speaker_boost": True,
+                },
+            }
+            for attempt in range(4):
+                try:
+                    req_tv = urllib.request.Request(
+                        url_tv,
+                        data=json.dumps(payload_tv).encode("utf-8"),
+                        headers={
+                            "xi-api-key": api_key,
+                            "Content-Type": "application/json",
+                            "Accept": "audio/mpeg",
+                        },
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(req_tv, timeout=60) as resp_tv:
+                        with open(seg_mp3, "wb") as wf_tv:
+                            wf_tv.write(resp_tv.read())
+                    break
+                except Exception:
+                    if attempt == 3:
+                        raise
+                    time.sleep(1.5 * (attempt + 1))
+            subprocess.run(
+                [
+                    FFMPEG_BIN, "-y", "-loglevel", "error",
+                    "-i", seg_mp3, "-af", seg_af,
+                    "-bitexact", "-map_metadata", "-1",
+                    "-ar", "44100", "-ac", "1", "-sample_fmt", "s16",
+                    seg_wav,
+                ],
+                check=True,
+            )
+            seg_wavs.append(seg_wav)
+        if len(seg_wavs) == 1:
+            shutil.copyfile(seg_wavs[0], wav_path)
+        else:
+            ff_cmd = [FFMPEG_BIN, "-y", "-loglevel", "error"]
+            for sw in seg_wavs:
+                ff_cmd.extend(["-i", sw])
+            in_labels = "".join(f"[{i}:a]" for i in range(len(seg_wavs)))
+            ff_cmd.extend([
+                "-filter_complex", f"{in_labels}concat=n={len(seg_wavs)}:v=0:a=1,alimiter=limit=0.96",
+                "-bitexact", "-map_metadata", "-1",
+                "-ar", "44100", "-ac", "1", "-sample_fmt", "s16",
+                wav_path,
+            ])
+            subprocess.run(ff_cmd, check=True)
+        subprocess.run(
+            [XWMAENCODE_BIN, "-b", "48000", wav_path, xwm_path],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        with open(txt_cache, "w", encoding="utf-8") as tf:
+            tf.write(cache_sig)
         return fname_base
 
     # Synthesize MP3 via ElevenLabs with retry
-    if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) < 100:
+    if (
+        not os.path.exists(mp3_path)
+        or os.path.getsize(mp3_path) < 100
+        or (cached_txt is not None and not cached_txt.startswith(tts_text))
+    ):
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128"
         payload = {
             "text": clean_tts_text_en(tts_text),
@@ -494,6 +660,13 @@ def synthesize_clip_worker(task: tuple) -> str:
                 "highpass=f=60,lowpass=f=6500,"
                 "acompressor=threshold=-16dB:ratio=3.0:makeup=4dB,volume=1.35"
             )
+        elif vtyp_edid == "V13ZAX12Voice":
+            af_filter = (
+                "asetrate=44100*0.92,aresample=44100,atempo=1.06,"
+                "highpass=f=180,lowpass=f=4800,"
+                "aecho=0.8:0.88:18:0.22,"
+                "acompressor=threshold=-16dB:ratio=3.5:makeup=4dB,volume=1.35"
+            )
         else:
             af_filter = (
                 "highpass=f=85,lowpass=f=7800,"
@@ -525,7 +698,13 @@ def synthesize_clip_worker(task: tuple) -> str:
 def synthesize_radio_dj_en(api_key: str) -> None:
     os.makedirs(RADIO_DJ_EN_DIR, exist_ok=True)
     dj_filter_ver = "v2_loud"
-    for dj in V13_RADIO_DJ_DEFS_EN:
+    af_radio_dj = (
+        "highpass=f=140,lowpass=f=5600,"
+        "acompressor=threshold=-20dB:ratio=4.0:makeup=7dB,"
+        "alimiter=limit=0.96,volume=1.55"
+    )
+
+    def _synth_one_en(dj: dict) -> str:
         fname = dj["name"]
         tts_text = dj["tts"]
         cache_key = f"{tts_text}|{dj_filter_ver}"
@@ -539,8 +718,9 @@ def synthesize_radio_dj_en(api_key: str) -> None:
             with open(txt_cache, "r", encoding="utf-8") as tf:
                 cached_txt = tf.read()
 
-        if not os.path.exists(xwm_path) or cached_txt != cache_key:
-            if not os.path.exists(mp3_path) or cached_txt != cache_key:
+        if not os.path.exists(xwm_path) or os.path.getsize(xwm_path) < 100 or cached_txt != cache_key:
+            need_tts = not os.path.exists(mp3_path) or cached_txt is None or not cached_txt.startswith(tts_text)
+            if need_tts:
                 print(f"  [ElevenLabs EN Radio DJ] {fname}: {tts_text[:68]}...")
                 url = f"https://api.elevenlabs.io/v1/text-to-speech/{RADIO_DJ_VOICE_ID}?output_format=mp3_44100_128"
                 payload = {
@@ -553,25 +733,30 @@ def synthesize_radio_dj_en(api_key: str) -> None:
                         "use_speaker_boost": True,
                     },
                 }
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={
-                        "xi-api-key": api_key,
-                        "Content-Type": "application/json",
-                        "Accept": "audio/mpeg",
-                    },
-                    method="POST",
-                )
-                with urllib.request.urlopen(req, timeout=90) as resp:
-                    with open(mp3_path, "wb") as wf:
-                        wf.write(resp.read())
+                for attempt in range(4):
+                    try:
+                        req = urllib.request.Request(
+                            url,
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={
+                                "xi-api-key": api_key,
+                                "Content-Type": "application/json",
+                                "Accept": "audio/mpeg",
+                            },
+                            method="POST",
+                        )
+                        with urllib.request.urlopen(req, timeout=90) as resp:
+                            audio_bytes = resp.read()
+                        with open(mp3_path, "wb") as wf:
+                            wf.write(audio_bytes)
+                        break
+                    except Exception as exc:
+                        if attempt == 3:
+                            raise
+                        wait_s = 2.5 * (attempt + 1)
+                        print(f"    [Retry EN {attempt + 1}/3] {fname}: {exc} (sleeping {wait_s:.1f}s)")
+                        time.sleep(wait_s)
 
-            af_radio_dj = (
-                "highpass=f=140,lowpass=f=5600,"
-                "acompressor=threshold=-20dB:ratio=4.0:makeup=7dB,"
-                "alimiter=limit=0.96,volume=1.55"
-            )
             subprocess.run(
                 [
                     FFMPEG_BIN, "-y", "-loglevel", "error",
@@ -587,8 +772,40 @@ def synthesize_radio_dj_en(api_key: str) -> None:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+            if os.path.exists(wav_path):
+                try:
+                    os.remove(wav_path)
+                except OSError:
+                    pass
             with open(txt_cache, "w", encoding="utf-8") as tf:
                 tf.write(cache_key)
+        return fname
+
+    pending = []
+    cached_n = 0
+    for dj in V13_RADIO_DJ_DEFS_EN:
+        fname = dj["name"]
+        cache_key = f"{dj['tts']}|{dj_filter_ver}"
+        xwm_p = os.path.join(RADIO_DJ_EN_DIR, f"{fname}.xwm")
+        txt_p = os.path.join(RADIO_DJ_EN_DIR, f"{fname}.txt")
+        c_txt = open(txt_p, "r", encoding="utf-8").read() if os.path.exists(txt_p) else None
+        if os.path.exists(xwm_p) and os.path.getsize(xwm_p) > 100 and c_txt == cache_key:
+            cached_n += 1
+        else:
+            pending.append(dj)
+
+    if pending:
+        print(f"  [EN Radio DJ Synthesis] {len(pending)} uncached broadcasts to synthesize ({cached_n} cached)...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
+            futs = {ex.submit(_synth_one_en, dj): dj["name"] for dj in pending}
+            done_n = 0
+            for fut in concurrent.futures.as_completed(futs):
+                fn = fut.result()
+                done_n += 1
+                if done_n % 15 == 0 or done_n == len(pending):
+                    print(f"  [EN Radio DJ Progress] {done_n}/{len(pending)} synthesized ({fn})")
+    else:
+        print(f"  [EN Radio DJ Cached] All {len(V13_RADIO_DJ_DEFS_EN)} English broadcasts verified.")
 
 
 def main() -> None:
@@ -625,14 +842,17 @@ def main() -> None:
                         sp += 6 + ssz
                         if st == b"NAM1":
                             idx += 1
-                            txt = sval[:-1].decode("cp1252", "replace")
-                            info_nam1_en[(fid & 0xFFFFFF, idx)] = trans.get(txt, txt)
+                            txt_cp = sval[:-1].decode("cp1252", "replace")
+                            txt_u8 = sval[:-1].decode("utf-8", "replace")
+                            info_nam1_en[(fid & 0xFFFFFF, idx)] = (
+                                trans.get(txt_cp) or trans.get(txt_u8) or txt_u8
+                            )
                 pos += 24 + dsz
 
     walk(esp_bytes, 0, len(esp_bytes))
 
-    # 1. Synthesize 24 Radio DJ broadcasts
-    print("=== Step 1: Synthesizing 24 English Radio DJ Broadcasts (The Hub Radio 84.5) ===")
+    # 1. Synthesize 110 quest-reactive Radio DJ broadcasts
+    print("=== Step 1: Synthesizing 110 English Radio DJ Broadcasts (The Hub Radio 84.5) ===")
     synthesize_radio_dj_en(api_key)
 
     # 2. Collect all voice clip tasks via es_builder.synthesize_all_voices hook
@@ -648,9 +868,12 @@ def main() -> None:
         tts_text_es: str,
         ba2_voice_map: dict[str, str],
     ) -> None:
-        en_txt = info_nam1_en.get((low_fid, resp_idx))
-        if not en_txt:
-            en_txt = trans.get(tts_text_es, tts_text_es)
+        if vtyp_edid == "V13TheMasterTriVoice" and (low_fid, resp_idx) in MASTER_TRIVOICE_TTS_EN:
+            en_txt = MASTER_TRIVOICE_TTS_EN[(low_fid, resp_idx)]
+        else:
+            en_txt = info_nam1_en.get((low_fid, resp_idx))
+            if not en_txt:
+                en_txt = trans.get(tts_text_es, tts_text_es)
         vid = VOICE_ID_MAP_EN.get(vtyp_edid, _voice_id)
         raw_tasks.append((vtyp_edid, vid, low_fid, resp_idx, en_txt))
 
@@ -681,6 +904,22 @@ def main() -> None:
         xwm_p = os.path.join(VOICES_EN_DIR, vtyp, f"{lfid:08X}_{ridx}.xwm")
         if not os.path.exists(xwm_p) or os.path.getsize(xwm_p) < 100:
             to_synth.append((api_key, vtyp, vid, lfid, ridx, en_txt))
+        else:
+            txt_p = os.path.join(VOICES_EN_DIR, vtyp, f"{lfid:08X}_{ridx}.txt")
+            if os.path.exists(txt_p):
+                with open(txt_p, "r", encoding="utf-8") as _tf:
+                    _prev_txt = _tf.read()
+                _expected_sig = (
+                    f"{en_txt}|trivoice_en_v1"
+                    if vtyp == "V13TheMasterTriVoice"
+                    else (
+                        f"{en_txt}|sfx_mix_v2"
+                        if f"{lfid:08X}_{ridx}" in {"00005033_1", "00005031_1", "00005030_1", "00005035_1", "00005015_1", "00005032_1"}
+                        else en_txt
+                    )
+                )
+                if _prev_txt != _expected_sig:
+                    to_synth.append((api_key, vtyp, vid, lfid, ridx, en_txt))
 
     print(f"Clips needing synthesis (after deduplicating mirrors): {len(to_synth)}")
     done_count = 0
@@ -761,6 +1000,7 @@ def main() -> None:
         "NPCMOverseerJacoren",
         "NPCMUndergroundLeader",
         "NPCMSetNecropolis",
+        "V13ZAX12Voice",
     ):
         stop_vdir = os.path.join(VOICES_EN_DIR, stop_vtyp)
         os.makedirs(stop_vdir, exist_ok=True)

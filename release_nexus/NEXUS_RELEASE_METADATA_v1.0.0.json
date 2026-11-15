@@ -1,0 +1,36 @@
+{
+  "mod_id": 111327,
+  "mod_uid": "4943507469023",
+  "game_domain": "fallout4",
+  "version": "1.0.0",
+  "summary": "Standalone Fallout 1 (1997) recreation in Fallout 4! Full 5-Act campaign (Acts I-V + Exile), 400-cell 2161 California worldspace, 4 companions (Ian, Tycho, Katja, Dogmeat), Hub Radio 84.5 (41 songs/110 news) & 1,544+ voices (EN/ES).",
+  "description_file": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\release_nexus\\NEXUS_DESCRIPTION_BBCODE.txt",
+  "announcement_post_file": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\release_nexus\\NEXUS_ANNOUNCEMENT_POST_BBCODE.txt",
+  "archive_existing_file": false,
+  "en_file": {
+    "file_id": "8367501",
+    "zip_path": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\release_nexus\\Vault13Chronicles_EN_v1.0.0.zip",
+    "name": "Vault 13 Chronicles - English Edition",
+    "description": "Standalone English v1.0.0 Complete Edition (Acts I-V & May 10, 2162 Exile, 400-cell 2161 Southern California worldspace, 4 simultaneous companions w/ Katja & Survival overhaul, 41 songs/110 reactive DJ broadcasts, 1,544+ lip-synced voices). Native 1.10.163 + Next-Gen/AE, 0 CC, 0 DLC, 0 F4SE. Requires a save without v0.9.x (NOT compatible with v0.9.x saves; v0.9.3 kept in Old Files).",
+    "primary": true
+  },
+  "es_file": {
+    "file_id": "8367504",
+    "zip_path": "c:\\proyectos_python\\Mods_Fallout\\cronicas_refugio_13\\release_nexus\\CronicasDelRefugio13_ES_v1.0.0.zip",
+    "name": "Cronicas del Refugio 13 - Spanish Edition",
+    "description": "Edicion Completa en Espanol v1.0.0 autonoma (Actos I-V y Epilogo del Exilio, mundo de 400 celdas en California 2161, 4 companeros con Katja y mejora de Supervivencia, 41 canciones/110 boletines reactivos, 1.544+ voces dobladas). Nativa 1.10.163 + Next-Gen/AE, 0 CC, 0 DLC, 0 F4SE. Requiere partida sin v0.9.x previa (NO compatible con guardados v0.9.x; v0.9.3 se conserva en Old Files).",
+    "primary": false
+  },
+  "changelog_lines": [
+    "v1.0.0 Complete Edition - Full 5-Act Fallout 1 (1997) Campaign (EN + ES Standalone; v0.9.3 Beta kept downloadable in Old Files):",
+    "- [EN] Complete Chapter 2 Unlocked (Acts III, IV & V): Multi-level Lost Hills Brotherhood Bunker (John Maxson, Rhombus, Head Scribe Vree's Autopsy Holodisk, Mathia, Honor of Steel T-51b quest) and The Glow West Tek Interior with interactive ZAX 1.2 dialogue & chess.",
+    "- [EN] 4th Simultaneous Companion - Katja: Recruitable at L.A. Boneyard Library alongside Nicole & Talius (Followers' Spy), joining Ian, Ranger Tycho & Dogmeat (2161) in a full 4-companion party with Survival scaling & instant field revival.",
+    "- [EN] Adytum Civil War & Forge + Mariposa Military Base: Resolve Regulators vs. Razor's Blades & Gun Runners; craft Turbo Plasma Rifle & Hardened T-51b; infiltrate Mariposa (purple robe stealth, forcefields, Nightkin, The Lieutenant, 180s FEV self-destruct explosion).",
+    "- [EN] The Cathedral, The Master & Arroyo Exile Epilogue: Sister Laura, Father Lasher, Morpheus & Gideon's Psychic Nullifier; defeat The Master (Tri-Voice synthesis) via Vree's Autopsy Proof, Military Combat, or 240s Nuclear Sabotage with Temple destruction effects, unified Cathedral acolyte/mutant AI, solid Vault 13 exit bunker geometry, Jacoren debrief, and playable Arroyo Pioneers Exile epilogue & Dynamic Final Chronicle.",
+    "- [EN] 6.25x Worldspace, Audio Expansion & Save Compatibility Notice: Expanded from 64 to 400 exterior LAND cells (32 fast-travel pins), 40 custom 3D .nif meshes, 28 quests, 59 scripts, 78 dialogue wheels, 1,544+ .fuz clips, plus The Hub Radio (84.5 kHz: 41 songs, 18 jingles, 8 dramas & 110 reactive DJ news) and Dynamic 1997 Mutant Invasion Calendar. Requires a save without v0.9.x (NOT compatible with v0.9.x saves; v0.9.3 kept in Old Files).",
+    "- [ES] Capitulo 2 Completo (Actos III, IV y V): Bunker multinivel de Lost Hills (Maxson, Rhombus, Vree y Holocinta de Autopsia, Mathia, Honor de Acero) e interior de El Resplandor con ZAX 1.2.",
+    "- [ES] Cuarta Companera Clasica (Katja) en El Boneyard para completar el cuarteto simultaneo (Ian, Tycho, Katja y Albondiga), Guerra Civil y Forja de Adytum (Rifle de Plasma Turbo y T-51b Endurecida) e infiltracion multi-via en la Base Militar Mariposa ante El Teniente con autodestruccion VEF de 180 s.",
+    "- [ES] La Catedral, El Maestro (Voz Triple) por las 3 vias canonicas, calendario de Invasiones Mutantes (1997) y Epilogo del Exilio rumbo a Arroyo (Theresa, Lyle y Cronica Final Dinamica), IA unificada en el Templo y salida solida del Refugio 13.",
+    "- [ES] Mundo exterior ampliado 6,25x (64 -> 400 celdas, 32 marcadores), 40 mallas 3D .nif, 28 misiones, 59 scripts, 1.544+ clips de voz .fuz con Lip-Sync y Radio El Eje (84.5 kHz) ampliada a 41 canciones, 18 cunas, 8 radionovelas y 110 boletines reactivos. Requiere partida sin v0.9.x previa (NO compatible con guardados v0.9.x; v0.9.3 se conserva en Old Files)."
+  ]
+}

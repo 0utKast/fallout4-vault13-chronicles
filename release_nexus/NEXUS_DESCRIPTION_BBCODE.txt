@@ -1,107 +1,121 @@
 [center][size=6][b]VAULT 13 CHRONICLES (2161) — CRÓNICAS DEL REFUGIO 13[/b][/size]
-[size=4][b]Standalone Recreation of Classic Fallout 1 (1997) Inside Fallout 4 • Chapter 1: The Water Chip (v0.9.0 Public Beta)[/b][/size]
-[size=3][i]Custom Southern California (2161) Worldspace & Calibrated Pip-Boy Map • The Hub Radio (84.5 kHz) • 3 Simultaneous Classic Companions (Ian, Tycho & Dogmeat) • All 6 Classic 1997 Special Encounters • 1,020+ Lip-Synced Voices (.fuz) • Native 1.10.163 & Next-Gen/AE Support • 0 Creation Club / 0 DLC / 0 F4SE • Standalone English & Spanish Editions[/i][/size]
+[size=4][b]v1.0.0 Complete Edition • 100% Standalone Recreation of Classic Fallout 1 (1997) Inside Fallout 4[/b][/size]
+[size=3][i]Complete 5-Act Campaign (Acts I–V & May 10, 2162 Exile) • 400-Cell Southern California (2161) Worldspace & Calibrated 2048×2048 Pip-Boy Map • The Hub Radio (84.5 kHz: 41 Songs, 18 Jingles, 8 Dramas & 110 Reactive News) • 4 Simultaneous Classic Companions (Ian, Tycho, Katja & Dogmeat) • All 6 Special Encounters • 1,544+ Lip-Synced Voices (.fuz) • Native 1.10.163 & Next-Gen/AE Support • 0 CC / 0 DLC / 0 F4SE • Standalone English & Spanish Editions[/i][/size]
 [size=3][b]Official Trailer:[/b] [url=https://youtu.be/f4HKP1jbSHs]youtu.be/f4HKP1jbSHs[/url]  •  [b]Open-Source Repository:[/b] [url=https://github.com/0utKast/fallout4-vault13-chronicles]github.com/0utKast/fallout4-vault13-chronicles[/url][/size]
 
 [youtube]f4HKP1jbSHs[/youtube][/center]
 
 [line]
 
-[size=4][b]☢️ PUBLIC BETA (v0.9.0) — WHAT IS COMPLETE TODAY & WHAT REMAINS ON THE ROADMAP[/b][/size]
-[quote][b]Vault 13 Chronicles / Crónicas del Refugio 13[/b] is an ambitious, 100% standalone recreation of the original [b]1997 Fallout[/b] built directly on the Fallout 4 engine — packaged in two independent, fully voiced editions ([b]100% English[/b] and [b]100% Spanish[/b]) in the [b]Files[/b] tab.
+[size=5][b]🚀 WHAT'S NEW IN v1.0.0 COMPLETE EDITION (MAJOR EXPANSION OVER v0.9.x BETA)[/b][/size]
+[quote][b]Vault 13 Chronicles / Crónicas del Refugio 13 v1.0.0 Complete Edition[/b] marks the full transition from the [b]Chapter 1 Public Beta (v0.9.x)[/b] to the [b]complete 5-Act Fallout 1 (1997) campaign[/b]. To protect ongoing Beta playthroughs, [b]v0.9.3 Beta remains available in the Old Files section[/b] of this page.
 
-• [b]100% Complete & Playable Right Now in v0.9.0 (Chapter 1 — [i]The Water Chip[/i]):[/b] From crossing the Vault-Tec Mnemosyne Temporal Portal in 2287 back to [b]December 5, 2161[/b], through [b]Vault 13[/b] (Overseer Jacoren & internal Vault subplots), [b]Shady Sands[/b], the buried ruins of [b]Vault 15[/b], [b]Garl's Khans & the 4-way Tandi Rescue[/b], [b]Junktown[/b] (Killian Darkwater, Captain Lars, Gizmo's taped confession, Neal & The Skulz, Doc Morbid), [b]The Hub[/b] (Water Merchants, Crimson Caravan Deathclaw & Tug, Sheriff Greene vs. Decker), frontier quests at [b]Lost Hills Exterior / The Glow[/b] & [b]L.A. Boneyard[/b], [b]Bakersfield / Necropolis Underground[/b], [b]The Watershed[/b] (Super Mutant Harry, the Great Water Pump moral choice & Vault 12 Water Chip extraction), all the way back to restoring Vault 13's Water Purification Plant — plus [b]all 3 classic companions[/b], [b]The Hub Radio (84.5 kHz)[/b], and [b]all 6 classic 1997 Special Encounters[/b].
-• [b]In Development for v1.0 (Chapter 2 — [i]The Mutant Army & The Master[/i]):[/b] While exterior bunker landmarks and core records for Acts III–V are already built into the plugin, expanding and unlocking the full multi-level interiors of [b]Lost Hills Bunker[/b], [b]Adytum & Katja[/b], [b]Mariposa Military Base (FEV Vats)[/b], [b]The Cathedral[/b] (all 3 canonical Master victory paths), and the [b]May 10, 2162 Exile Epilogue[/b] is scheduled for [b]v1.0[/b]. Full progress is tracked openly on [url=https://github.com/0utKast/fallout4-vault13-chronicles]GitHub[/url].[/quote]
-
+[b]Headline Expansions Over v0.9.x:[/b]
+[list]
+[*][b]Full Chapter 2 Campaign Unlocked (Acts III, IV & V — [i]The Mutant Army, The Master & Exile[/i]):[/b] Takes the story from delivering the Water Chip all the way through Lost Hills, The Glow Interior, Adytum's Civil War, Mariposa Military Base, The Cathedral, The Master's 3 canonical endings, and the playable May 10, 2162 Exile Epilogue![/*]
+[*][b]6.25× Larger Worldspace ([font=Courier New]64 → 400[/font] Exterior Cells):[/b] Expanded from an 8×8 grid (64 cells) to a vast [b]20×20 Southern California wasteland (400 custom [font=Courier New]LAND[/font] cells, 81,920 × 81,920 units)[/b] with sculpted terrain, 32 fast-travel MapMarkers, and 40 custom 3D [font=Courier New].nif[/font] architectural & prop meshes (up from 11 landmarks).[/*]
+[*][b]4th Simultaneous Classic Companion — Katja (Followers of the Apocalypse):[/b] Recruitable at the L.A. Boneyard Library alongside Nicole and Talius, armed with her .45 SMG and stealth/lockpicking role, joining [b]Ian, Tycho & Dogmeat (2161)[/b] in a full 4-companion squad with the Survival scaling, auto-recovery & instant field-revival overhaul.[/*]
+[*][b]Multi-Level Lost Hills Bunker & ZAX 1.2 Inside The Glow:[/b] Full Brotherhood of Steel command bunker (High Elder John Maxson, Head Paladin Rhombus, Head Scribe Vree & the Super Mutant Autopsy Holodisk, Mathia, Knight Kyle's T-51b quest) plus subterranean West Tek featuring interactive chess, science & philosophical dialogue with [b]ZAX 1.2[/b].[/*]
+[*][b]Adytum Civil War, Adytum Forge & Mariposa Military Base (FEV Vats):[/b] Resolve Jon Zimmerman & Caleb's Regulators vs. Razor's Blades & Gabriel's Gun Runners; craft Smitty's [b]Winchester P94 Turbo Plasma Rifle[/b] & Miles's [b]Hardened T-51b Power Armor[/b]; infiltrate Mariposa disguised in Children of the Cathedral robes, sabotage forcefields, defeat [b]The Lieutenant ("Lou")[/b], and escape the 180-second FEV self-destruct explosion.[/*]
+[*][b]The Cathedral, The Master's 3 Canonical Endings & Arroyo Exile Epilogue:[/b] Infiltrate Morpheus's Temple with Sister Laura & Father Lasher, earn the [b]Psychic Nullifier[/b] from prisoner Gideon, and defeat [b]The Master (Richard Grey)[/b] (voiced with alternating Tri-Voice synthesis) via [b]Vree's Autopsy Proof[/b], [b]Military Combat[/b], or [b]Sublevel IV 240s Nuclear Sabotage[/b] — culminating in custom Temple destruction cinematics, Jacoren's iconic final debrief, and the playable [b]May 10, 2162 Arroyo Exile Epilogue[/b] with Theresa, Lyle & Dynamic Final Chronicle.[/*]
+[*][b]Massive Audio, Dialogue & Radio Growth ([i]The Hub Radio 84.5 kHz[/i]):[/b] Upgraded from 24 songs / 24 news clips to [b]41 original atomic-age songs, 18 vintage commercial jingles, 8 serialized radio dramas, and 110 reactive voiced DJ broadcasts[/b] that comment dynamically on your actions, alongside [b]1,544+ lip-synced [font=Courier New].fuz[/font] dialogue lines[/b] across [b]78 four-option dialogue wheels[/b] and [b]28 quests[/b].[/*]
+[*][b]Dynamic 1997 Mutant Invasion Calendar, Fixes & Important Save Notice:[/b] Includes all v0.9.1–v0.9.3 fixes plus unified Cathedral NPC faction AI, flush Vault 13 exit bunker geometry, repaired sound-descriptor casts & synchronized Boneyard/Glow persistent coordinates. [color=#ff6666][b]IMPORTANT: Requires a clean Fallout 4 save that never ran v0.9.x Beta (v0.9.3 remains in Old Files for active v0.9 runs).[/b][/color][/*]
+[/list][/quote]
 [line]
 
-[size=5][b]🌍 KEY CONTRIBUTIONS & FEATURES (ENGLISH)[/b][/size]
+[size=5][b]🌍 COMPLETE CAMPAIGN & FEATURES (ENGLISH)[/b][/size]
 [list]
-[*][b]Custom Open Worldspace — Southern California (2161) Fully Trackable on Your Pip-Boy:[/b]
-  • A purpose-built [b]64-cell (8×8) open-world desert topography[/b] ([font=Courier New]V13SouthernCaliforniaWorld[/font]) stretching from the snow-dusted Sierra Madre peaks above [b]Vault 13[/b] and [b]Vault 15[/b] in the north, down through [b]Shady Sands[/b], [b]Junktown[/b], [b]Lost Hills[/b], and [b]The Hub[/b]'s central river valley, to the irradiated ruins of [b]Necropolis (Bakersfield)[/b], [b]The Glow (West Tek)[/b], [b]Mariposa[/b], and the [b]L.A. Boneyard / Cathedral[/b] in the south.
-  • Includes a native 16-byte [font=Courier New].lod[/font] worldspace descriptor and a custom [b]2048×2048 12-mipmap classic Fallout 1 Pip-Boy World Map[/b] (localized in English and Spanish) so your [b]player cursor, active quest markers, custom location pins, and fast-travel targets align 1:1 on the Pip-Boy screen[/b] with zero F4SE or UI mods required!
-[*][b]Full Chapter 1 Main Questline (Acts I & II — [i]The Water Chip[/i]):[/b]
-  • Enter the [b]Vault-Tec Mnemosyne Historical Archive[/b] in the Commonwealth (northwest of Vault 111 / Sanctuary Hills) and step into [b]Vault 13 on December 5, 2161[/b], receiving [b]Overseer Jacoren[/b]'s iconic briefing: 150 days of drinking water remain.
-  • Investigate [b]Shady Sands[/b] and descend into the collapsed subterranean command center of [b]Vault 15[/b].
-  • Resolve internal Vault 13 crises (Calming [b]Theresa[/b]'s water-rationing faction, unmasking the [b]Water Thief[/b], and accessing Vault 13's armory).
-  • Follow the water caravan trail to [b]Necropolis[/b]: parley with peaceful Vault 12 Ghouls in the Underground caverns, face [b]Set[/b] & [b]Garret[/b] in the Hall of the Dead, repair the [b]Great Water Pump[/b] so Necropolis doesn't die of thirst when you take the chip, confront Super Mutant [b]Harry, Barry & Sally[/b] at the [b]Watershed[/b] (bluff, fight, or sneak past), extract the [b]Water Chip[/b] in [b]Vault 12[/b], and install it in Vault 13's Purification Plant!
-[*][b]True 1997 Multi-Path RPG Town & Wasteland Quests:[/b]
-  • [b]Shady Sands & The Khans:[/b] Clear the [b]Emperor Radscorpion[/b] nest and cure poisoned farmer Jarvis with Razlo's antivenom; rescue [b]Tandi[/b] from Garl Death-Hand & Petrox's Khan camp via [b]4 classic RPG paths[/b] (combat assault, 500-cap ransom, speech intimidation, or lockpicking her cell door); liberate captives at Tolan's Eastern Pass; and recover the iconic [b].223 Pistol[/b] at [b]Irwin's Farm[/b].
-  • [b]Junktown:[/b] Stop Gizmo's hired hitman [b]Kenji[/b] for Mayor [b]Killian Darkwater[/b] & Captain [b]Lars[/b]; wiretap or confront crime lord [b]Gizmo[/b] & his bodyguard [b]Izo[/b]; help bartender [b]Neal[/b] at the Skum Pitt recover his late wife's urn from [b]Vinnie[/b] (leader of [i]The Skulz[/i]); and uncover [b]Doc Morbid[/b]'s gruesome secret shipments to Iguana Bob!
-  • [b]The Hub, Lost Hills Exterior & L.A. Boneyard:[/b] Escort [b]Master Merchant Martha Rastello[/b]'s water caravans; investigate the [b]Missing Caravans[/b] for Crimson Caravan, slay the [b]Deathclaw[/b], and interrogate dying Super Mutant [b]Tug[/b]; dismantle [b]Decker & Kane[/b]'s Underground syndicate at the Maltese Falcon with [b]Sheriff Justin Greene[/b]; recover the Ancient Brotherhood Holodisk from [b]ZAX-WT01 at The Glow[/b] for [b]Cabbot & Paladin Talus[/b] ([b]Wattz 2000 Laser Rifle[/b] reward); and clear the Boneyard Deathclaw brood for [b]Gabriel (Gun Runners)[/b], [b]Smitty[/b] ([b]Winchester P94 Plasma Caster[/b]), and [b]Nicole (Followers of the Apocalypse)[/b].
-[*][b]3 Simultaneous Classic 2161 Companions (No Vanilla Companion Slot Replaced!):[/b]
-  • Recruit [b]Ian[/b] in Shady Sands (100 Caps or Speech check), [b]Desert Ranger Tycho[/b] in Junktown, and [b]Dogmeat (2161)[/b] (using your Vault 13 jumpsuit or Iguana-on-a-Stick) — and [b]travel with all three at the same time[/b], complete with follow/wait/regroup commands and automatic Commonwealth suspension/restoration when crossing the Temporal Portal!
-[*][b]Dedicated 2161 Radio Station — [i]The Hub Radio (84.5 kHz)[/i]:[/b]
-  • Tune your Pip-Boy anywhere in 2161 Southern California to [b]The Hub Radio (84.5)[/b]: [b]24 original retro-atomic tracks[/b] paired with [b]24 voiced DJ news broadcasts[/b] reporting on Water Merchant caravans, Junktown's turf war, Radscorpion plagues, Brotherhood patrols, and rumors from Necropolis.
-[*][b]All 6 Classic 1997 Special Encounters Hidden Across the Desert:[/b]
-  1. [b]Unusual Call Box (1960s TARDIS):[/b] Dematerializes with its iconic wheezing groan & beacon flash when approached, leaving behind the functional [b]Pip-Boy Motion Sensor[/b]!
-  2. [b]Crashed Flying Saucer ("Property of Area 51"):[/b] Recover the [b]1997 Classic Alien Blaster[/b] and the [b]Velvet Elvis Painting[/b].
-  3. [b]Overturned Nuka-Cola Delivery Truck:[/b] Custom Nuka-Cola shipping crates and a hilarious pre-war Caps stash.
-  4. [b]Giant Reptilian Footprint ("Godzilla"):[/b] Towering prehistoric crater concealing a [b]Stealth Boy[/b] on a crushed skeleton.
-  5. [b]Bob's Pre-Owned Car Mart:[/b] Abandoned dealership housing the legendary high-crit [b]Red Ryder LE BB Gun[/b].
-  6. [b]Patrick the Celt:[/b] Friendly wandering bard whose song of Old Erin grants [b]+1 Permanent Charisma[/b]!
-[*][b]Classic Arsenal, Custom Meshes & Over 1,020 Lip-Synced Voice Clips ([font=Courier New].fuz[/font]):[/b]
-  • Wield the [b]Colt 6520 10mm Pistol[/b], [b].223 Pistol[/b], [b]Wattz 2000 Laser Rifle[/b], [b]Winchester P94 Plasma Caster[/b], [b]Red Ryder LE BB Gun[/b], [b]Classic Alien Blaster[/b], and the [b]Vault 13 Armored Jumpsuit[/b] (with isolated golden [font=Courier New]13[/font] back numbers) — and bring them freely back to the 2287 Commonwealth!
-  • Every single NPC across all [b]43 four-option dialogue wheels[/b] features native FaceFX lip-synced [font=Courier New].fuz[/font] audio (1,020+ clips per language).
+[*][b]400-Cell Southern California (2161) Worldspace & 1:1 Pip-Boy World Map:[/b]
+• Traverse 400 hand-sculpted exterior [font=Courier New]LAND[/font] cells ([font=Courier New]V13SouthernCaliforniaWorld[/font]) spanning snow-dusted northern peaks above [b]Vault 13[/b] & [b]Vault 15[/b], [b]Shady Sands[/b], [b]Junktown[/b], [b]Lost Hills[/b], and [b]The Hub[/b], down to [b]Necropolis (Bakersfield)[/b], [b]The Glow[/b], [b]Mariposa Military Base[/b], and [b]L.A. Boneyard / The Cathedral[/b].
+• Features a calibrated [b]2048×2048 12-mipmap classic Fallout 1 Pip-Boy Map[/b] (separate English & Spanish editions) and native 16-byte [font=Courier New].lod[/font] bounds so player coordinates, quest pins, and all [b]32 discoverable MapMarkers[/b] align 1:1 without F4SE or UI mods.[/*]
+[*][b]Chapter 1 — Acts I & II ([i]The Water Chip[/i]):[/b]
+• Enter the [b]Vault-Tec Mnemosyne Historical Archive[/b] in the 2287 Commonwealth (northwest of Vault 111 / Sanctuary Hills) and step back to [b]December 5, 2161[/b]. Return freely between 2161 California and 2287 Commonwealth at any time while keeping every classic item.
+• Receive [b]Overseer Jacoren[/b]'s 150-day Water Chip mission; resolve Vault 13's water theft & Theresa's rebel faction; explore collapsed [b]Vault 15[/b] and defeat [b]Garl Death-Hand[/b]; parley with [b]Set[/b], [b]Garret[/b], and the Underground Ghouls in [b]Necropolis[/b]; repair the [b]Great Water Pump[/b] to save Bakersfield; outwit, bluff, or fight Super Mutant [b]Harry[/b] at the Watershed; and install the [b]Vault 12 Water Chip[/b].[/*]
+[*][b]Chapter 2 — Acts III, IV & V ([i]The Mutant Army, The Master & Exile[/i]):[/b]
+• Gain Brotherhood induction at [b]Lost Hills[/b] (Elder Maxson, Paladin Rhombus, Scribe Vree, Initiate Lorenzo / Knight Kyle) and descend into [b]The Glow (West Tek)[/b] to converse and play chess with [b]ZAX 1.2[/b].
+• Take sides in [b]Adytum[/b]'s civil conflict (Zimmerman & Caleb vs. Razor's Blades & Gabriel), upgrade gear at the [b]Adytum Forge[/b] ([b]Turbo Plasma Rifle[/b] & [b]Hardened T-51b Power Armor[/b]), and investigate [b]Followers' Spy[/b] at the Boneyard Library.
+• Infiltrate [b]Mariposa Military Base[/b] (purple robe stealth, forcefield emitters, Nightkin, The Lieutenant & 180s FEV self-destruct escape) and [b]The Cathedral[/b] in 1997 Free Order — defeating [b]The Master[/b] via Speech/Autopsy proof, Combat, or Nuclear Sabotage before facing the playable [b]May 10, 2162 Exile Epilogue[/b], Arroyo Pioneers & Dynamic Final Chronicle.[/*]
+[*][b]True 1997 Multi-Path Town Quests (28 Quests Total):[/b]
+• 4-way [b]Tandi Rescue[/b], Emperor Radscorpion & Razlo's Antivenom, Tolan's Eastern Pass, [b]Irwin's Farm[/b] ([b].223 Pistol[/b]), Junktown ([b]Killian Darkwater[/b], Lars, Gizmo's confession bug, Neal & The Skulz, [b]Doc Morbid[/b] & Iguana Bob), Hub Water Caravans, Missing Caravans Deathclaw & Tug, [b]Sheriff Justin Greene vs. Decker & Kane[/b], plus the [b]1997 Mutant Invasion Calendar[/b] across wasteland hubs.[/*]
+[*][b]4 Simultaneous Classic Companions (Survival Ready, No Vanilla Slot Lost):[/b]
+• Travel simultaneously with [b]Ian[/b], [b]Desert Ranger Tycho[/b], [b]Katja[/b], and [b]Dogmeat (2161)[/b] — featuring full 1.0× player-level scaling, Survival bleedout-lock immunity, post-combat auto-recovery, instant field revival ([font=Courier New]E[/font] / [font=Courier New]A[/font]), tactical menus, and seamless Commonwealth suspension/restoration across the Temporal Portal.[/*]
+[*][b][i]The Hub Radio (84.5 kHz)[/i] & 1,544 Lip-Synced Voices:[/b]
+• Enjoy [b]41 original atomic-age songs[/b], [b]18 commercial jingles[/b], [b]8 radio dramas[/b], and [b]110 reactive voiced DJ broadcasts[/b] that adapt dynamically as quests unfold — plus [b]1,544+ FaceFX [font=Courier New].fuz[/font] voice lines[/b] across [b]78 dialogue wheels[/b] and [b]125 custom NPCs[/b].[/*]
+[*][b]All 6 Classic 1997 Special Encounters & Custom 3D Arsenal:[/b]
+• Discover the [b]TARDIS Police Box[/b] (working Pip-Boy Motion Sensor), [b]Area 51 Crashed UFO[/b] (Alien Blaster + Velvet Elvis Painting), [b]Overturned Nuka-Cola Truck[/b], [b]Giant Godzilla Footprint[/b] (Stealth Boy), [b]Bob's Pre-Owned Car Mart[/b] (Red Ryder LE BB Gun), and [b]Patrick the Celt[/b] (+1 Permanent Charisma).
+• Unlock iconic gear & 40 custom 3D assets: [b]Colt 6520[/b], [b].223 Pistol[/b], [b]Wattz 2000[/b], [b]Winchester P94 & Turbo Plasma Rifle[/b], [b]T-51b & Hardened T-51b Power Armor[/b], [b]Vault 13 Armored Jumpsuit[/b], Master's Biomechanical Throne, Cathedral Ruins, and Vault 13 monuments.[/*]
 [/list]
-
 [line]
 
 [size=5][b]🛡️ UNIVERSAL COMPATIBILITY (1.10.163 + NEXT-GEN / AE) & OPEN MODDING POLICY[/b][/size]
 [list]
-[*][b]Works Natively on BOTH Fallout 4 [font=Courier New]1.10.163[/font] (Pre-Next-Gen / GOG / Downgraded) AND [font=Courier New]1.10.980+[/font] (Next-Gen / Anniversary Edition):[/b]
-  • Plugin header compiled strictly as [b][font=Courier New]HEDR v1.00[/font][/b] (all custom FormIDs [font=Courier New]>= 0x01000800[/font]) and archives packed strictly as [b][font=Courier New]BTDX Version 1[/font][/b] ([font=Courier New]GNRL v1[/font] & [font=Courier New]DX10 v1[/font] — never v7/v8).
-[*][b]ZERO Creation Club, ZERO DLCs, ZERO F4SE & ZERO External Dependencies:[/b]
-  • Depends [b]exclusively on base [font=Courier New]Fallout4.esm[/font][/b]. 100% Standalone All-in-One package.
-[*][b]100% Free & Open Permissions Forever:[/b]
-  • We reject artificial modding restrictions and paid gating. Everything in this mod and its [url=https://github.com/0utKast/fallout4-vault13-chronicles]GitHub source repository[/url] is released under [b]100% Open Permissions (MIT)[/b]: feel free to inspect, modify, translate, reuse assets, or redistribute with credit to the author.
+[*][b]Native Dual-Generation Support ([font=Courier New]1.10.163[/font] + [font=Courier New]1.10.980+[/font]):[/b]
+• Compiled with [b][font=Courier New]HEDR v1.00[/font][/b] (custom FormIDs [font=Courier New]>= 0x01000800[/font]) and packed strictly in [b][font=Courier New]BTDX Version 1[/font][/b] ([font=Courier New]GNRL v1[/font] & [font=Courier New]DX10 v1[/font]) — works natively on pre-Next-Gen/GOG [font=Courier New]1.10.163[/font] and Next-Gen/AE [font=Courier New]1.10.980+[/font] alike.[/*]
+[*][b]ZERO Creation Club, ZERO DLCs, ZERO F4SE & ZERO External Requirements:[/b]
+• Requires only base [font=Courier New]Fallout4.esm[/font]. Two automated QA suites verify all [font=Courier New]49,832[/font] custom records and [font=Courier New]59[/font] Papyrus scripts cleanly ([font=Courier New]3,435[/font] structural checks + [font=Courier New]25[/font] bilingual binary/text audits with [b]0[/b] errors).[/*]
+[*][b]100% Free & Open Permissions Forever (MIT License):[/b]
+• Built in total opposition to paid modding locks and walled ecosystems. Source code and assets on [url=https://github.com/0utKast/fallout4-vault13-chronicles]GitHub[/url] carry [b]100% Open Permissions[/b] — inspect, modify, translate, or redistribute freely with attribution.[/*]
 [/list]
-
 [line]
 
-[size=5][b]🛠️ INSTALLATION & HOW TO START (ENGLISH)[/b][/size]
+[size=5][b]🛠️ INSTALLATION & SAVE COMPATIBILITY WARNING (ENGLISH)[/b][/size]
+[quote][color=#ff6666][b]IMPORTANT — NOT COMPATIBLE WITH v0.9.x BETA SAVEGAMES:[/b][/color]
+Because [b]v1.0.0 Complete Edition[/b] expands Southern California 6.25× (from 64 to 400 exterior cells), relocates major hubs, and reassigns persistent FormIDs, loading a save that already ran v0.9.0–v0.9.3 is [b]NOT safe[/b] and will cause displaced objects or broken quest states.
+[list]
+[*][b]Starting v1.0.0:[/b] Load a clean Fallout 4 save (or start a new playthrough) where [b]v0.9.x was NEVER installed[/b].[/*]
+[*][b]Finishing an active v0.9.x campaign?[/b] Do not update mid-playthrough — [b]v0.9.3 Beta (EN & ES) remains downloadable under "Old Files"[/b] on this page (and on the [font=Courier New]release/v0.9.x[/font] branch on GitHub) so you can finish your current run cleanly first.[/*]
+[/list][/quote]
 [list=1]
-[*]In the [b]Files[/b] tab, download [b]EITHER[/b] [font=Courier New]Vault 13 Chronicles - English Edition[/font] [b]OR[/b] [font=Courier New]Cronicas del Refugio 13 - Spanish Edition[/font] (each archive is a complete standalone language edition).
-[*]Install directly with [b]Vortex[/b] or [b]Mod Organizer 2[/b] (or extract [font=Courier New]Vault13Chronicles.esp[/font], [font=Courier New]Vault13Chronicles - Main.ba2[/font], and [font=Courier New]Vault13Chronicles - Textures.ba2[/font] into your [font=Courier New]Fallout 4\Data[/font] folder) and enable [font=Courier New]Vault13Chronicles.esp[/font].
-[*][b]How to Start In-Game:[/b] Load any save (or start a new game after leaving Vault 111). The quest activates automatically and marks the [b]Vault-Tec Mnemosyne Historical Archive[/b] bunker in the northwest Commonwealth (near Vault 111 / Sanctuary Hills). Step inside, read or use the [b]Neural Simulation Mainframe[/b], and cross the [b]Temporal Airlock[/b] into [b]Vault 13 (2161)[/b]! You can travel freely between 2161 California and 2287 Commonwealth at any time.
+[*]In the [b]Files[/b] tab, download [b]EITHER[/b] [font=Courier New]Vault 13 Chronicles - English Edition v1.0.0[/font] [b]OR[/b] [font=Courier New]Cronicas del Refugio 13 - Spanish Edition v1.0.0[/font] (100% standalone per language).[/*]
+[*]Install via [b]Vortex[/b] or [b]Mod Organizer 2[/b] (or extract [font=Courier New]Vault13Chronicles.esp[/font], [font=Courier New]Vault13Chronicles - Main.ba2[/font], and [font=Courier New]Vault13Chronicles - Textures.ba2[/font] to [font=Courier New]Fallout 4\Data[/font]) and enable [font=Courier New]Vault13Chronicles.esp[/font].[/*]
+[*]Load your clean save (after leaving Vault 111). Follow the quest marker to the [b]Vault-Tec Mnemosyne Historical Archive[/b] northwest of Vault 111 / Sanctuary Hills and enter the [b]Temporal Airlock[/b] into 2161 Vault 13.[/*]
 [/list]
-
 [line]
 
 [center][size=6][b]🇪🇸 EDICIÓN COMPLETA EN ESPAÑOL — CRÓNICAS DEL REFUGIO 13 (2161)[/b][/size]
-[size=4][b]Recreación Autónoma de Fallout 1 (1997) en el Motor de Fallout 4 • Capítulo 1: El Chip de Agua (v0.9.0 Beta Pública)[/b][/size]
+[size=4][b]Edición Completa v1.0.0 • Recreación 100% Autónoma de Fallout 1 (1997) en el Motor de Fallout 4[/b][/size]
 [size=3][b]Tráiler Oficial:[/b] [url=https://youtu.be/f4HKP1jbSHs]youtu.be/f4HKP1jbSHs[/url]  •  [b]Repositorio Abierto:[/b] [url=https://github.com/0utKast/fallout4-vault13-chronicles]github.com/0utKast/fallout4-vault13-chronicles[/url][/size][/center]
 
-[size=4][b]☢️ ESTADO ACTUAL DE LA BETA (v0.9.0) Y HOJA DE RUTA[/b][/size]
-[quote][b]Crónicas del Refugio 13[/b] recrea el clásico [b]Fallout (1997)[/b] de forma 100% autónoma dentro de Fallout 4, con voces, textos, radio, carteles 3D y mapa del Pip-Boy íntegramente localizados al español en el segundo archivo principal de la pestaña [b]Files[/b] ([font=Courier New]Cronicas del Refugio 13 - Spanish Edition[/font]).
+[size=5][b]🚀 NOVEDADES EN v1.0.0 EDICIÓN COMPLETA (GRAN EXPANSIÓN FRENTE A v0.9.x)[/b][/size]
+[quote][b]Crónicas del Refugio 13 v1.0.0 Edición Completa[/b] culmina la evolución desde la [b]Beta Pública (v0.9.x)[/b] hasta la [b]campaña completa de los 5 Actos de Fallout 1 (1997)[/b]. Para no romper partidas en curso, [b]la Beta v0.9.3 se mantiene disponible en la pestaña «Old Files»[/b].
 
-• [b]100% Completado y Jugable en v0.9.0 (Capítulo 1 — [i]El Chip de Agua[/i]):[/b] Desde el cruce del Portal Temporal en el Archivo Mnemosyne de Vault-Tec hasta el [b]5 de diciembre de 2161[/b], recorriendo el [b]Refugio 13[/b] (Supervisor Jacoren y subtramas internas), [b]Shady Sands[/b], las ruinas subterráneas del [b]Refugio 15[/b], [b]los Khans y el rescate de Tandi por 4 vías[/b], [b]Junktown / Ciudad Chatarra[/b] (Killian Darkwater, Capitán Lars, confesión grabada de Gizmo, Neal y Los Cráneos, Doc Morbid), [b]El Eje (The Hub)[/b], las misiones exteriores de [b]Lost Hills / El Resplandor[/b] y [b]El Boneyard[/b], [b]Necrópolis (Bakersfield)[/b], [b]La Cuenca[/b] (el supermutante Harry, la Gran Bomba de Agua y la extracción del Chip de Agua en el Refugio 12) y la restauración de la Planta Purificadora del Refugio 13 — junto con [b]los 3 compañeros clásicos simultáneos[/b], [b]Radio El Eje (84.5 kHz)[/b] y [b]los 6 Encuentros Especiales de 1997[/b].
-• [b]En Desarrollo para v1.0 (Capítulo 2 — [i]El Ejército Mutante y El Maestro[/i]):[/b] Apertura y expansión de los niveles interiores de [b]Lost Hills[/b], [b]Adytum y Katja[/b], [b]Base Militar Mariposa (Cubas VEF)[/b], [b]La Catedral[/b] (con las 3 vías canónicas frente al Maestro) y el [b]Epílogo del Exilio (10 de mayo de 2162)[/b]. Código fuente y hoja de ruta abiertos en [url=https://github.com/0utKast/fallout4-vault13-chronicles]GitHub[/url].[/quote]
-
-[size=5][b]🌟 APORTACIONES CLAVE (ESPAÑOL)[/b][/size]
 [list]
-[*][b]Mundo Exterior Propio («Sur de California, 2161») Perfectamente Seguible desde el Pip-Boy:[/b]
-  • Topografía propia de [b]64 celdas exteriores[/b] desde los picos de Sierra Madre ([b]Refugio 13[/b] y [b]Refugio 15[/b]) hasta [b]Shady Sands[/b], [b]Junktown[/b], [b]Lost Hills[/b], [b]El Eje[/b], [b]Necrópolis[/b], [b]El Resplandor[/b], [b]Mariposa[/b] y [b]El Boneyard[/b].
-  • Mapa del mundo en el Pip-Boy ([font=Courier New]2048×2048[/font] en español) calibrado 1:1 con tu posición real, marcadores dinámicos de misión y viaje rápido nativo sin requerir F4SE ni parches de interfaz.
-[*][b]Campaña Principal del Capítulo 1 + Misiones Secundarias Multi-Vía al Estilo 1997:[/b]
-  • Resuelve misiones mediante combate, sigilo, ganzúa, soborno o persuasión: rescate de [b]Tandi[/b] por 4 rutas distintas, grabación de la confesión de [b]Gizmo[/b], urna de [b]Neal[/b] frente a [b]Los Cráneos[/b], secreto de [b]Doc Morbid[/b], [b]Granja de Irwin[/b] (Pistola del .223), caravanas de agua y el Sanguinario de [b]El Eje[/b], [b]Sheriff Greene contra Decker[/b], el holodisco de [b]El Resplandor[/b] y el dilema moral de la [b]Gran Bomba de Agua[/b] y [b]Harry[/b] en Necrópolis.
-[*][b]3 Compañeros Clásicos Simultáneos + Radio Propia + Los 6 Encuentros Especiales:[/b]
-  • Viaja a la vez con [b]Ian[/b], el [b]Ranger Tycho[/b] y [b]Albóndiga (2161)[/b] sin perder tu compañero de la Commonwealth.
-  • Sintoniza [b]Radio El Eje (84.5 kHz)[/b] con [b]24 canciones retro-atómicas[/b] y [b]24 boletines de locutor doblados al español[/b].
-  • Descubre en el desierto la [b]Cabina Azul TARDIS[/b] (Sensor de Movimiento), el [b]Platillo Estrellado del Área 51[/b] (Bláster Alienígena + cuadro de Elvis), el [b]Camión Volcado de Nuka-Cola[/b], la [b]Huella Gigante de Godzilla[/b], el [b]Concesionario de Bob[/b] (Red Ryder LE BB) y a [b]Patrick el Celta[/b] (+1 Carisma permanente).
-[*][b]Más de 1.020 Líneas de Voz con Lip-Sync ([font=Courier New].fuz[/font]) y Compatibilidad Universal:[/b]
-  • Funciona de serie en [b]Fallout 4 [font=Courier New]1.10.163[/font] (GOG / Pre-Next-Gen)[/b] y en [b][font=Courier New]1.10.980+[/font] (Next-Gen / AE)[/b] ([font=Courier New]HEDR v1.00[/font], [font=Courier New]BA2 v1[/font], 0 Creation Club, 0 DLCs, 0 F4SE) bajo [b]Permisos 100% Abiertos[/b].
-[/list]
+[*][b]Capítulo 2 Completo Desbloqueado (Actos III, IV y V — [i]El Ejército Mutante, El Maestro y el Exilio[/i]):[/b] Continúa la historia tras entregar el Chip de Agua con Lost Hills multinivel, el interior de El Resplandor ([b]ZAX 1.2[/b]), la guerra civil de Adytum, la infiltración en la [b]Base Militar Mariposa[/b], [b]La Catedral[/b], las [b]3 vías canónicas frente al Maestro[/b] y el [b]Epílogo Jugable del Exilio (10 de mayo de 2162)[/b].[/*]
+[*][b]Mundo Exterior Ampliado 6,25 Veces (de [font=Courier New]64[/font] a [font=Courier New]400[/font] Celdas):[/b] Desierto «Sur de California (2161)» ampliado a una cuadrícula [b]20×20 (400 celdas [font=Courier New]LAND[/font], 81.920 × 81.920 unidades)[/b], con [b]32 marcadores de viaje rápido[/b], mapa del Pip-Boy en español (2048×2048) calibrado 1:1 y [b]40 mallas 3D propias (.nif)[/b] con 45 materiales y 47 texturas.[/*]
+[*][b]Cuarta Compañera Clásica — Katja (Seguidores del Apocalipsis):[/b] Reclutable en la Biblioteca de El Boneyard junto a Nicole y Talius para viajar simultáneamente con [b]Ian, Ranger Tycho, Katja y Albóndiga (2161)[/b], con escalado dinámico para Muy Difícil / Supervivencia, inmunidad al bloqueo de abatimiento y reanimación rápida ([font=Courier New]E[/font] / [font=Courier New]A[/font]).[/*]
+[*][b]Lost Hills, ZAX 1.2, Forja de Adytum y Mariposa:[/b] Diálogos completos con [b]John Maxson, Rhombus, Vree (Holocinta de Autopsia), Mathia y Caballero Kyle[/b]; partida de ajedrez y debates con [b]ZAX 1.2[/b]; mejora de [b]Rifle de Plasma Turbo[/b] (Smitty) y [b]Servoarmadura T-51b Endurecida[/b] (Miles); e infiltración multi-vía ante [b]El Teniente («Lou»)[/b] con autodestrucción VEF de 180 s en Mariposa.[/*]
+[*][b]La Catedral, El Maestro (Voz Triple) y Epílogo del Exilio rumbo a Arroyo:[/b] Trama de Hermana Laura, Padre Lasher, Morpheus y el [b]Anulador Psíquico[/b] de Gideon; derrota al [b]Maestro[/b] por persuasión científica, combate o sabotaje nuclear (240 s) con cinemática de explosión y ruinas del templo, despedida final de Jacoren y [b]Epílogo Jugable del Exilio rumbo a Arroyo[/b] junto a Theresa, Lyle y la Crónica Final Dinámica.[/*]
+[*][b]Gran Expansión Sonora en [i]Radio El Eje (84.5 kHz)[/i] y Voces Dobladas:[/b] De 24 canciones/24 boletines pasa a [b]41 canciones originales de la era atómica, 18 cuñas publicitarias, 8 radionovelas y 110 boletines reactivos doblados[/b] que comentan tus decisiones en el yermo, junto a [b]1.544+ líneas de diálogo con Lip-Sync (.fuz)[/b] en [b]78 ruedas de diálogo[/b] y [b]28 misiones[/b].[/*]
+[*][b]Calendario de Invasiones Mutantes (1997), Auditoría y Aviso de Partidas:[/b] Incluye todas las mejoras de v0.9.1–v0.9.3 más IA unificada en la Catedral, salida sólida del Refugio 13, corrección de sonidos y sincronización de coordenadas en Boneyard/El Resplandor. [color=#ff6666][b]IMPORTANTE: Requiere una partida limpia donde NO se haya usado la Beta v0.9.x (la v0.9.3 sigue disponible en «Old Files»).[/b][/color][/*]
+[/list][/quote]
+[line]
 
-[size=5][b]🛠️ INSTALACIÓN EN ESPAÑOL[/b][/size]
-En la pestaña [b]Files[/b], descarga [b][font=Courier New]Cronicas del Refugio 13 - Spanish Edition[/font][/b], instálalo con [b]Vortex / Mod Organizer 2[/b] (o extrae los 3 archivos en [font=Courier New]Fallout 4\Data[/font]) y activa [font=Courier New]Vault13Chronicles.esp[/font]. Al cargar tu partida se marcará automáticamente el búnker del [b]Archivo Histórico Mnemosyne[/b] al noroeste del Refugio 111 / Sanctuary Hills para iniciar el viaje a 2161.
+[size=5][b]🌟 CARACTERÍSTICAS COMPLETAS (ESPAÑOL)[/b][/size]
+[list]
+[*][b]Campaña Completa de 5 Actos + 28 Misiones Multi-Vía al Estilo de 1997:[/b]
+• Desde el [b]Archivo Histórico Mnemosyne[/b] en 2287 (viaje bidireccional libre conservando todo tu equipo) hasta el [b]Refugio 13[/b], [b]Shady Sands[/b], [b]Refugio 15[/b] (Garl Mano Muerta), rescate de [b]Tandi[/b] por 4 vías, [b]Junktown[/b] (Killian Darkwater, Gizmo, Neal y Doc Morbid), [b]El Eje[/b] (Granja de Irwin, Martha Rastello, Sanguinario y Decker), [b]Necrópolis y Refugio 12[/b] (Set, Gran Bomba de Agua y Harry), [b]Lost Hills / El Resplandor[/b], [b]El Boneyard / Adytum[/b], [b]Mariposa[/b], [b]La Catedral[/b] y el [b]Epílogo del Exilio en Arroyo[/b].[/*]
+[*][b]4 Compañeros Clásicos Simultáneos + Radio Propia + 6 Encuentros Especiales:[/b]
+• Viaja a la vez con [b]Ian, Ranger Tycho, Katja y Albóndiga (2161)[/b] sin perder tu compañero de la Commonwealth.
+• Sintoniza [b]Radio El Eje (84.5 kHz)[/b] (41 canciones, 18 cuñas, 8 radionovelas, 110 boletines reactivos).
+• Encuentra la [b]Cabina TARDIS[/b] (Sensor de Movimiento), [b]Platillo del Área 51[/b] (Bláster Alienígena + Elvis), [b]Camión de Nuka-Cola[/b], [b]Huella de Godzilla[/b], [b]Concesionario de Bob[/b] (Red Ryder LE) y a [b]Patrick el Celta[/b] (+1 Carisma permanente).[/*]
+[*][b]1.544 Líneas Dobladas con Lip-Sync (.fuz) y Compatibilidad Universal:[/b]
+• [font=Courier New]49.832[/font] registros propios, [font=Courier New]59[/font] scripts Papyrus compilados y auditoría automatizada impecable ([font=Courier New]0[/font] errores). Funciona nativamente en [b]Fallout 4 [font=Courier New]1.10.163[/font] (GOG / Pre-Next-Gen)[/b] y [b][font=Courier New]1.10.980+[/font] (Next-Gen / AE)[/b] ([font=Courier New]HEDR v1.00[/font], [font=Courier New]BA2 v1[/font], 0 Creation Club, 0 DLCs, 0 F4SE) bajo [b]Permisos 100% Abiertos (MIT)[/b].[/*]
+[/list]
+[size=5][b]🛠️ INSTALACIÓN Y AVISO IMPORTANTE SOBRE PARTIDAS DE LA v0.9.x[/b][/size]
+[quote][color=#ff6666][b]IMPORTANTE — NO COMPATIBLE CON PARTIDAS DE LA BETA v0.9.x:[/b][/color]
+Al reconstruir y ampliar el mapa exterior 6,25 veces (de 64 a 400 celdas), desplazar todos los asentamientos y reasignar 64 FormIDs persistentes, cargar una partida que ya tuviera activa la Beta v0.9.0–v0.9.3 [b]NO es compatible[/b] y provocaría objetos desplazados o misiones atascadas.
+[list]
+[*][b]Para jugar a la v1.0.0:[/b] Inicia una partida nueva o carga un guardado de Fallout 4 donde [b]NUNCA se haya instalado la v0.9.x[/b].[/*]
+[*][b]¿Estás terminando una partida de la v0.9?[/b] No actualices todavía: hemos dejado [b]la Beta v0.9.3 (ES y EN) disponible en la sección «Old Files»[/b] de esta misma ficha (y en la rama [font=Courier New]release/v0.9.x[/font] de GitHub) para que puedas acabar tu campaña anterior sin perder nada.[/*]
+[/list][/quote]
+En la pestaña [b]Files[/b], descarga [b][font=Courier New]Cronicas del Refugio 13 - Spanish Edition v1.0.0[/font][/b], instálalo con [b]Vortex / Mod Organizer 2[/b] en una partida limpia sin historial de la v0.9.x y activa [font=Courier New]Vault13Chronicles.esp[/font]. Al cargar la partida tras salir del Refugio 111 se marcará automáticamente el [b]Archivo Histórico Mnemosyne[/b] al noroeste del Refugio 111 / Sanctuary Hills.
 
 [line]
 
 [size=4][b]📜 CREDITS & ACKNOWLEDGEMENTS / CRÉDITOS[/b][/size]
 [list]
-[*][b]Author & Engineering / Autor y Desarrollo:[/b] [b]0utKast[/b] — [url=https://github.com/0utKast/fallout4-vault13-chronicles]GitHub: fallout4-vault13-chronicles[/url] (Custom worldspace & heightmap, 3D NIF meshes, procedural DDS maps/signs, 50 Papyrus state-machine scripts, AI voice synthesis & Lip-Sync pipeline, and original atomic-age radio soundtrack).
-[*][b]Base Game Engine & Vanilla Assets:[/b] [b]Bethesda Game Studios[/b] ([font=Courier New]Fallout4.esm[/font]).
-[*][b]Original [i]Fallout: A Post Nuclear Role Playing Game[/i] (1997) Lore & Inspiration:[/b] [b]Interplay Productions[/b] (Tim Cain, Leonard Boyarsky, Jason Anderson, Chris Taylor, Mark O'Green, Scott Campbell & original 1997 team). Zero original 1997 game files are redistributed; all assets are built from scratch or derived cleanly from [font=Courier New]Fallout4.esm[/font].
-[*][b]License / Permisos:[/b] [b]MIT & 100% Open Permissions[/b] — Free to use, modify, translate, and redistribute with attribution.
+[*][b]Author & Engineering / Autor y Desarrollo:[/b] [b]0utKast[/b] — [url=https://github.com/0utKast/fallout4-vault13-chronicles]GitHub: fallout4-vault13-chronicles[/url] (400-cell worldspace & heightmap, 40 custom 3D NIF meshes, 47 procedural/custom DDS maps & signs, 59 Papyrus scripts, 1,544+ lip-synced AI voice lines & Tri-Voice Master pipeline, and 41-song atomic-age radio soundtrack).[/*]
+[*][b]Base Game Engine & Vanilla Assets:[/b] [b]Bethesda Game Studios[/b] ([font=Courier New]Fallout4.esm[/font]).[/*]
+[*][b]Original [i]Fallout: A Post Nuclear Role Playing Game[/i] (1997) Lore & Inspiration:[/b] [b]Interplay Productions[/b] (Tim Cain, Leonard Boyarsky, Jason Anderson, Chris Taylor, Mark O'Green, Scott Campbell & original 1997 team). Zero original 1997 game files are redistributed; all assets are built from scratch or derived cleanly from [font=Courier New]Fallout4.esm[/font].[/*]
+[*][b]License / Permisos:[/b] [b]MIT & 100% Open Permissions[/b] — Free to use, modify, translate, and redistribute with attribution.[/*]
 [/list]

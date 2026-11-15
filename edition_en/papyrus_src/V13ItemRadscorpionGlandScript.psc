@@ -105,6 +105,42 @@ Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldCo
             if sPC != None
                 sPC.NotifyMotionSensorRecovered()
             endif
+        elseif myBase == Game.GetFormFromFile(0x00001560, "Vault13Chronicles.esp")
+            Quest qAW = Game.GetFormFromFile(0x000D2000, "Vault13Chronicles.esp") as Quest
+            V13SideQuestAdytumWarScript sAW = qAW as V13SideQuestAdytumWarScript
+            if sAW != None
+                sAW.NotifyCalebHoloRecovered()
+            endif
+        elseif myBase == Game.GetFormFromFile(0x00001561, "Vault13Chronicles.esp")
+            Quest qAF1 = Game.GetFormFromFile(0x000D3000, "Vault13Chronicles.esp") as Quest
+            V13SideQuestAdytumForgeScript sAF1 = qAF1 as V13SideQuestAdytumForgeScript
+            if sAF1 != None
+                sAF1.NotifyHydroponicPartsRecovered()
+            endif
+        elseif myBase == Game.GetFormFromFile(0x00001562, "Vault13Chronicles.esp")
+            Quest qAF2 = Game.GetFormFromFile(0x000D3000, "Vault13Chronicles.esp") as Quest
+            V13SideQuestAdytumForgeScript sAF2 = qAF2 as V13SideQuestAdytumForgeScript
+            if sAF2 != None
+                sAF2.NotifyChemistryJournalsRecovered()
+            endif
+        elseif myBase == Game.GetFormFromFile(0x00001563, "Vault13Chronicles.esp")
+            Quest qFS = Game.GetFormFromFile(0x000D4000, "Vault13Chronicles.esp") as Quest
+            V13SideQuestFollowersSpyScript sFS = qFS as V13SideQuestFollowersSpyScript
+            if sFS != None
+                sFS.NotifyHeatherCipherRecovered()
+            endif
+        elseif myBase == Game.GetFormFromFile(0x00001564, "Vault13Chronicles.esp")
+            Quest qInvR = Game.GetFormFromFile(0x000D5000, "Vault13Chronicles.esp") as Quest
+            V13MutantInvasionScript sInvR = qInvR as V13MutantInvasionScript
+            if sInvR != None
+                sInvR.NotifyUnityRadioRecovered()
+            endif
+        elseif myBase == Game.GetFormFromFile(0x00001566, "Vault13Chronicles.esp")
+            Quest qInvV = Game.GetFormFromFile(0x000D5000, "Vault13Chronicles.esp") as Quest
+            V13MutantInvasionScript sInvV = qInvV as V13MutantInvasionScript
+            if sInvV != None
+                sInvV.NotifyViperCodexRecovered()
+            endif
         endif
     endif
 EndEvent

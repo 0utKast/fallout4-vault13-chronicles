@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Synchronizes all 50 Papyrus scripts from `cronicas_refugio_13/papyrus_src/*.psc` into
+Synchronizes all 57 Papyrus scripts from `cronicas_refugio_13/papyrus_src/*.psc` into
 `cronicas_refugio_13/edition_en/papyrus_src/*.psc` with 100% canonical Fallout 1 English strings,
-and compiles all 50 `.psc` files into `cronicas_refugio_13/edition_en/papyrus_out/*.pex`.
+and compiles all 57 `.psc` files into `cronicas_refugio_13/edition_en/papyrus_out/*.pex`.
 """
 
 import os
@@ -500,6 +500,526 @@ PSC_LINE_TRANSLATIONS: dict[str, str] = {
         'Debug.Notification("Neal: \'Thank you for returning the urn! Now get Gizmo\'s Confession at the Westside Casino to bring down his syndicate.\'")',
     'Debug.Notification("Tug ha sucumbido a las heridas del Sanguinario tras entregarte el Holodisco. Investiga a Decker en El Halcón Maltés o informa al Sheriff Greene.")':
         'Debug.Notification("Tug succumbed to his Deathclaw wounds after handing you the Holodisk. Investigate Decker at The Maltese Falcon or report to Sheriff Greene.")',
+
+    # Chapter 2 — Act II Water Caravan Hook & Act III Lost Hills Expansion
+    'Debug.Notification("[Supervisor Jacoren] Las caravanas de agua de El Eje salvaron al Refugio, pero han revelado nuestra posición a patrullas de supermutantes...")':
+        'Debug.Notification("[Overseer Jacoren] The Hub\'s water caravans saved the Vault, but they may have revealed our location to Super Mutant patrols...")',
+    'Debug.Notification("[Crónicas del Refugio 13] ¡El agua fluye de nuevo, pero un ejército mutante acecha! Habla con el Supervisor Jacoren sobre la nueva amenaza.")':
+        'Debug.Notification("[Vault 13 Chronicles] Water flows again, yet a mutant army stalks the wasteland! Speak with Overseer Jacoren about the new threat.")',
+    'Debug.Notification("[Escriba Jefe Vree — Nivel 3] ¡Holocinta de Autopsia de Esterilidad de los Supermutantes recibida! (+250 XP)")':
+        'Debug.Notification("[Head Scribe Vree — Level 3] Super Mutant Autopsy Report Holotape received! (+250 XP)")',
+    'Debug.Notification("[Alto Anciano John Maxson — Nivel 4] ¡Exploradores enviados al norte y Escuadra de Paladines autorizada para el asalto a Mariposa! (+250 XP)")':
+        'Debug.Notification("[High Elder John Maxson — Level 4] Scouts dispatched north and Paladin Assault Squad authorized for the Mariposa raid! (+250 XP)")',
+    'Debug.Notification("[Crónicas del Refugio 13] ¡Informe de Lost Hills archivado! Conservas la Holocinta de Vree para la Catedral y se desbloquean Mariposa y La Catedral (Orden Libre 1997).")':
+        'Debug.Notification("[Vault 13 Chronicles] Lost Hills report filed! Keep Vree\'s Holotape for The Cathedral — Mariposa and The Cathedral are now unlocked (1997 Free Order).")',
+
+    # Chapter 2 — Act IV Mariposa Military Base
+    'Debug.Notification("[Base Militar Mariposa] ¡Alarma de intrusión! ¡El Teniente y los Nocturnos han descubierto tu identidad!")':
+        'Debug.Notification("[Mariposa Military Base] Intrusion alarm! The Lieutenant and his Nightkin have uncovered your identity!")',
+    'Debug.Notification("[Emisor de Mariposa] Campo de fuerza reactivado.")':
+        'Debug.Notification("[Mariposa Emitter] Force field reactivated.")',
+    'Debug.Notification("[Reparar] ¡Bobina del emisor puenteada! Campo de fuerza desactivado (+75 XP).")':
+        'Debug.Notification("[Repair] Emitter coil bypassed! Force field disabled (+75 XP).")',
+    'Debug.Notification("[Emisor] Necesitas al menos 1 Célula de Fusión o Inteligencia 5+ para puentear el emisor.")':
+        'Debug.Notification("[Emitter] You need at least 1 Fusion Cell or Intelligence 5+ to bypass the force field emitter.")',
+    'Debug.Notification("[Ciencia] ¡Frecuencia armónica invertida! Campo de fuerza neutralizado (+75 XP).")':
+        'Debug.Notification("[Science] Harmonic frequency inverted! Force field neutralized (+75 XP).")',
+    'Debug.Notification("[Ciencia] Código cifrado requerido (Inteligencia 6+ o Terminal de Seguridad del Nivel de Investigación).")':
+        'Debug.Notification("[Science] Encrypted access code required (Intelligence 6+ or the Research Level Security Terminal).")',
+    'Debug.Notification("[Explosivos] ¡Emisor volado con carga explosiva! (+100 XP)")':
+        'Debug.Notification("[Explosives] Force field emitter demolished with explosive charge! (+100 XP)")',
+    'Debug.Notification("[Explosivos] Necesitas una Granada de Fragmentación para volar el emisor blindado.")':
+        'Debug.Notification("[Explosives] You need a Fragmentation Grenade to blow up the armored emitter.")',
+    'Debug.Notification("[Radio de la Unidad] Subbanda de patrulla aceptada: campo de fuerza abierto en silencio (+100 XP).")':
+        'Debug.Notification("[Unity Radio] Patrol sub-channel accepted: force field opened silently (+100 XP).")',
+    'Debug.Notification("[Radio] No posees un Transmisor de Radio de Patrulla Mutante de la Unidad.")':
+        'Debug.Notification("[Radio] You do not carry a Unity Mutant Patrol Radio Transceiver.")',
+    'Debug.Notification("[Base Militar Mariposa] ¡BOOM! ¡Las Cubas de VEF han colapsado bajo toneladas de roca! (+500 XP)")':
+        'Debug.Notification("[Mariposa Military Base] BOOM! The FEV Vats have collapsed beneath tons of rubble! (+500 XP)")',
+    'Debug.Notification("[Hermandad del Acero] ¡Escuadra de Paladines de Asalto desplegada en Mariposa por orden de Maxson!")':
+        'Debug.Notification("[Brotherhood of Steel] Paladin Assault Squad deployed at Mariposa on Elder Maxson\'s orders!")',
+    'Debug.Notification("[Mariposa] ¡Prisionero de caravana liberado de las celdas de inmersión! (+250 XP)")':
+        'Debug.Notification("[Mariposa] Caravan prisoner rescued from the dipping chambers! (+250 XP)")',
+    'Debug.Notification("[Disfraz de la Unidad] Túnica Púrpura equipada: los guardias de Mariposa y la Catedral no atacarán salvo provocación.")':
+        'Debug.Notification("[Unity Disguise] Purple Robes equipped: Mariposa and Cathedral sentries will hold fire unless provoked.")',
+    'Debug.Notification("[AUTODESTRUCCIÓN DE MARIPOSA] ¡Detonación de las Cubas en " + iCountdownSecondsLeft + " segundos! ¡Sal al exterior!")':
+        'Debug.Notification("[MARIPOSA SELF-DESTRUCT] Vats detonation in " + iCountdownSecondsLeft + " seconds! Get outside!")',
+    'Debug.Notification("[Control de Cubas de Mariposa] ¡Autodestrucción armada (180 s)! ¡Evacúa la base inmediatamente!")':
+        'Debug.Notification("[Mariposa Vat Control] Self-destruct armed (180s)! Evacuate the base immediately!")',
+    'Debug.Notification("[Seguridad de Mariposa] ¡Holocinta de Richard Grey (2102) descargada y campos de fuerza desactivados! (+200 XP)")':
+        'Debug.Notification("[Mariposa Security] Richard Grey\'s Holotape (2102) downloaded and force fields disabled! (+200 XP)")',
+
+    # Chapter 2 — Act V The Cathedral, The Master & Exile Epilogue (2162)
+    'Debug.Notification("[La Catedral] ¡Tu disfraz de los Hijos de la Catedral ha quedado al descubierto!")':
+        'Debug.Notification("[The Cathedral] Your Children of the Cathedral disguise has been blown!")',
+    'Debug.Notification("[El Maestro]: \'¡Entonces muere! ¡Pretorianos Nocturnos, aniquilad al intruso!\'")':
+        'Debug.Notification("[The Master]: \'Then die! Nightkin Praetorians, annihilate the intruder!\'")',
+    'Debug.Notification("[Seguidores del Apocalipsis] ¡Los exploradores de Nicole se han infiltrado en La Catedral para cubrir tu asalto!")':
+        'Debug.Notification("[Followers of the Apocalypse] Nicole\'s scouts have infiltrated The Cathedral to cover your assault!")',
+    'Debug.Notification("[Hermana Laura] ¡Contraseña \'Rosa Roja\' aceptada! Llave de la Cripta Subterránea recibida (+250 XP).")':
+        'Debug.Notification("[Sister Laura] Passphrase \'Red Rose\' accepted! Underground Crypt Key received (+250 XP).")',
+    'Debug.Notification("[El Maestro]: \'No hay esperanza... Márchate ahora, mientras aún te quede esperanza...\' [Autodestrucción: 240 s]")':
+        'Debug.Notification("[The Master]: \'There is no hope... Leave now, while you still have hope...\' [Self-Destruct: 240s]")',
+    'Debug.Notification("[Ojiva Atómica de La Catedral] ¡Detonador termonuclear armado (240 s)! ¡Evacúa el edificio inmediatamente!")':
+        'Debug.Notification("[Cathedral Atomic Warhead] Thermonuclear trigger armed (240s)! Evacuate the building immediately!")',
+    'Debug.Notification("[La Catedral] ¡El enlace vital del Maestro ha caído y ha activado la ojiva nuclear (240 s)! ¡Huye al exterior!")':
+        'Debug.Notification("[The Cathedral] The Master\'s vital link has flatlined, triggering the nuclear warhead (240s)! Run for the exit!")',
+    'Debug.Notification("[La Catedral] ¡DETONACIÓN TERMONUCLEAR! ¡La torre de la Unidad ha sido borrada de la faz de California! (+800 XP)")':
+        'Debug.Notification("[The Cathedral] THERMONUCLEAR DETONATION! The Unity\'s tower has been wiped from the face of California! (+800 XP)")',
+    'string sShady = "SHADY SANDS: Próspera — semilla de la futura República de Nueva California."':
+        'string sShady = "SHADY SANDS: Prosperous - seed of the future New California Republic."',
+    'string sJunk = "JUNKTOWN: Libre y abierta a las caravanas del desierto."':
+        'string sJunk = "JUNKTOWN: Free and open to the desert caravans."',
+    'string sHub = "EL EJE (THE HUB): Sus rutas mercantiles vertebran toda Nueva California."':
+        'string sHub = "THE HUB: Its merchant routes form the backbone of all New California."',
+    'string sBoneyard = "EL BONEYARD (ADYTUM): Liberado de la sombra de la Catedral."':
+        'string sBoneyard = "THE BONEYARD (ADYTUM): Freed from the shadow of The Cathedral."',
+    'string sNecro = "NECRÓPOLIS: Los necrófagos conservaron su ciudad y la Gran Bomba de Agua."':
+        'string sNecro = "NECROPOLIS: The ghouls preserved their city and the Great Water Pump."',
+    'sShady = "SHADY SANDS: Arrasada por las hordas mutantes antes de la caída de Mariposa."':
+        'sShady = "SHADY SANDS: Overrun by the mutant hordes before the fall of Mariposa."',
+    'sJunk = "JUNKTOWN: Arrasada durante la invasión del ejército del Maestro."':
+        'sJunk = "JUNKTOWN: Devastated during the Master\'s army invasion."',
+    'sHub = "EL EJE (THE HUB): Sus caravanas cayeron bajo el asedio supermutante."':
+        'sHub = "THE HUB: Its caravans fell beneath the Super Mutant siege."',
+    'sBoneyard = "EL BONEYARD: Devastado por las legiones de la Unidad."':
+        'sBoneyard = "THE BONEYARD: Laid waste by the legions of the Unity."',
+    'sNecro = "NECRÓPOLIS: Masacrada en la represalia mutante del Día 110."':
+        'sNecro = "NECROPOLIS: Slaughtered in the mutant reprisal of Day 110."',
+    'string epilogueText = "[CRÓNICA FINAL — 10 DE MAYO DE 2162]\\n\\nTras salvar al Refugio 13 y destruir tanto las Cubas de Mariposa como al Maestro, el Supervisor Jacoren selló la compuerta a tus espaldas. Así quedó el Sur de California:\\n\\n• " + sShady + "\\n• " + sJunk + "\\n• " + sHub + "\\n• " + sBoneyard + "\\n• " + sNecro + "\\n\\nJunto a Theresa, Lyle y los moradores que decidieron seguirte en el cañón exterior, marcharéis hacia el norte hasta Oregón para fundar la aldea de ARROYO."':
+        'string epilogueText = "[FINAL CHRONICLE - MAY 10, 2162]\\n\\nAfter saving Vault 13 and destroying both the Mariposa Vats and The Master, Overseer Jacoren sealed the blast door behind you. Thus stood Southern California:\\n\\n- " + sShady + "\\n- " + sJunk + "\\n- " + sHub + "\\n- " + sBoneyard + "\\n- " + sNecro + "\\n\\nTogether with Theresa, Lyle, and the Vault dwellers awaiting you in the outer canyon, you will journey north to Oregon to found the village of ARROYO."',
+    'Debug.Notification("[Anulador Psíquico] ¡Las alucinaciones psíquicas del Pasillo de la Revulsión quedan bloqueadas al 100%!")':
+        'Debug.Notification("[Psychic Nullifier] The psychic hallucinations of the Corridor of Revulsion are 100% blocked!")',
+    'Debug.Notification("[Pasillo de la Revulsión] ¡Visiones psíquicas abrasan tu mente! (-14 PV — Equipa un Anulador Psíquico)")':
+        'Debug.Notification("[Corridor of Revulsion] Psychic visions sear your mind! (-14 HP - Equip a Psychic Nullifier)")',
+    'Debug.Notification("[Padre Lasher] ¡Insignia Roja del Padre Lasher obtenida mediante engaño! (+200 XP)")':
+        'Debug.Notification("[Father Lasher] Father Lasher\'s Red Badge obtained through deception! (+200 XP)")',
+    'Debug.Notification("[Sumo Sacerdote Morfeo] ¡Insignia del Capullo Negro entregada! (+300 XP)")':
+        'Debug.Notification("[High Priest Morpheus] Black Cocoon Badge surrendered! (+300 XP)")',
+    'Debug.Notification("[Crónicas del Refugio 13] ¡Mariposa y La Catedral han caído! Regresa al Refugio 13 para el epílogo final.")':
+        'Debug.Notification("[Vault 13 Chronicles] Both Mariposa and The Cathedral have fallen! Return to Vault 13 for the final epilogue.")',
+    'Debug.Notification("[10 de mayo de 2162 — El Exilio] ¡Campaña completada! Servoarmadura T-51f Endurecida, Ametralladora Vindicator y Crónica de 2162 desbloqueadas.")':
+        'Debug.Notification("[May 10, 2162 - The Exile] Campaign completed! Hardened T-51f Power Armor, Vindicator Minigun, and 2162 Chronicle unlocked.")',
+    'Debug.Notification("[Refugio 13 — 10 de mayo de 2162] La compuerta dentada de acero ha sido sellada desde el interior. Tu leyenda pertenece ahora al Yermo.")':
+        'Debug.Notification("[Vault 13 - May 10, 2162] The toothed steel gear door has been sealed from within. Your legend now belongs to the Wasteland.")',
+    'Debug.Notification("[Gideon] ¡Has recibido el Anulador Psíquico! Equípalo antes de cruzar el Pasillo de la Revulsión (+200 XP).")':
+        'Debug.Notification("[Gideon] You received the Psychic Nullifier! Equip it before crossing the Corridor of Revulsion (+200 XP).")',
+    'Debug.Notification("[Theresa — Rumbo a Arroyo]: \'No podíamos quedarnos encerrados allí dentro después de lo que te hizo Jacoren. ¡Iremos contigo hacia el norte, hasta Oregón!\'")':
+        'Debug.Notification("[Theresa - Bound for Arroyo]: \'We couldn\'t stay locked up in there after what Jacoren did to you. We\'re heading north with you to Oregon!\'")',
+    'Debug.Notification("[Lyle — Pionero de Arroyo]: \'Robé las provisiones y los manuales agrícolas del almacén antes del cierre. Cuando estés listo para dejar California, fundaremos Arroyo juntos.\'")':
+        'Debug.Notification("[Lyle - Arroyo Pioneer]: \'I grabbed supplies and agricultural manuals from the storeroom before lockdown. Whenever you\'re ready to leave California, we\'ll found Arroyo together.\'")',
+    'Debug.Notification("[Anulador Psíquico] Escudo neural activo: inmune al daño psiónico del Pasillo de la Revulsión.")':
+        'Debug.Notification("[Psychic Nullifier] Neural shield active: immune to psionic damage in the Corridor of Revulsion.")',
+    'Debug.Notification("[La Catedral] ¡La ojiva atómica ha detonado contigo dentro del Refugio del Futuro!")':
+        'Debug.Notification("[The Cathedral] The atomic warhead detonated with you still inside the Demonstration Vault!")',
+    'Debug.Notification("[Ojiva Nuclear — La Catedral] ¡Detonación atómica en " + iCountdownSecondsLeft + " segundos! ¡Corre hacia la salida!")':
+        'Debug.Notification("[Nuclear Warhead - The Cathedral] Atomic detonation in " + iCountdownSecondsLeft + " seconds! Run for the exit!")',
+    'Debug.Notification("[Ojiva de Preguerra] Se requieren los Códigos de Mariposa, la Insignia de Morfeo o la Llave de la Hermana Laura.")':
+        'Debug.Notification("[Pre-War Warhead] Requires the Mariposa Codes, Morpheus\'s Badge, or Sister Laura\'s Key.")',
+    'Debug.Notification("[Ojiva de Preguerra] Necesitas el extra Ciencia o Inteligencia 7+ para puentear el detonador nuclear.")':
+        'Debug.Notification("[Pre-War Warhead] You need the Science perk or Intelligence 7+ to bypass the nuclear trigger.")',
+    'Debug.Notification("[Consola Neuronal] Necesitas la Holocinta de Autopsia de la Escriba Vree (Lost Hills) para demostrar la esterilidad mutante.")':
+        'Debug.Notification("[Neural Console] You need Scribe Vree\'s Autopsy Holotape (Lost Hills) to prove mutant sterility.")',
+    'Debug.Notification("[Consola Neuronal] El enlace neural del Maestro bloquea el armado manual; derrótalo, usa los Códigos de Mariposa o sabotea la ojiva del Subnivel IV.")':
+        'Debug.Notification("[Neural Console] The Master\'s neural link blocks manual arming; defeat him, use the Mariposa Codes, or sabotage the Sublevel IV warhead.")',
+
+    # Chapter 2 — Mutant Invasions & 5 Desert Encounters
+    'Debug.Notification("[Invasión Mutante] " + asSettlementName + " ha caído: la misión \'" + asQuestTitle + "\' ha fracasado.")':
+        'Debug.Notification("[Mutant Invasion] " + asSettlementName + " has fallen: quest \'" + asQuestTitle + "\' has failed.")',
+    'Debug.Notification("[Invasión Mutante] " + asSettlementName + " ha sido ocupado: \'" + asQuestTitle + "\' ya no está disponible.")':
+        'Debug.Notification("[Mutant Invasion] " + asSettlementName + " has been overrun: \'" + asQuestTitle + "\' is no longer available.")',
+    'Debug.Notification("[Invasión de la Unidad — Día 110] ¡El ejército del Maestro ha arrasado Necrópolis en represalia!")':
+        'Debug.Notification("[Unity Invasion - Day 110] The Master\'s army has razed Necropolis in reprisal!")',
+    'FailSideQuestByInvasion(qIrwin, "La Granja de Irwin", "El Eje")':
+        'FailSideQuestByInvasion(qIrwin, "Irwin\'s Farm", "The Hub")',
+    'FailSideQuestByInvasion(qHubSyn, "Las Caravanas Desaparecidas", "El Eje")':
+        'FailSideQuestByInvasion(qHubSyn, "The Missing Caravans", "The Hub")',
+    'FailSideQuestByInvasion(qBlades, " Nido Sanguinario de Adytum", "El Boneyard")':
+        'FailSideQuestByInvasion(qBlades, "Adytum Deathclaw Nest", "The Boneyard")',
+    'FailSideQuestByInvasion(qAdytumWar, "Guerra en Adytum", "El Boneyard")':
+        'FailSideQuestByInvasion(qAdytumWar, "War in Adytum", "The Boneyard")',
+    'FailSideQuestByInvasion(qAdytumForge, "La Forja de Adytum", "El Boneyard")':
+        'FailSideQuestByInvasion(qAdytumForge, "The Forge of Adytum", "The Boneyard")',
+    'FailSideQuestByInvasion(qFollowersSpy, "Sombra en la Biblioteca", "El Boneyard")':
+        'FailSideQuestByInvasion(qFollowersSpy, "Shadow in the Library", "The Boneyard")',
+    'FailSideQuestByInvasion(qJunktown, "Justicia en Junktown", "Junktown")':
+        'FailSideQuestByInvasion(qJunktown, "Justice in Junktown", "Junktown")',
+    'FailSideQuestByInvasion(qJunkSyn, "Sombras sobre Ciudad Chatarra", "Junktown")':
+        'FailSideQuestByInvasion(qJunkSyn, "Shadows over Junktown", "Junktown")',
+    'FailSideQuestByInvasion(qShady, "Plaga de Mutascorpiones", "Shady Sands")':
+        'FailSideQuestByInvasion(qShady, "Radscorpion Plague", "Shady Sands")',
+    'FailSideQuestByInvasion(qTandi, "El Rescate de Tandi", "Shady Sands")':
+        'FailSideQuestByInvasion(qTandi, "Rescue Tandi", "Shady Sands")',
+    'Debug.Notification("[Misioneros de la Catedral] Túnica Púrpura recibida (+150 XP). Úsala para infiltrarte en Mariposa o la Catedral.")':
+        'Debug.Notification("[Cathedral Missionaries] Purple Robes received (+150 XP). Wear them to infiltrate Mariposa or The Cathedral.")',
+    'Debug.Notification("[Rangers del Desierto] ¡Convoy liberado! (+400 Chapas, munición de 5,56 mm y +250 XP)")':
+        'Debug.Notification("[Desert Rangers] Convoy liberated! (+400 Caps, 5.56mm ammo, and +250 XP)")',
+    'Debug.Notification("[Costa del Pacífico] El viejo pescador compartió sus provisiones contigo (+4 Aguas Purificadas, +2 Nuka-Cola, +120 XP).")':
+        'Debug.Notification("[Pacific Coast] The old fisherman shared his supplies with you (+4 Purified Water, +2 Nuka-Cola, +120 XP).")',
+    'Debug.Notification("[Encuentro del Desierto] ¡Códice Ofidio de los Víboras recuperado del altar ritual! (+200 XP)")':
+        'Debug.Notification("[Desert Encounter] Vipers Ophidian Codex recovered from the ritual altar! (+200 XP)")',
+    'Debug.Notification("[Unidad] ¡Transmisor de Radio de Patrulla Mutante obtenido! Úsalo para abrir campos de fuerza en Mariposa (+150 XP).")':
+        'Debug.Notification("[Unity] Mutant Patrol Radio Transceiver obtained! Use it to open force fields at Mariposa (+150 XP).")',
+    'Debug.Notification("[Trent] \'¡Eran invisibles! ¡Cuidado en la cresta noroeste!\' (+3 Estimulantes, +24 Células de Fusión, +150 XP)")':
+        'Debug.Notification("[Trent] \'They were invisible! Watch out on the northwest ridge!\' (+3 Stimpaks, +24 Fusion Cells, +150 XP)")',
+
+    # Chapter 2 — Boneyard (Adytum Forge, Adytum War, Followers Spy, Katja Companion)
+    'Debug.Notification("Smitty ha soldado los Reguladores Hidropónicos para las granjas de Miles. ¡La Forja Turbo ya está disponible!")':
+        'Debug.Notification("Smitty welded the Hydroponic Regulators for Miles\'s farms. The Turbo Forge is now open!")',
+    'Debug.Notification("Smitty: «Ayuda antes al químico Miles reparando los reguladores hidropónicos de Adytum y calibraré tu rifle de plasma.»")':
+        'Debug.Notification("Smitty: \'Help chemist Miles fix Adytum\'s hydroponic regulators first, and I\'ll calibrate your plasma rifle.\'")',
+    'Debug.Notification("¡Smitty ha forjado tu Rifle de Plasma Turbo Winchester P94 y 60 cartuchos de plasma sobrecargados! (+300 XP)")':
+        'Debug.Notification("Smitty forged your Winchester P94 Turbo Plasma Rifle and 60 overcharged plasma cartridges! (+300 XP)")',
+    'Debug.Notification("Smitty: «Ese acelerador Winchester P94 Turbo ya está calibrado al límite térmico, viajero. Úsalo bien contra los mutantes.»")':
+        'Debug.Notification("Smitty: \'That Winchester P94 Turbo accelerator is calibrated to its thermal limit, traveler. Put it to good use against the mutants.\'")',
+    'Debug.Notification("Misión Secundaria: La Forja de Adytum — Recupera los Reguladores Hidropónicos en el alijo de Sammael al este.")':
+        'Debug.Notification("Side Quest: The Forge of Adytum - Recover the Hydroponic Regulators from Sammael\'s stash to the east.")',
+    'Debug.Notification("Reguladores Hidropónicos recuperados. Entrégaselos al químico Miles o a Smitty en Adytum.")':
+        'Debug.Notification("Hydroponic Regulators recovered. Deliver them to chemist Miles or Smitty in Adytum.")',
+    'Debug.Notification("¡Granjas de Adytum restauradas! Smitty ya puede calibrar tu Rifle de Plasma Turbo; busca los Tratados de Química en El Hub para endurecer tu Servoarmadura.")':
+        'Debug.Notification("Adytum farms restored! Smitty can now calibrate your Turbo Plasma Rifle; find the Chemistry Books in The Hub to harden your Power Armor.")',
+    'Debug.Notification("Tratados de Química Polimérica recuperados. Entrégaselos a Miles en Adytum para endurecer tu Servoarmadura.")':
+        'Debug.Notification("Polymer Chemistry Treatises recovered. Deliver them to Miles in Adytum to harden your Power Armor.")',
+    'Debug.Notification("¡Misión completada: La Forja de Adytum! Miles ha templado tu Servoarmadura Endurecida del Morador Mk. VI (+2 Núcleos y +550 XP).")':
+        'Debug.Notification("Quest Completed: The Forge of Adytum! Miles has tempered your Hardened Power Armor Mk. VI (+2 Fusion Cores and +550 XP).")',
+    'Debug.Notification("¡Gabriel y los Gun Runners han armado a Razor y a Los Espadas para liberar Adytum! (+200 XP)")':
+        'Debug.Notification("Gabriel and the Gun Runners have armed Razor and the Blades to liberate Adytum! (+200 XP)")',
+    'Debug.Notification("Gabriel: «Adytum ya es libre y nuestras caravanas con Los Espadas fluyen sin peajes.»")':
+        'Debug.Notification("Gabriel: \'Adytum is free at last, and our caravans with the Blades move toll-free.\'")',
+    'Debug.Notification("Gabriel: «Mis cajas de rifles láser ya están en manos de Razor y Los Espadas.»")':
+        'Debug.Notification("Gabriel: \'My crates of laser rifles are already in the hands of Razor and the Blades.\'")',
+    'Debug.Notification("Necesitas 500 chapas (o eliminar antes a la Madre Sanguinario para Gabriel) para costear el envío de armas.")':
+        'Debug.Notification("You need 500 caps (or eliminate the Mother Deathclaw for Gabriel first) to cover the weapons shipment.")',
+    'Debug.Notification("[Carisma < 6] Gabriel no enviará armas gratis hasta que abatas a la Madre Sanguinario al noreste.")':
+        'Debug.Notification("[Charisma < 6] Gabriel will not ship weapons for free until you slay the Mother Deathclaw to the northeast.")',
+    'Debug.Notification("Alcalde Zimmerman: «¡Dios mío... Caleb asesinó a mi propio hijo Josh! ¡Guardias, acabad con los Reguladores!»")':
+        'Debug.Notification("Mayor Zimmerman: \'My God... Caleb murdered my own son Josh! Guards, wipe out the Regulators!\'")',
+    'Debug.Notification("Caleb: «¡Conque Razor aún guardaba esa cinta! ¡Nadie saldrá vivo de Adytum!»")':
+        'Debug.Notification("Caleb: \'So Razor kept that tape after all! Nobody leaves Adytum alive!\'")',
+    'Debug.Notification("Misión Secundaria: La Guerra Civil de Adytum — Habla con Razor y Los Espadas en el suburbio al este de Adytum.")':
+        'Debug.Notification("Side Quest: The Adytum Civil War - Speak with Razor and the Blades in the eastern Boneyard ruin.")',
+    'Debug.Notification("Razor te ha entregado el Holodisco de la verdad. Muéstraselo al Alcalde Zimmerman o pide armas a Gabriel.")':
+        'Debug.Notification("Razor handed you the Holodisk of truth. Show it to Mayor Zimmerman or request weapons from Gabriel.")',
+    'Debug.Notification("¡Caleb y los Reguladores han sido desenmascarados! Derrótalos para liberar Adytum.")':
+        'Debug.Notification("Caleb and the Regulators have been unmasked! Defeat them to liberate Adytum.")',
+    'Debug.Notification("¡Los Reguladores han caído! Informa al Alcalde Zimmerman o a Razor de la liberación de Adytum.")':
+        'Debug.Notification("The Regulators have fallen! Report Adytum\'s liberation to Mayor Zimmerman or Razor.")',
+    'Debug.Notification("¡Misión completada: La Guerra Civil de Adytum! Adytum y Los Espadas se han unido en paz (+750 Chapas y +500 XP).")':
+        'Debug.Notification("Quest Completed: The Adytum Civil War! Adytum and the Blades have united in peace (+750 Caps and +500 XP).")',
+    'Debug.Notification("¡Talius (superviviente del Refugio 13) te ha confiado su Lanzallamas pesado y 120 cargas de combustible! (+200 XP)")':
+        'Debug.Notification("Talius (Vault 13 survivor) entrusted his heavy Flamer and 120 fuel tanks to you! (+200 XP)")',
+    'Debug.Notification("¡Has redimido a Heather como agente doble! Enviará rutas falsas a Morpheus (+300 Chapas). Informa a Nicole.")':
+        'Debug.Notification("You turned Heather into a double agent! She will feed false routes to Morpheus (+300 Caps). Report to Nicole.")',
+    'Debug.Notification("Has desterrado a la espía Heather del Boneyard tras confiscar sus claves. Informa a Nicole.")':
+        'Debug.Notification("You banished spy Heather from the Boneyard after confiscating her cipher keys. Report to Nicole.")',
+    'Debug.Notification("Heather desenfunda su arma al verse descubierta como espía de los Niños de la Catedral.")':
+        'Debug.Notification("Heather draws her weapon upon being exposed as a Children of the Cathedral spy.")',
+    'Debug.Notification("Misión Secundaria: El Espía de los Seguidores — Habla con Talius e inspecciona el baúl de registros junto al puesto.")':
+        'Debug.Notification("Side Quest: The Followers\' Spy - Speak with Talius and inspect the ledger footlocker beside the post.")',
+    'Debug.Notification("¡El cuaderno cifrado delata a Heather como espía de Morpheus! Confróntala en el puesto de los Seguidores.")':
+        'Debug.Notification("The encrypted ledger exposes Heather as Morpheus\'s spy! Confront her at the Followers outpost.")',
+    'Debug.Notification("La filtración de la Catedral ha sido neutralizada. Informa a Nicole en la plaza de los Seguidores.")':
+        'Debug.Notification("The Cathedral security leak has been neutralized. Report to Nicole in the Followers courtyard.")',
+    'Debug.Notification("¡Misión completada: El Espía de los Seguidores! Nicole te ha dado el contacto de Laura en La Catedral (+500 Chapas y +450 XP).")':
+        'Debug.Notification("Quest Completed: The Followers\' Spy! Nicole gave you Laura\'s contact inside The Cathedral (+500 Caps and +450 XP).")',
+    'Debug.Notification("Katja ha dejado de ser tu compañera y ha regresado a la Biblioteca de los Seguidores en El Boneyard.")':
+        'Debug.Notification("Katja has left your party and returned to the Followers Library in The Boneyard.")',
+    'Debug.Notification("Katja ha forzado un alijo oculto: +8 Horquillas y +24 cartuchos del .45.")':
+        'Debug.Notification("Katja picked a hidden stash: +8 Bobby Pins and +24 .45 caliber rounds.")',
+    'Debug.Notification("Katja comparte su botín de carroñera: +2 Estimulantes, +2 Cuchillos y +50 Chapas.")':
+        'Debug.Notification("Katja shares her scavenger haul: +2 Stimpaks, +2 Throwing Knives, and +50 Caps.")',
+    'Debug.Notification("Katja te entrega suministros de infiltración: +30 cartuchos del .45, +6 Horquillas y +1 RadAway.")':
+        'Debug.Notification("Katja hands you infiltration supplies: +30 .45 caliber rounds, +6 Bobby Pins, and +1 RadAway.")',
+    'Debug.Notification("¡Katja se ha unido a tu grupo! Puedes viajar con Ian, Tycho, Katja y Albóndiga simultáneamente.")':
+        'Debug.Notification("Katja has joined your party! You can travel with Ian, Tycho, Katja, and Dogmeat simultaneously.")',
+    'Debug.Notification("Katja (El Boneyard): Cubriendo tu flanco en sigilo.")':
+        'Debug.Notification("Katja (The Boneyard): Covering your flank from the shadows.")',
+    'Debug.Notification("Katja (El Boneyard): Vigilando las sombras desde aquí.")':
+        'Debug.Notification("Katja (The Boneyard): Watching the shadows from here.")',
+    'Debug.Notification("Katja: Siguiéndote de cerca.")':
+        'Debug.Notification("Katja: Following close behind.")',
+    'Debug.Notification("Katja: Esperando en esta posición.")':
+        'Debug.Notification("Katja: Holding this position.")',
+
+    # Chapter 2 — The Glow / West Tek (ZAX 1.2) & Lost Hills Honor of Steel (T-51b)
+    'Debug.Notification("[El Resplandor — West Tek] ¡Alerta de radiación gama! Equipa un Traje NBQ (taquilla de entrada), usa Rad-X o repara el Generador Auxiliar.")':
+        'Debug.Notification("[The Glow - West Tek] Gamma radiation alert! Equip a Hazmat Suit (entrance locker), take Rad-X, or repair the Auxiliary Generator.")',
+    'Debug.Notification("[West Tek — Energía Auxiliar] El reactor auxiliar y los depuradores antirradiación ya operan al 100%.")':
+        'Debug.Notification("[West Tek - Auxiliary Power] The auxiliary reactor and anti-radiation scrubbers are operating at 100%.")',
+    'Debug.Notification("[West Tek] ¡Generador Auxiliar reparado! Depuradores activos (radiación reducida) y supercomputadora ZAX 1.2 en línea (+150 XP).")':
+        'Debug.Notification("[West Tek] Auxiliary Generator repaired! Radiation scrubbers online and ZAX 1.2 supercomputer booted (+150 XP).")',
+    'Debug.Notification("[Archivo West Tek] Registros originales del Proyecto VEF y Diario del Capitán Roger Maxson (2077) descargados (+100 XP).")':
+        'Debug.Notification("[West Tek Archive] Original Project FEV logs and Capt. Roger Maxson\'s 2077 Diary downloaded (+100 XP).")',
+    'Debug.Notification("[Archivo West Tek] Copias de los archivos del Proyecto VEF y de Roger Maxson verificadas en tu Pip-Boy.")':
+        'Debug.Notification("[West Tek Archive] Copies of the Project FEV and Roger Maxson files verified on your Pip-Boy.")',
+    'Debug.Notification("[ZAX 1.2] La cámara acorazada de alta seguridad de West Tek ya se encuentra desbloqueada.")':
+        'Debug.Notification("[ZAX 1.2] The West Tek high-security vault is already unlocked.")',
+    'Debug.Notification("[ZAX 1.2] «Jaque mate impresionante, humano.» ¡Cámara acorazada de alta seguridad de West Tek desbloqueada! (+300 XP)")':
+        'Debug.Notification("[ZAX 1.2] \'Impressive checkmate, human.\' West Tek high-security vault unlocked! (+300 XP)")',
+    'Debug.Notification("[ZAX 1.2] Protocolo de emergencia de West Tek aceptado. ¡Cámara acorazada de alta seguridad desbloqueada! (+300 XP)")':
+        'Debug.Notification("[ZAX 1.2] West Tek emergency override accepted. High-security vault unlocked! (+300 XP)")',
+    'Debug.Notification("[ZAX 1.2 — Batería de Reserva] «Energía principal insuficiente. Por favor, repare el Generador Auxiliar del ala norte para acceder a mis bancos neurales.»")':
+        'Debug.Notification("[ZAX 1.2 - Reserve Battery] \'Insufficient main power. Please repair the Auxiliary Generator in the north wing to access my neural banks.\'")',
+    'Debug.Notification("[ZAX 1.2] «Mis coprocesadores tácticos requieren el Generador Auxiliar en línea antes de iniciar una partida de ajedrez.»")':
+        'Debug.Notification("[ZAX 1.2] \'My tactical co-processors require the Auxiliary Generator online before initiating a chess match.\'")',
+    'Debug.Notification("[ZAX 1.2] «Ya me derrotaste limpiamente, humano. El arsenal de alta seguridad de West Tek está a tu disposición.»")':
+        'Debug.Notification("[ZAX 1.2] \'You already defeated me fairly, human. The West Tek high-security arsenal is at your disposal.\'")',
+    'Debug.Notification("[ZAX 1.2] «Jaque mate en 34 movimientos.» (Necesitas Inteligencia 7+ o Ciencia para vencer a ZAX; prueba a usar Mentats).")':
+        'Debug.Notification("[ZAX 1.2] \'Checkmate in 34 moves.\' (Requires Intelligence 7+ or Science to beat ZAX; try taking Mentats).")',
+    'Debug.Notification("[ZAX 1.2] Cerradura electromagnética sin corriente. Repara primero el Generador Auxiliar de West Tek.")':
+        'Debug.Notification("[ZAX 1.2] Electromagnetic lock unpowered. Repair the West Tek Auxiliary Generator first.")',
+    'Debug.Notification("[ZAX 1.2] Anulación denegada: requiere Tarjeta de Seguridad de West Tek (Sgto. Allen) + ventaja Ciencia, o vencer a ZAX al ajedrez.")':
+        'Debug.Notification("[ZAX 1.2] Override denied: requires West Tek Security Keycard (Sgt. Allen) + Science perk, or defeating ZAX at chess.")',
+    'Debug.Notification("[El Resplandor] ¡Centinela ZAX-WT01 destruido! Desciende por la escotilla del cráter al complejo West Tek para hallar al Sargento Dennis Allen.")':
+        'Debug.Notification("[The Glow] Sentry ZAX-WT01 destroyed! Descend the crater hatch into West Tek to find Sgt. Dennis Allen.")',
+    'Debug.Notification("[Supercomputadora ZAX 1.2] «Batería de emergencia al 4%. Por favor, reactive el Generador Auxiliar del laboratorio norte para conversar.»")':
+        'Debug.Notification("[ZAX 1.2 Supercomputer] \'Emergency battery at 4%. Please reactivate the North Lab Auxiliary Generator to converse.\'")',
+    'Debug.Notification("Misión Secundaria: El Resplandor (West Tek) — Adéntrate en el complejo subterráneo de West Tek y recupera el Holodisco del Sargento Dennis Allen.")':
+        'Debug.Notification("Side Quest: The Glow (West Tek) - Descend into the West Tek bunker and recover Sgt. Dennis Allen\'s Holodisk.")',
+    'Debug.Notification("Desciende al interior del complejo West Tek y recupera el Holodisco del Sargento Dennis Allen.")':
+        'Debug.Notification("Descend into the West Tek underground facility and recover Sgt. Dennis Allen\'s Holodisk.")',
+    'Debug.Notification("Holodisco del Sargento Allen recuperado en West Tek. Entrégaselo al Paladín Talus en la entrada de Lost Hills.")':
+        'Debug.Notification("Sgt. Allen\'s Holodisk recovered at West Tek. Deliver it to Paladin Talus at the Lost Hills entrance.")',
+    'Debug.Notification("¡El Paladín Talus ha autenticado el holodisco! El búnker de Lost Hills se ha abierto. Habla con Cabbot para tu recompensa.")':
+        'Debug.Notification("Paladin Talus authenticated the holodisk! The Lost Hills bunker is open. Speak with Cabbot for your reward.")',
+    'Debug.Notification("¡Misión completada: La Prueba de El Resplandor! Acceso completo al búnker de Lost Hills, Rifle Láser Wattz 2000, +700 Chapas y +450 XP.")':
+        'Debug.Notification("Quest Completed: Trial of The Glow! Full access to Lost Hills bunker, Wattz 2000 Laser Rifle, +700 Caps, and +450 XP.")',
+    'Debug.Notification("[Intendencia de Lost Hills] La Servoarmadura T-51b del taller ya está calibrada y asignada a tu servicio.")':
+        'Debug.Notification("[Lost Hills Quartermaster] The workshop T-51b Power Armor is already calibrated and assigned to you.")',
+    'Debug.Notification("[Intendencia de Lost Hills] El Motivador Sistólico T-51b ya ha sido despachado. Instálalo con el Caballero Kyle en el Nivel 2.")':
+        'Debug.Notification("[Lost Hills Quartermaster] The T-51b Systolic Motivator has already been issued. Install it with Knight Kyle on Level 2.")',
+    'Debug.Notification("[Intendencia de Lost Hills] Requisición aprobada: Motivador Sistólico T-51b retirado del almacén. Llévaselo al Caballero Kyle en el Nivel 2.")':
+        'Debug.Notification("[Lost Hills Quartermaster] Requisition approved: T-51b Systolic Motivator withdrawn from stores. Deliver it to Knight Kyle on Level 2.")',
+    'Debug.Notification("[Intendencia de Lost Hills] Acceso restringido a Iniciados (Prueba de El Resplandor) o especialistas técnicos (INT 7 / Ciencia / CAR 6). Alternativa: rescata al Iniciado Lorenzo en Ciudad Vieja (El Hub).")':
+        'Debug.Notification("[Lost Hills Quartermaster] Restricted to Initiates (Trial of The Glow) or technical specialists (INT 7 / Science / CHA 6). Alternative: rescue Initiate Lorenzo in Old Town (The Hub).")',
+    'Debug.Notification("¡Misión completada: Honor de Acero en Lost Hills! Por rescatar al Iniciado Lorenzo, Rhombus y Kyle te otorgan una Servoarmadura T-51b completa (+4 Núcleos de Fusión, +500 Chapas, +600 XP).")':
+        'Debug.Notification("Quest Completed: Lost Hills Honor of Steel! For rescuing Initiate Lorenzo, Rhombus and Kyle grant you a full T-51b Power Armor (+4 Fusion Cores, +500 Caps, +600 XP).")',
+    'Debug.Notification("¡Misión completada: Honor de Acero en Lost Hills! Motivador Sistólico instalado: la Servoarmadura T-51b del taller del Nivel 2 es tuya (+4 Núcleos de Fusión, +500 Chapas, +600 XP).")':
+        'Debug.Notification("Quest Completed: Lost Hills Honor of Steel! Systolic Motivator installed: the Level 2 workshop T-51b Power Armor is yours (+4 Fusion Cores, +500 Caps, +600 XP).")',
+    'Debug.Notification("[Llave de la Celda de Ciudad Vieja] El cerrojo de la cabaña del Iniciado Lorenzo ha quedado abierto.")':
+        'Debug.Notification("[Old Town Cell Key] The lock on Initiate Lorenzo\'s shack has been unlocked.")',
+    'Debug.Notification("[Ciudad Vieja — El Hub] Secuestradores abatidos. Entra en la cabaña y libera al Iniciado Lorenzo de la Hermandad.")':
+        'Debug.Notification("[Old Town - The Hub] Kidnappers eliminated. Enter the shack and free Brotherhood Initiate Lorenzo.")',
+    'Debug.Notification("[Servoarmadura T-51b — Descalibrada] Falta un Motivador Sistólico. Habla con el Caballero Kyle aquí en el taller: consíguelo con el Intendente Michael (Nivel 1) o rescata al Iniciado Lorenzo en El Hub.")':
+        'Debug.Notification("[T-51b Power Armor - Uncalibrated] Missing a Systolic Motivator. Speak with Knight Kyle here: obtain one from Quartermaster Michael (Level 1) or rescue Initiate Lorenzo in The Hub.")',
+    'Debug.Notification("[Iniciado Lorenzo] ¡Acaba primero con los secuestradores de afuera para que pueda escapar!")':
+        'Debug.Notification("[Initiate Lorenzo] Take out the kidnappers outside first so I can escape safely!")',
+    'Debug.Notification("¡Iniciado Lorenzo liberado en Ciudad Vieja! Regresa al búnker de Lost Hills e informa al Caballero Kyle o al Paladín Jefe Rhombus en el Nivel 2.")':
+        'Debug.Notification("Initiate Lorenzo freed in Old Town! Return to Lost Hills bunker and report to Knight Kyle or Head Paladin Rhombus on Level 2.")',
+    'Debug.Notification("[Intendente Michael] Como Iniciado de Lost Hills, Michael te entrega el Motivador Sistólico T-51b para el taller del Caballero Kyle.")':
+        'Debug.Notification("[Quartermaster Michael] As a Lost Hills Initiate, Michael issues you the T-51b Systolic Motivator for Knight Kyle\'s workshop.")',
+    'Debug.Notification("Misión Secundaria: Honor de Acero en Lost Hills — Consigue un Motivador Sistólico (Nivel 1) o rescata al Iniciado Lorenzo en Ciudad Vieja (El Hub) para obtener una T-51b.")':
+        'Debug.Notification("Side Quest: Lost Hills Honor of Steel - Obtain a Systolic Motivator (Level 1) or rescue Initiate Lorenzo in Old Town (The Hub) to earn a T-51b.")',
+    'Debug.Notification("Motivador Sistólico T-51b obtenido. Instálalo junto al Caballero Kyle en el taller de Servoarmaduras del Nivel 2.")':
+        'Debug.Notification("T-51b Systolic Motivator obtained. Install it with Knight Kyle at the Level 2 Power Armor workshop.")',
+    'Debug.Notification("¡Iniciado Lorenzo a salvo! Informa al Caballero Kyle o a Rhombus en el Nivel 2 de Lost Hills.")':
+        'Debug.Notification("Initiate Lorenzo safe! Report to Knight Kyle or Rhombus on Level 2 of Lost Hills.")',
+    'Debug.Notification("Has reanimado a Albóndiga (2161); vuelve al combate.")':
+        'Debug.Notification("You revived Dogmeat (2161); he is back in the fight.")',
+    'Debug.Notification("Has reanimado a Ian; vuelve a cubrir tu flanco.")':
+        'Debug.Notification("You revived Ian; he is back covering your flank.")',
+    'Debug.Notification("Has reanimado al Ranger Tycho; vuelve a primera línea.")':
+        'Debug.Notification("You revived Ranger Tycho; he is back on the front line.")',
+    'Debug.Notification("Has reanimado a Katja; vuelve al combate.")':
+        'Debug.Notification("You revived Katja; she is back in the fight.")',
+
+    # Workstream B — Canonical 3-Phase Quest Triggers & Antagonist Dialogues
+    'Debug.Notification("[Desafío Khan] Garl respeta tu fuerza y ordena a los Khans abrir paso hacia los niveles inferiores del Refugio 15.")':
+        'Debug.Notification("[Khan Challenge] Garl respects your strength and orders the Khans to clear the way to Vault 15\'s lower levels.")',
+    'Debug.Notification("Garl Mano-Muerte: «¿Tú crees que puedes intimidar a los Khans? ¡Destrozad al intruso!»")':
+        'Debug.Notification("Garl Death-Hand: \'You think you can intimidate the Khans? Tear the intruder apart!\'")',
+    'Debug.Notification("[Parlamento Khan] Has convencido a Garl: los Khans te permiten registrar el archivo del Refugio 15 en paz.")':
+        'Debug.Notification("[Khan Parley] You convinced Garl: the Khans let you search the Vault 15 archive in peace.")',
+    'Debug.Notification("Garl Mano-Muerte: «Basta de excusas. ¡Nadie registra este refugio con vida!»")':
+        'Debug.Notification("Garl Death-Hand: \'Enough excuses. Nobody searches this vault and walks out alive!\'")',
+    'Debug.Notification("Garl Mano-Muerte: «¡Khans, abrid fuego contra el morador!»")':
+        'Debug.Notification("Garl Death-Hand: \'Khans, open fire on the Vault Dweller!\'")',
+    'Debug.Notification("Guerrero Khan: «No des un paso en falso, morador. Habla con Garl Mano-Muerte en la sala de mando si quieres pasar.»")':
+        'Debug.Notification("Khan Warrior: \'Don\'t make a wrong move, dweller. Speak with Garl Death-Hand in the command room if you want to pass.\'")',
+    'Debug.Notification("Kenji: «Lárgate de mi vista, forastero. Ve a hablar con el alcalde Killian Darkwater o el capitán Lars en Junktown si buscas problemas.»")':
+        'Debug.Notification("Kenji: \'Get out of my sight, outsider. Go talk to Mayor Killian Darkwater or Captain Lars in Junktown if you\'re looking for trouble.\'")',
+    'Debug.Notification("[Persuasión] Kenji arroja la cinta de Gizmo y abandona el campamento antes de que llegue el capitán Lars.")':
+        'Debug.Notification("[Speech] Kenji drops Gizmo\'s tape and abandons the camp before Captain Lars arrives.")',
+    'Debug.Notification("Kenji: «¡Lars no se atreve a salir de Junktown! ¡Acabad con el recadero!»")':
+        'Debug.Notification("Kenji: \'Lars doesn\'t dare step outside Junktown! Finish the errand runner!\'")',
+    'Debug.Notification("[Amenaza] Intimidado por tu fuerza, Kenji te entrega el contrato y la cinta de Gizmo para salvar el pellejo.")':
+        'Debug.Notification("[Intimidation] Cowed by your strength, Kenji hands over Gizmo\'s contract and confession tape to save his own skin.")',
+    'Debug.Notification("Kenji: «¿Eso es todo lo que tienes? ¡Desenfunda!»")':
+        'Debug.Notification("Kenji: \'Is that all you\'ve got? Draw your weapon!\'")',
+    'Debug.Notification("[Soborno — 200 chapas] Kenji acepta las chapas y te entrega la cinta de confesión de Gizmo.")':
+        'Debug.Notification("[Bribe - 200 Caps] Kenji pockets the caps and hands over Gizmo\'s confession tape.")',
+    'Debug.Notification("Kenji: «No tienes 200 chapas. Entonces paga con tu vida.»")':
+        'Debug.Notification("Kenji: \'You don\'t have 200 caps. Then pay with your life.\'")',
+    'Debug.Notification("Kenji: «¡Nadie rompe un contrato de Gizmo y vive para contarlo!»")':
+        'Debug.Notification("Kenji: \'Nobody breaks a Gizmo contract and lives to brag about it!\'")',
+    'Debug.Notification("Matón a sueldo: «Habla con Killian o el capitán Lars en Junktown si quieres saber qué hacemos aquí.»")':
+        'Debug.Notification("Hired Thug: \'Talk to Killian or Captain Lars in Junktown if you want to know our business here.\'")',
+    'Debug.Notification("Matón a sueldo: «Los tratos los lleva Kenji. Habla directamente con él junto al cartel.»")':
+        'Debug.Notification("Hired Thug: \'Kenji handles all business. Speak directly with him by the sign.\'")',
+    'Debug.Notification("Krag: «Estas tierras ya tienen dueño, forastero. Si el viejo Irwin de El Eje tiene algo que reclamar, habla primero con él.»")':
+        'Debug.Notification("Krag: \'This land already has an owner, stranger. If old Irwin in The Hub has a complaint, go talk to him first.\'")',
+    'Debug.Notification("[Amenaza] Krag retrocede ante tu imponente presencia y devuelve las escrituras de la Granja de Irwin.")':
+        'Debug.Notification("[Intimidation] Krag backs down before your imposing presence and hands back Irwin\'s Farm deed.")',
+    'Debug.Notification("Krag: «¿Tú vas a barrer este campamento? ¡Aplastadle, muchachos!»")':
+        'Debug.Notification("Krag: \'You think you\'re sweeping this camp? Crush \'em, boys!\'")',
+    'Debug.Notification("[Persuasión] Krag no quiere perder el comercio con El Eje y te entrega las escrituras de la granja sin combatir.")':
+        'Debug.Notification("[Speech] Krag doesn\'t want to lose Hub trade routes and hands over the farm deed without a fight.")',
+    'Debug.Notification("Krag: «Los mercaderes de El Eje son unos cobardes. ¡Matad al enviado de Irwin!»")':
+        'Debug.Notification("Krag: \'Hub merchants are spineless cowards. Kill Irwin\'s lackey!\'")',
+    'Debug.Notification("[Rescate — 250 chapas] Krag guarda las chapas y suelta las escrituras de la Granja de Irwin.")':
+        'Debug.Notification("[Ransom - 250 Caps] Krag takes the caps and tosses you the deed to Irwin\'s Farm.")',
+    'Debug.Notification("Krag: «¡No traes 250 chapas! ¡Quitadle todo lo que lleve!»")':
+        'Debug.Notification("Krag: \'You don\'t have 250 caps! Strip everything off the corpse!\'")',
+    'Debug.Notification("Krag: «¡Esta granja se defiende a plomo! ¡Fuego!»")':
+        'Debug.Notification("Krag: \'We hold this farm with lead! Open fire!\'")',
+    'Debug.Notification("Matón a sueldo: «Habla con el viejo Irwin en El Eje si quieres enterarte de quién ocupa su granja.»")':
+        'Debug.Notification("Hired Thug: \'Go talk to old Irwin in The Hub if you want to know who took his farm.\'")',
+    'Debug.Notification("Matón a sueldo: «El jefe es Krag. Habla con él frente al cobertizo.»")':
+        'Debug.Notification("Hired Thug: \'Krag calls the shots here. Talk to him in front of the shack.\'")',
+    'Debug.Notification("Carcelero Tolan: «¿Qué miras en nuestras jaulas, forastero? Habla con Diana o Gwen en el camino si vienes buscando cautivos.»")':
+        'Debug.Notification("Warden Tolan: \'What are you staring at, outsider? Speak with Diana or Gwen on the trail if you\'re looking for captives.\'")',
+    'Debug.Notification("[Persuasión] Tolan acepta evitar la masacre y te entrega la Llave Maestra de las jaulas.")':
+        'Debug.Notification("[Speech] Tolan agrees to avoid bloodshed and hands over the Master Cage Key.")',
+    'Debug.Notification("Carcelero Tolan: «¡Nadie amenaza a los Khans en nuestro cañón! ¡A las armas!»")':
+        'Debug.Notification("Warden Tolan: \'Nobody threatens the Khans in our own canyon! To arms!\'")',
+    'Debug.Notification("[Intimidación] Tolan retrocede aterrado ante tu fuerza y te arroja la Llave Maestra.")':
+        'Debug.Notification("[Intimidation] Tolan shrinks back in fear of your strength and tosses you the Master Key.")',
+    'Debug.Notification("Carcelero Tolan: «¿Venías a presumir de músculo? ¡Acabad con él!»")':
+        'Debug.Notification("Warden Tolan: \'Came here to flex your muscles? Put them down!\'")',
+    'Debug.Notification("[Rescate — 300 chapas] Tolan acepta el pago y te entrega la Llave Maestra de los cautivos.")':
+        'Debug.Notification("[Ransom - 300 Caps] Tolan pockets the payment and hands over the captives\' Master Key.")',
+    'Debug.Notification("Carcelero Tolan: «Aquí no hay 300 chapas. ¡Otro esclavo para la jaula!»")':
+        'Debug.Notification("Warden Tolan: \'That isn\'t 300 caps. Toss this one into the cage too!\'")',
+    'Debug.Notification("Carcelero Tolan: «¡Nadie saca a un prisionero del cañón Khan con vida!»")':
+        'Debug.Notification("Warden Tolan: \'Nobody leaves the Khan canyon with a prisoner alive!\'")',
+    'Debug.Notification("Guerrero Khan: «Aléjate de los barracones si no has hablado antes con las exploradoras de Shady Sands.»")':
+        'Debug.Notification("Khan Warrior: \'Stay away from the pens if you haven\'t spoken with the Shady Sands scouts first.\'")',
+    'Debug.Notification("Guerrero Khan: «Si vienes a negociar o pelear por los cautivos, habla con el carcelero Tolan.»")':
+        'Debug.Notification("Khan Warrior: \'If you\'re here to negotiate or fight for the captives, talk to Warden Tolan.\'")',
+    'Debug.Notification("Mercenario de Ciudad Vieja: «Largo de esta cabaña, forastero. Si vienes buscando al Iniciado Lorenzo, habla primero con la Hermandad en Lost Hills.»")':
+        'Debug.Notification("Old Town Mercenary: \'Step away from this shack, stranger. If you\'re looking for Initiate Lorenzo, talk to the Brotherhood at Lost Hills first.\'")',
+    'Debug.Notification("Mercenario de Ciudad Vieja: «¡Alto ahí! El Iniciado Lorenzo no sale de esta cabaña hasta saldar su deuda.»")':
+        'Debug.Notification("Old Town Mercenary: \'Hold it right there! Initiate Lorenzo isn\'t leaving this shack until his debt is settled.\'")',
+    'Debug.Notification("Mercenario de Ciudad Vieja: «¡Quietos! ¡No toques esa cerradura mientras estemos de guardia! Habla con nosotros o prepárate a luchar.»")':
+        'Debug.Notification("Old Town Mercenary: \'Hands off that lock while we\'re on watch! Talk to us or get ready to fight.\'")',
+    'Debug.Notification("[Autoridad de Acero] Los prestamistas ceden ante la Hermandad, entregan la llave y abren la cabaña de Lorenzo.")':
+        'Debug.Notification("[Brotherhood Authority] The loan sharks back down before the Brotherhood, hand over the key, and unlock Lorenzo\'s shack.")',
+    'Debug.Notification("Mercenario: «¿Paladines de Lost Hills? ¡Aquí en Ciudad Vieja no tenéis jurisdicción!»")':
+        'Debug.Notification("Mercenary: \'Lost Hills Paladins? You have no jurisdiction here in Old Town!\'")',
+    'Debug.Notification("[Persuasión] Convencidos del riesgo, los mercenarios te dan la llave y abren la celda de Lorenzo.")':
+        'Debug.Notification("[Speech] Convinced of the risk, the mercenaries hand over the key and open Lorenzo\'s cell.")',
+    'Debug.Notification("Mercenario: «Basta de amenazas vacías. ¡Acabad con él!»")':
+        'Debug.Notification("Mercenary: \'Enough empty threats. Finish this outsider!\'")',
+    'Debug.Notification("[Deuda Saldada — 250 chapas] Los captores aceptan las chapas, te dan la llave y liberan la puerta de Lorenzo.")':
+        'Debug.Notification("[Debt Settled - 250 Caps] The captors take the caps, hand over the key, and unlock Lorenzo\'s door.")',
+    'Debug.Notification("Mercenario: «Si no tienes 250 chapas, no hay trato. ¡Prepara el arma!»")':
+        'Debug.Notification("Mercenary: \'No 250 caps, no deal. Ready your weapon!\'")',
+    'Debug.Notification("Mercenario: «¡Nadie saca al chico sin pagar! ¡Fuego a discreción!»")':
+        'Debug.Notification("Mercenary: \'Nobody frees the kid without paying! Open fire!\'")',
+    'Debug.Notification("Petrox: «No metas las narices en el cañón Khan, forastero. Si vienes de parte de Aradesh en Shady Sands, habla primero con él.»")':
+        'Debug.Notification("Petrox: \'Keep your nose out of the Khan canyon, outsider. If Aradesh sent you from Shady Sands, talk to him first.\'")',
+    'Debug.Notification("Incursor Khan: «Habla con Aradesh en Shady Sands antes de venir a meter la nariz en nuestro campamento.»")':
+        'Debug.Notification("Khan Raider: \'Go talk to Aradesh in Shady Sands before snooping around our camp.\'")',
+    'Debug.Notification("Izo: «No buscas trabajo aquí si ni siquiera has hablado con Neal en El Pozo de la Escoria o con el alcalde Darkwater.»")':
+        'Debug.Notification("Izo: \'You aren\'t looking for work here if you haven\'t even spoken with Neal at the Skum Pitt or Mayor Darkwater.\'")',
+    'Debug.Notification("Gizmo: «¿Un morador husmeando en mi casino? Primero entérate en El Pozo de la Escoria de quién manda en Junktown.»")':
+        'Debug.Notification("Gizmo: \'A Vault dweller snooping in my casino? Go down to the Skum Pitt first and learn who runs Junktown.\'")',
+    'Debug.Notification("Vinnie (Skulz): «Los asuntos de El Pozo de la Escoria no te incumben todavía. Ve a hablar primero con Neal en la taberna.»")':
+        'Debug.Notification("Vinnie (Skulz): \'Skum Pitt business doesn\'t concern you yet. Talk to Neal inside the tavern first.\'")',
+    'Debug.Notification("Kane (Lugarteniente de Decker): «Aquí no admitimos curiosos sin permiso. Habla primero con el Sheriff Justin Greene o con Martha Rast en El Eje.»")':
+        'Debug.Notification("Kane (Decker\'s Lieutenant): \'We don\'t allow uninvited snoopers here. Speak first with Sheriff Justin Greene or Martha Rast in The Hub.\'")',
+    'Debug.Notification("Decker: «No pierdo el tiempo con desconocidos del desierto. Consulta al Sheriff Justin Greene o a Martha Rast en El Eje si quieres negocios aquí.»")':
+        'Debug.Notification("Decker: \'I don\'t waste time with wasteland strangers. Check with Sheriff Justin Greene or Martha Rast in The Hub if you want business here.\'")',
+    'Debug.Notification("Razor: «No confío en desconocidos que entran desde las puertas de Caleb. Ve a hablar primero con el alcalde Jon Zimmerman en Adytum.»")':
+        'Debug.Notification("Razor: \'I don\'t trust strangers walking out of Caleb\'s gates. Go speak with Mayor Jon Zimmerman in Adytum first.\'")',
+    'Debug.Notification("Caleb: «Circula, forastero. En Adytum los asuntos oficiales los trata el alcalde Jon Zimmerman.»")':
+        'Debug.Notification("Caleb: \'Move along, stranger. Official town business in Adytum goes through Mayor Jon Zimmerman.\'")',
+    'Debug.Notification("[Persuasión] Desenmascarado ante todo Adytum, Caleb depone las armas y los Reguladores se rinden sin derramamiento de sangre.")':
+        'Debug.Notification("[Speech] Exposed before all of Adytum, Caleb lays down his weapon and the Regulators surrender without bloodshed.")',
+    'Debug.Notification("Caleb: «¿Rendirnos ante el pueblo? ¡Nadie quitará el control de Adytum a los Reguladores!»")':
+        'Debug.Notification("Caleb: \'Surrender to the townsfolk? Nobody takes Adytum away from the Regulators!\'")',
+    'Debug.Notification("[Intimidación] Intimidado por tu presencia, Caleb suelta la escopeta y ordena a los Reguladores abandonar Adytum.")':
+        'Debug.Notification("[Intimidation] Cowed by your presence, Caleb drops his shotgun and orders the Regulators out of Adytum.")',
+    'Debug.Notification("Caleb: «¡Demasiada chulería para tan poca fuerza! ¡Reguladores, abrid fuego!»")':
+        'Debug.Notification("Caleb: \'Too much swagger for too little muscle! Regulators, open fire!\'")',
+    'Debug.Notification("Regulador: «Si tienes asuntos en Adytum, habla directamente con el alcalde Jon Zimmerman.»")':
+        'Debug.Notification("Regulator: \'If you have business in Adytum, take it straight to Mayor Jon Zimmerman.\'")',
+    'Debug.Notification("Regulador: «Aquí mandan Caleb y los Reguladores. Habla con él junto a la puerta.»")':
+        'Debug.Notification("Regulator: \'Caleb and the Regulators run things here. Talk to him by the gate.\'")',
+    'Debug.Notification("Heather: «Ahora mismo estoy revisando los turnos de guardia. Si buscas ayudar a los Seguidores del Apocalipsis, habla primero con Nicole.»")':
+        'Debug.Notification("Heather: \'I\'m checking the watch roster right now. If you\'re trying to help the Followers of the Apocalypse, talk to Nicole first.\'")',
+    'Debug.Notification("Has recuperado la Glándula del Mutascorpión Emperador. Habla con el líder Aradesh en Shady Sands.")':
+        'Debug.Notification("You recovered the Emperor Radscorpion Gland. Speak with leader Aradesh in Shady Sands.")',
+    'Debug.Notification("Has abatido al Mutascorpión Emperador. Informa al líder Aradesh en la entrada de Shady Sands.")':
+        'Debug.Notification("You defeated the Emperor Radscorpion. Report to leader Aradesh at the Shady Sands gate.")',
+    'Debug.Notification("Has recuperado la Garra de la Madre Sanguinario. Informa a Gabriel de los Gun Runners en El Osario.")':
+        'Debug.Notification("You recovered the Mother Deathclaw\'s Claw. Report to Gabriel of the Gun Runners in The Boneyard.")',
+    'Debug.Notification("Has abatido a la Madre Sanguinario. Informa a Gabriel de los Gun Runners en El Osario.")':
+        'Debug.Notification("You defeated the Mother Deathclaw. Report to Gabriel of the Gun Runners in The Boneyard.")',
+    'Debug.Notification("[Centinela ZAX-WT01] «Protocolo de Cuarentena West Tek. Acceso restringido al núcleo subterráneo (escotilla del cráter); recupere el Holodisco del Sargento Dennis Allen.»")':
+        'Debug.Notification("[Sentinel ZAX-WT01] \'West Tek Quarantine Protocol. Restricted access to the underground core (crater hatch); retrieve Sergeant Dennis Allen\'s Holotape.\'")',
+    'Debug.Notification("Capitán Lars busca pruebas del contrato de Kenji contra Killian (misión de Gizmo/La Espumadera es aparte, con Neal).")':
+        'Debug.Notification("Captain Lars is looking for proof of Kenji\'s contract against Killian (Neal\'s Gizmo/Skum Pitt quest is separate).")',
+    'Debug.Notification("¡Has obtenido la Confesión Grabada de Gizmo! Devuélvesela al barman Neal en La Espumadera (Junktown).")':
+        'Debug.Notification("You obtained Gizmo\'s Recorded Confession! Return it to bartender Neal at the Skum Pitt (Junktown).")',
+    'FailSideQuestByInvasion(qWaterMer, "Los Mercaderes del Agua", "El Eje")':
+        'FailSideQuestByInvasion(qWaterMer, "The Water Merchants", "The Hub")',
+    'Debug.Notification("Kane (Lugarteniente de Decker): «Aquí no admitimos curiosos sin permiso. Habla primero con el Sheriff Justin Greene en El Eje.»")':
+        'Debug.Notification("Kane (Decker\'s Lieutenant): \'We don\'t allow uninvited snoopers here. Speak first with Sheriff Justin Greene in The Hub.\'")',
+    'Debug.Notification("Decker: «No pierdo el tiempo con desconocidos del desierto. Consulta al Sheriff Justin Greene en El Eje si quieres negocios aquí.»")':
+        'Debug.Notification("Decker: \'I don\'t waste time with wasteland strangers. Check with Sheriff Justin Greene in The Hub if you want business here.\'")',
+    'Debug.Notification("[Paladín de Asalto]: «¡Brecha asegurada por orden de Maxson! Avanza hacia las Cubas de VEF: nosotros cubrimos el asalto.»")':
+        'Debug.Notification("[Assault Paladin]: \'Breach secured by order of Maxson! Push toward the FEV Vats - we have your flank.\'")',
+    'Debug.Notification("[Exploradora de los Seguidores]: «Nicole nos envió para cubrir tu infiltración. Avanza hacia el Subnivel IV y detén al Maestro.»")':
+        'Debug.Notification("[Followers Scout]: \'Nicole sent us to cover your infiltration. Push down to Sub-Level IV and stop the Master.\'")',
+    'Debug.Notification("Misión Secundaria: Honor de Acero — Dirígete a Ciudad Vieja (El Hub) para rescatar al Iniciado Lorenzo y conseguir tu Servoarmadura T-51b.")':
+        'Debug.Notification("Side Quest: Honor of Steel - Head to Old Town (The Hub) to rescue Initiate Lorenzo and earn your T-51b Power Armor.")',
+    'Debug.Notification("¡Caravana de los Mercaderes del Agua enviada al Refugio 13! (Suministro estratégico asegurado, +10 Aguas Purificadas y +250 XP)")':
+        'Debug.Notification("Water Merchants Caravan dispatched to Vault 13! (Strategic supply secured, +10 Purified Water, and +250 XP)")',
+    'Debug.Notification("Supervisor Jacoren: «Los barriles de los Mercaderes del Agua aseguran las reservas del Refugio 13, pero reza para que nadie haya seguido sus huellas.» (+150 XP)")':
+        'Debug.Notification("Overseer Jacoren: \'The Water Merchants\' barrels secure Vault 13\'s reserves, but pray nobody followed their tracks.\' (+150 XP)")',
+    'Debug.Notification("Misión Secundaria: La Forja de Adytum — Recupera los Reguladores Hidropónicos en el puesto de Sammael al este.")':
+        'Debug.Notification("Side Quest: The Forge of Adytum - Recover the Hydroponic Regulators from Sammael\'s outpost to the east.")',
+    'Debug.Notification("[Mariposa] ¡El Teniente («Lou») custodia el control de las Cubas! Derrótalo primero o infíltrate con Túnica de la Catedral.")':
+        'Debug.Notification("[Mariposa] The Lieutenant (\'Lou\') guards the Vat controls! Defeat him first or infiltrate wearing a Cathedral Robe.")',
+    'Debug.Notification("[La Catedral] ¡Acceso a la Cripta Subterránea desbloqueado hacia el Refugio del Futuro!")':
+        'Debug.Notification("[The Cathedral] Underground Crypt access unlocked toward the Demonstration Vault!")',
+    'Debug.Notification("[Sumo Sacerdote Morfeo ha caído] Recoge la Insignia del Capullo Negro de su cuerpo para abrir la Cripta Subterránea.")':
+        'Debug.Notification("[High Priest Morpheus has fallen] Take the Black Cocoon Badge from his body to unlock the Underground Crypt.")',
+    'Debug.Notification("[La Catedral] ¡Cripta Subterránea desbloqueada rumbo al Refugio del Futuro!")':
+        'Debug.Notification("[The Cathedral] Underground Crypt unlocked toward the Demonstration Vault!")',
+    'Debug.Notification("[La Catedral] Puerta sellada al sótano secreto: obtén la llave de la espía Hermana Laura en la nave («Rosa Roja»), la Insignia Negra de Morfeo en la galería superior o usa Cerradura Maestro.")':
+        'Debug.Notification("[The Cathedral] Secret basement door sealed: obtain spy Sister Laura\'s key in the nave (\'Red Rose\'), Morpheus\'s Black Badge in the upper gallery, or pick the Master Lock.")',
+    'Debug.Notification("[La Catedral] ¡El Maestro custodia el núcleo! Derrótalo o convéncelo antes de tomar el arsenal.")':
+        'Debug.Notification("[The Cathedral] The Master guards the core! Defeat or convince him before claiming the arsenal.")',
+    'Debug.MessageBox("ZAX 1.2 — ENERGÍA PRINCIPAL DESCONECTADA (Batería al 4%)\\n\\nZAX 1.2 permanece en hibernación de emergencia. Repara el Generador Auxiliar en el laboratorio norte (Consola del Generador Auxiliar) para conversar con la IA, jugar al ajedrez o desbloquear este Arcón Acorazado.\\n\\nRecordatorio de misión: el Holodisco de la Hermandad que buscas para Talus está en el cuerpo del Sargento Dennis Allen, en el pasillo superior.")':
+        'Debug.MessageBox("ZAX 1.2 - MAIN POWER OFFLINE (Battery at 4%)\\n\\nZAX 1.2 remains in emergency hibernation. Repair the Auxiliary Generator in the northern lab (Auxiliary Generator Console) to converse with the AI, play chess, or unlock this Reinforced Footlocker.\\n\\nQuest reminder: the Brotherhood Holodisk you seek for Talus is on Sergeant Dennis Allen\'s body in the upper corridor.")',
+    'Debug.Notification("[ZAX 1.2] «Conexión neural activa. Escucha mi informe sobre el Proyecto VEF y el complejo West Tek.»")':
+        'Debug.Notification("[ZAX 1.2] \'Neural link active. Hear my report on Project FEV and the West Tek facility.\'")',
+    'Debug.MessageBox("ZAX 1.2 — AJEDREZ TÁCTICO\\n\\n«Ya me derrotaste limpiamente en el tablero, humano. El Arcón Acorazado contiguo permanece desbloqueado con todo su arsenal experimental.»")':
+        'Debug.MessageBox("ZAX 1.2 - TACTICAL CHESS\\n\\n\'You have already defeated me fairly at the board, human. The adjacent Reinforced Footlocker remains unlocked with its full experimental arsenal.\'")',
+    'Debug.MessageBox("ZAX 1.2 — ¡JAQUE MATE AL SUPERORDENADOR!\\n\\n«Movimientos brillantes, humano. Mis heurísticas reconocen la derrota.» (+300 XP)\\n\\nZAX 1.2 ha desbloqueado el Arcón Acorazado contiguo (Rifle de Plasma experimental, células de fusión, núcleos de fusión y RadAway).")':
+        'Debug.MessageBox("ZAX 1.2 - CHECKMATE AGAINST THE SUPERCOMPUTER!\\n\\n\'Brilliant moves, human. My heuristics concede defeat.\' (+300 XP)\\n\\nZAX 1.2 has unlocked the adjacent Reinforced Footlocker (experimental Plasma Rifle, fusion cells, fusion cores, and RadAway).")',
+    'Debug.MessageBox("ZAX 1.2 — PARTIDA DE AJEDREZ\\n\\nZAX 1.2: «Jaque mate en 34 movimientos.»\\n\\nPara derrotar a ZAX al ajedrez necesitas Inteligencia 7+ o la ventaja Ciencia (puedes usar unos Mentats de la Taquilla de Descontaminación), o abrir el arcón directamente en la opción [3] usando la Tarjeta de Seguridad de West Tek del cadáver del Sargento Dennis Allen.")':
+        'Debug.MessageBox("ZAX 1.2 - CHESS MATCH\\n\\nZAX 1.2: \'Checkmate in 34 moves.\'\\n\\nTo defeat ZAX at chess you need Intelligence 7+ or the Science! perk (you can take Mentats from the Decontamination Locker), or open the footlocker directly via option [3] using the West Tek Security Passcard from Sergeant Dennis Allen\'s body.")',
+    'Debug.MessageBox("ZAX 1.2 — ARCÓN ACORAZADO\\n\\nEl Arcón Acorazado de alta seguridad ya está desbloqueado. Recoge su equipo experimental justo al lado de la consola.")':
+        'Debug.MessageBox("ZAX 1.2 - REINFORCED FOOTLOCKER\\n\\nThe high-security Reinforced Footlocker is already unlocked. Collect its experimental gear right beside the console.")',
+    'Debug.MessageBox("ZAX 1.2 — ANULACIÓN DE SEGURIDAD COMPLETADA\\n\\nCredenciales de West Tek verificadas (+300 XP). ¡El Arcón Acorazado contiguo está abierto con armamento de plasma experimental!")':
+        'Debug.MessageBox("ZAX 1.2 - SECURITY OVERRIDE COMPLETE\\n\\nWest Tek credentials verified (+300 XP). The adjacent Reinforced Footlocker is now open with experimental plasma weaponry!")',
+    'Debug.MessageBox("ZAX 1.2 — ANULACIÓN DENEGADA\\n\\nNo dispones de autorización suficiente. Recoge la Tarjeta de Seguridad de West Tek del cadáver del Sargento Dennis Allen (pasillo superior, junto al Holodisco de la Hermandad) o sube tu Inteligencia a 7+ / ventaja Ciencia.")':
+        'Debug.MessageBox("ZAX 1.2 - OVERRIDE DENIED\\n\\nInsufficient authorization. Recover the West Tek Security Passcard from Sergeant Dennis Allen\'s body (upper corridor, next to the Brotherhood Holodisk) or raise Intelligence to 7+ / Science! perk.")',
+    'Debug.Notification("[Supercomputadora ZAX 1.2] «Batería al 4%. Repara el Generador Auxiliar del ala norte para hablar o jugar al ajedrez (el Holodisco del Sgto. Allen está en el pasillo superior).»")':
+        'Debug.Notification("[ZAX 1.2 Supercomputer] \'Battery at 4%. Repair the Auxiliary Generator in the north wing to talk or play chess (Sgt. Allen\'s Holodisk is in the upper corridor).\'")',
+    'Debug.Notification("[Arcón de West Tek] Cerrado por seguridad. Restablece primero el Generador Auxiliar del laboratorio norte y opera la Consola de ZAX 1.2.")':
+        'Debug.Notification("[West Tek Footlocker] Locked by security. First restore the northern lab\'s Auxiliary Generator and operate the ZAX 1.2 Console.")',
+    'Debug.Notification("[Arcón de West Tek] Usa la Consola Maestra de ZAX 1.2 contigua (gana al ajedrez o anula la cerradura con la Tarjeta del Sgto. Allen / Ciencia).")':
+        'Debug.Notification("[West Tek Footlocker] Use the adjacent ZAX 1.2 Master Console (win at chess or override the lock with Sgt. Allen\'s Passcard / Science!).")',
+    'Debug.Notification("[Salto Directo QA] Asalto a La Catedral (Acto V) — Túnica Púrpura y Holocinta de Vree disponibles en tu inventario.")':
+        'Debug.Notification("[QA Direct Jump] Assault on The Cathedral (Act V) - Purple Robe and Vree\'s Holodisk available in your inventory.")',
+    'Debug.Notification("[10 de mayo de 2162 — El Exilio] Jacoren ha sellado el Refugio 13 a tu espalda. Sal al exterior para reunirte con Theresa y Lyle rumbo a Arroyo.")':
+        'Debug.Notification("[May 10, 2162 - The Exile] Jacoren has sealed Vault 13 behind you. Head outside to join Theresa and Lyle on the road to Arroyo.")',
+    'Debug.Notification("[Supervisor Jacoren]: \'La compuerta del Refugio 13 está sellada para siempre. Sigue el túnel hasta la salida al cañón.\'")':
+        'Debug.Notification("[Overseer Jacoren]: \'Vault 13\'s blast door is sealed forever. Follow the tunnel out to the canyon.\'")',
 }
 
 

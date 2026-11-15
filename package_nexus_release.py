@@ -21,169 +21,144 @@ MOD_FILES = (
 )
 
 README_EN = """===============================================================================
-VAULT 13 CHRONICLES (2161) - v0.9.0 Public Beta (English Standalone Edition)
-Chapter 1: The Water Chip — Recreation of Fallout 1 (1997) Inside Fallout 4
-GitHub: https://github.com/0utKast/fallout4-vault13-chronicles
+VAULT 13 CHRONICLES (2161) - v1.0.0 Complete Edition (English Standalone)
+Chapters 1 & 2 Complete — Full Recreation of Fallout 1 (1997) in Fallout 4
 ===============================================================================
 
-1. OVERVIEW & WHAT IS INCLUDED IN v0.9.0 (CHAPTER 1 COMPLETE)
--------------------------------------------------------------
-Step into the Vault-Tec Mnemosyne Historical Archive in the Commonwealth and
-cross the Temporal Bridge back to December 5, 2161 as the original Vault Dweller.
+1. WHAT IS THIS MOD?
+---------------------
+Vault 13 Chronicles is a 100% standalone, full-campaign recreation of the
+classic 1997 Fallout (Acts I-V & May 10, 2162 Exile) inside Fallout 4:
+- Complete 5-Act Main Storyline: Mnemosyne Historical Archive (Commonwealth) ->
+  Vault 13 & Overseer Jacoren -> Shady Sands & Vault 15 -> Necropolis, The Great
+  Water Pump & Vault 12 Water Chip -> Multi-level Lost Hills Brotherhood Bunker
+  & ZAX 1.2 inside The Glow -> Adytum Civil War & Forge -> Mariposa Military
+  Base (FEV Vats & Lou) -> The Cathedral (Morpheus, Gideon & The Master's 3
+  canonical endings with Tri-Voice synthesis) -> May 10, 2162 Exile Epilogue,
+  Arroyo Pioneers Camp (Theresa & Lyle) & Dynamic Final Chronicle.
+- 400 Custom Exterior LAND Cells (20x20 grid, 81,920 x 81,920 units) across
+  2161 Southern California with calibrated 2048x2048 Pip-Boy World Map, native
+  .lod bounds, and 32 discoverable MapMarkers.
+- 28 Quests & Multi-Path 1997 RPG Design: 4-way Tandi Rescue, Junktown (Killian,
+  Lars, Gizmo, Neal & Doc Morbid), The Hub (Water Caravans, Irwin's .223 Pistol,
+  Decker & Sheriff Greene), Followers' Spy, Adytum Forge (Turbo Plasma Rifle &
+  Hardened T-51b), Honor of Steel, Dynamic 1997 Mutant Invasion Calendar, and all
+  6 classic 1997 Special Encounters (TARDIS/Motion Sensor, Area 51 Alien Blaster
+  & Elvis, Nuka-Cola Truck, Godzilla Footprint, Bob's Car Mart & Patrick).
+- 4 Simultaneous Classic Companions (Survival Ready, No Vanilla Slot Lost):
+  Ian, Desert Ranger Tycho, Katja (Followers of the Apocalypse), and Dogmeat
+  (2161) — featuring 1.0x level scaling, Survival bleedout-lock immunity, auto-
+  recovery, instant field revival (E / A), tactical menus & Commonwealth sync.
+- The Hub Radio (84.5 kHz): 41 original atomic-age songs, 18 vintage commercial
+  jingles, 8 serialized radio dramas, and 110 reactive voiced DJ news broadcasts.
+- 59 Compiled Papyrus Scripts, 1,544+ lip-synced .fuz dialogue lines across
+  78 four-option dialogue wheels, 125 custom NPCs, 40 custom 3D .nif meshes
+  (45 .bgsm/.bgem materials, 47 .dds textures).
 
-Included & 100% Playable in v0.9.0 (Chapter 1: The Water Chip):
-- Custom Southern California (2161) Open Worldspace (64 exterior cells) with a
-  calibrated 2048x2048 Pip-Boy World Map, 23 Map Markers, quest tracking & fast travel.
-- Complete Chapter 1 Main Campaign (Acts I & II): Vault 13 (Overseer Jacoren &
-  internal Vault 13 subplots), Shady Sands, Vault 15 buried ruins & Garl Death-Hand,
-  Junktown, The Hub, Necropolis Underground, Watershed (Harry, Barry & Sally + Great
-  Water Pump moral choice), Vault 12 Water Chip extraction & Vault 13 finale.
-- Multi-Path 1997 RPG Town Quests: 4-way Tandi Rescue, Gizmo's taped confession,
-  Neal & The Skulz, Doc Morbid's clinic secret, Irwin's Farm (.223 Pistol), Water
-  Merchants caravan contract, Missing Caravans Deathclaw & Tug, Sheriff Greene vs.
-  Decker, plus frontier quests at Lost Hills Exterior / The Glow & L.A. Boneyard.
-- 3 Simultaneous Classic Companions: Ian, Desert Ranger Tycho, and Dogmeat (2161)
-  with classic loadouts and tactical command menus.
-- Dedicated 2161 Radio Station — The Hub Radio (84.5 kHz): 24 original atomic-age
-  songs + 24 voiced English DJ news broadcasts reacting to 2161 events.
-- All 6 Classic 1997 Special Encounters: 1960s Police Box (TARDIS + working Pip-Boy
-  Motion Sensor), Area 51 Crashed UFO (Alien Blaster + Elvis Velvet Painting),
-  Overturned Nuka-Cola Truck, Giant Godzilla Footprint, Bob's Pre-Owned Car Mart
-  (Red Ryder LE BB Gun), and Patrick the Celt (+1 Permanent Charisma).
-- Over 1,060 AI-synthesized English voice lines (.xwm) across 43 dialogue wheels.
+2. UNIVERSAL COMPATIBILITY & REQUIREMENTS
+------------------------------------------
+- Fallout 4 Base Game ONLY (Fallout4.esm).
+- ZERO Creation Club content, ZERO DLCs, ZERO F4SE, ZERO external dependencies.
+- Native compatibility with BOTH Fallout 4 1.10.163 (Pre-Next-Gen / GOG) AND
+  1.10.980+ (Next-Gen / Anniversary Edition): compiled as HEDR v1.00 and packed
+  strictly as BTDX Version 1 BA2 archives (GNRL v1 & DX10 v1).
+- IMPORTANT (SAVE COMPATIBILITY): v1.0.0 is NOT compatible with v0.9.x Beta saves
+  due to the 6.25x worldspace rebuild (64 -> 400 cells). Start a fresh 2161
+  playthrough (or load any Fallout 4 save that has NEVER had v0.9.x installed).
+  Players finishing a v0.9.x run can keep using v0.9.3 from Nexus "Old Files"
+  or the GitHub "release/v0.9.x" branch.
 
-Roadmap for v1.0 (Chapter 2 — Mutant Army & The Master):
-- Unlocking & expanding Acts III-V interiors (Lost Hills multi-level bunker & ZAX,
-  Katja companion, Adytum civil conflict, Mariposa Military Base FEV Vats, The
-  Cathedral's 3 canonical Master victory paths, and the May 10, 2162 Exile Epilogue).
+3. INSTALLATION (VORTEX / MOD ORGANIZER 2 OR MANUAL)
+-----------------------------------------------------
+Install via Vortex or Mod Organizer 2 (recommended), or extract all three plugin
+files directly into your Fallout 4\\Data folder:
+  - Vault13Chronicles.esp
+  - Vault13Chronicles - Main.ba2
+  - Vault13Chronicles - Textures.ba2
+Enable Vault13Chronicles.esp. Load any clean save (without v0.9.x history)
+after leaving Vault 111; the starting quest highlights the Vault-Tec Mnemosyne
+Historical Archive bunker northwest of Vault 111 / Sanctuary Hills.
 
-2. UNIVERSAL COMPATIBILITY & ZERO RESTRICTIONS
-----------------------------------------------
-- Game Versions Supported Natively:
-  * Fallout 4 v1.10.163 (Pre-Next-Gen / GOG / Downgraded)
-  * Fallout 4 v1.10.980+ (Next-Gen / Anniversary Edition)
-- Technical Standard:
-  * Plugin Header: HEDR v1.00, all custom FormIDs >= 0x800
-  * Archives: BTDX Version 1 (GNRL v1 & DX10 v1)
-- Requirements:
-  * Base Fallout4.esm ONLY.
-  * ZERO Creation Club / Creations requirements.
-  * ZERO DLC requirements & ZERO F4SE requirements.
-  * ZERO external mod dependencies (100% Standalone All-in-One).
-
-3. INSTALLATION (Vortex / Mod Organizer 2 / Manual)
----------------------------------------------------
-- Mod Manager (Recommended): Install the .zip archive directly with Vortex or MO2
-  and enable Vault13Chronicles.esp.
-- Manual: Extract 'Vault13Chronicles.esp', 'Vault13Chronicles - Main.ba2', and
-  'Vault13Chronicles - Textures.ba2' into your 'Fallout 4\\Data' folder and enable
-  'Vault13Chronicles.esp'.
-
-4. HOW TO START IN-GAME
------------------------
-Upon loading your save, the quest activates automatically and marks the
-Vault-Tec Mnemosyne Historical Archive bunker in the Commonwealth on your Pip-Boy
-map (northwest of Vault 111 / Sanctuary Hills). Enter the bunker and activate
-the Neural Simulation Mainframe next to the Memory Pod to step into Vault 13 (2161).
-You can freely travel back and forth between 2161 Southern California and 2287
-Commonwealth at any time, keeping all unlocked classic weapons and gear.
-
-5. OPEN MODDING POLICY & CREDITS
---------------------------------
-- Author: 0utKast (https://github.com/0utKast/fallout4-vault13-chronicles)
-- License: MIT & 100% Open Permissions. You are free to use, modify, translate,
-  learn from, and redistribute this mod and its custom assets freely, with credit
-  to the original author. Free forever — rejecting paid gating or artificial
-  modding restrictions.
-- Base Game Engine & Vanilla Assets: Bethesda Game Studios (Fallout4.esm)
-- Fallout 1 (1997) Original Setting & Lore Inspiration: Interplay Productions /
-  Tim Cain, Leonard Boyarsky, Jason Anderson, Chris Taylor & team.
-- Custom 3D Meshes, Procedural BC1 Textures, Worldspace Heightmap, Papyrus State
-  Machines, AI Voice Synthesis & Radio Soundtrack: Created from scratch by 0utKast.
+4. OPEN PERMISSIONS & CREDITS (MIT LICENSE)
+--------------------------------------------
+Author: 0utKast (https://github.com/0utKast/fallout4-vault13-chronicles)
+Base Engine & Assets: Bethesda Game Studios (Fallout4.esm)
+1997 Lore Inspiration: Interplay Productions (Tim Cain, Leonard Boyarsky,
+Jason Anderson, Chris Taylor, Mark O'Green, Scott Campbell & original team).
+No original 1997 Fallout files are included. 100% Free & Open Permissions.
+===============================================================================
 """
 
 README_ES = """===============================================================================
-CRONICAS DEL REFUGIO 13 (2161) - v0.9.0 Beta Publica (Edicion en Espanol)
-Capitulo 1: El Chip de Agua — Recreacion de Fallout 1 (1997) en Fallout 4
-GitHub: https://github.com/0utKast/fallout4-vault13-chronicles
+CRÓNICAS DEL REFUGIO 13 (2161) - Edición Completa v1.0.0 (Español Autónomo)
+Capítulos 1 y 2 Completos — Recreación de Fallout 1 (1997) en Fallout 4
 ===============================================================================
 
-1. DESCRIPCION GENERAL Y CONTENIDO DE v0.9.0 (CAPITULO 1 COMPLETO)
-------------------------------------------------------------------
-Adentrate en el Archivo Historico Mnemosyne de Vault-Tec en la Commonwealth y
-cruza la Puerta Temporal hasta el 5 de diciembre de 2161 como el Morador del
-Refugio original.
+1. ¿QUÉ INCLUYE ESTA EDICIÓN COMPLETA v1.0.0?
+----------------------------------------------
+Crónicas del Refugio 13 es una recreación 100% autónoma de Fallout 1 (1997)
+íntegramente dentro de Fallout 4 (Actos I-V y Epílogo del Exilio, 10 de mayo
+de 2162):
+- Campaña Principal Completa de 5 Actos: Archivo Histórico Mnemosyne (2287) ->
+  Refugio 13 y Supervisor Jacoren -> Shady Sands y Refugio 15 -> Necrópolis,
+  la Gran Bomba de Agua y el Chip de Agua del Refugio 12 -> Búnker multinivel
+  de Lost Hills y ZAX 1.2 en El Resplandor -> Guerra civil y Forja de Adytum ->
+  Base Militar Mariposa (Cubas VEF y El Teniente) -> La Catedral (Morpheus,
+  Gideon y las 3 vías canónicas ante El Maestro con síntesis de Voz Triple) ->
+  Despedida de Jacoren, Pioneros rumbo a Arroyo (Theresa y Lyle) y Crónica Final Dinámica.
+- 400 Celdas Exteriores LAND (cuadrícula 20x20, 81.920 x 81.920 unidades) en
+  «Sur de California (2161)», mapa del Pip-Boy en español (2048x2048) calibrado
+  1:1 con archivos .lod nativos y 32 marcadores de viaje rápido.
+- 28 Misiones RPG Multi-Vía al Estilo de 1997: Rescate de Tandi por 4 vías,
+  Junktown (Killian, Lars, Gizmo, Neal y Doc Morbid), El Eje (Martha Rastello,
+  Granja de Irwin con Pistola .223, Decker y Sheriff Greene), Espía de los
+  Seguidores, Forja de Adytum (Rifle de Plasma Turbo y T-51b Endurecida),
+  Honor de Acero, Calendario de Invasiones Mutantes (1997) y los 6 Encuentros
+  Especiales (TARDIS / Sensor de Movimiento, Platillo del Área 51, Camión de
+  Nuka-Cola, Huella de Godzilla, Concesionario de Bob y Patrick el Celta).
+- 4 Compañeros Clásicos Simultáneos (Preparados para Supervivencia): Ian,
+  Ranger Tycho, Katja (Seguidores del Apocalipsis) y Albóndiga (2161), con
+  escalado 1.0x al nivel del jugador, inmunidad al bloqueo de abatimiento,
+  recuperación automática, reanimación inmediata (E / A) y menú táctico propio.
+- Radio El Eje (84.5 kHz): 41 canciones originales de la era atómica, 18 cuñas
+  publicitarias, 8 radionovelas y 110 boletines informativos reactivos doblados.
+- 59 Scripts Papyrus compilados, 1.544+ líneas dobladas con Lip-Sync (.fuz)
+  en 78 ruedas de diálogo, 125 NPCs propios y 40 mallas 3D .nif (45 materiales
+  y 47 texturas .dds).
 
-Incluido y 100% Jugable en v0.9.0 (Capitulo 1: El Chip de Agua):
-- Mundo Exterior Propio "Sur de California (2161)" (64 celdas exteriores) con
-  Mapa Tactico del Pip-Boy 2048x2048 en espanol calibrado 1:1, 23 marcadores de
-  mapa, seguimiento completo de misiones y viaje rapido.
-- Campana Principal del Capitulo 1 Completa (Actos I y II): Refugio 13 (Supervisor
-  Jacoren y subtramas internas del Refugio), Shady Sands, ruinas sepultadas del
-  Refugio 15 y Garl Mano Muerta, Junktown, El Eje, Alcantarillas de Necropolis,
-  La Cuenca (Harry, Barry y Sally + dilema moral de la Gran Bomba de Agua),
-  extraccion del Chip de Agua en el Refugio 12 y regreso al Refugio 13.
-- Misiones Secundarias Clasicas Multi-Via (Diseno RPG 1997): Rescate de Tandi por
-  4 vias clasicas, confesion grabada de Gizmo, Neal y Los Craneos, secreto de Doc
-  Morbid, Granja de Irwin (Pistola del .223), caravana de los Mercaderes del Agua,
-  Caravanas Desaparecidas (Sanguinario y Tug), Sheriff Greene contra Decker, mas
-  las misiones exteriores de Lost Hills / El Resplandor y El Boneyard de L.A.
-- 3 Companeros Clasicos Simultaneos: Ian, el Ranger Tycho y Albondiga (2161) con
-  su equipo iconico y menus tacticos de escuadron.
-- Emisora Propia de 2161 — Radio El Eje (84.5 kHz): 24 canciones originales de la
-  era atomica + 24 boletines doblados en espanol sobre los sucesos de 2161.
-- Los 6 Encuentros Especiales Clasicos de 1997: Cabina Policial Britanica TARDIS
-  (con Sensor de Movimiento funcional), OVNI Estrellado del Area 51 (Blaster
-  Alienigena y Cuadro de Terciopelo de Elvis), Camion de Nuka-Cola Volcado, Huella
-  Gigante de Godzilla, Concesionario de Coches de Bob (Red Ryder LE BB Gun) y
-  Patrick el Celta (+1 Carisma permanente).
-- Mas de 1.020 lineas de voz en espanol (.xwm) y 43 ruedas de dialogo.
-
-Hoja de Ruta hacia v1.0 (Capitulo 2 — El Ejercito Mutante y El Maestro):
-- Apertura y expansion profunda de los interiores de los Actos III, IV y V (Bunker
-  multinivel de Lost Hills y ZAX, companera Katja, conflicto civil de Adytum,
-  infiltracion en la Base Militar Mariposa, las 3 vias canonicas frente al Maestro
-  en La Catedral y el Epilogo jugable del Exilio del 10 de mayo de 2162).
-
-2. COMPATIBILIDAD UNIVERSAL Y CERO RESTRICCIONES
-------------------------------------------------
-- Versiones soportadas de forma nativa (mismo archivo sin parches):
-  * Fallout 4 v1.10.163 (Pre-Next-Gen / GOG / Downgraded)
-  * Fallout 4 v1.10.980+ (Next-Gen / Anniversary Edition)
-- Estandar tecnico:
-  * Cabecera .esp: HEDR v1.00 con todos los FormIDs propios >= 0x800
-  * Archivos .ba2: BTDX Version 1 (GNRL v1 y DX10 v1)
-- Requisitos:
-  * Unicamente Fallout4.esm (juego base).
-  * CERO contenido de Creation Club / Creations.
-  * CERO DLCs y CERO F4SE requeridos.
-  * CERO dependencias externas (100% Autonomo Todo-en-Uno).
-
-3. INSTALACION (Vortex / Mod Organizer 2 / Manual)
---------------------------------------------------
-- Gestor de mods (Recomendado): Instala el archivo .zip directamente con Vortex
-  o Mod Organizer 2 y activa Vault13Chronicles.esp.
-- Manual: Extrae 'Vault13Chronicles.esp', 'Vault13Chronicles - Main.ba2' y
-  'Vault13Chronicles - Textures.ba2' dentro de 'Fallout 4\\Data' y activa el plugin.
-
-4. COMO EMPEZAR EN EL JUEGO
----------------------------
-Al cargar tu partida se activara automaticamente el marcador hacia el Bunker del
-Archivo Mnemosyne de Vault-Tec (al noroeste del Refugio 111 / Sanctuary Hills).
-Accede al terminal principal junto a la capsula neuronal para viajar al Refugio 13
-(5 de diciembre de 2161). Puedes regresar a la Commonwealth de 2287 cuando quieras
-conservando todas las armas y equipo clasico desbloqueado.
-
-5. POLITICA DE MODDING ABIERTO Y CREDITOS
+2. COMPATIBILIDAD UNIVERSAL Y REQUISITOS
 -----------------------------------------
-- Autor: 0utKast (https://github.com/0utKast/fallout4-vault13-chronicles)
-- Licencia: MIT y Permisos 100% Abiertos (Open Permissions). Cualquier miembro de
-  la comunidad puede usar, modificar, traducir y redistribuir libremente este mod
-  citando la autoria original. 100% gratuito y libre de limitaciones artificiales.
-- Motor y activos base: Bethesda Game Studios (Fallout4.esm).
-- Inspiracion e historia original de Fallout (1997): Interplay Productions.
-- Modelos 3D propios, texturas DDS BC1, terreno exterior de California, scripts
-  Papyrus, doblaje IA y banda sonora de radio: Desarrollados por 0utKast.
+- Requiere EXCLUSIVAMENTE Fallout 4 base (Fallout4.esm).
+- CERO contenido del Creation Club, CERO DLCs, CERO F4SE y CERO dependencias.
+- Compatible de forma nativa TANTO con Fallout 4 1.10.163 (GOG / Pre-Next-Gen)
+  como con 1.10.980+ (Next-Gen / Anniversary Edition): cabecera HEDR v1.00 y
+  archivos BA2 v1 (GNRL v1 y DX10 v1).
+- IMPORTANTE (PARTIDAS GUARDADAS): La v1.0.0 NO es compatible con partidas
+  guardadas de la Beta v0.9.x debido a la reconstrucción 6,25x del mundo
+  exterior (64 -> 400 celdas). Inicia una partida nueva o carga un guardado de
+  Fallout 4 donde NUNCA se haya activado la v0.9.x. Si quieres terminar antes
+  tu campaña de la v0.9, tienes la v0.9.3 disponible en «Old Files» de Nexus
+  Mods y en la rama «release/v0.9.x» de GitHub.
+
+3. INSTALACIÓN (VORTEX / MOD ORGANIZER 2 O MANUAL)
+---------------------------------------------------
+Instálalo con Vortex o Mod Organizer 2 (recomendado), o copia estos tres
+archivos dentro de tu carpeta Fallout 4\\Data:
+  - Vault13Chronicles.esp
+  - Vault13Chronicles - Main.ba2
+  - Vault13Chronicles - Textures.ba2
+Activa Vault13Chronicles.esp. Carga cualquier partida limpia (sin historial de
+la Beta v0.9.x) tras salir del Refugio 111; se activará automáticamente la misión
+inicial hacia el Archivo Histórico Mnemosyne, al noroeste del Refugio 111.
+
+4. PERMISOS 100% ABIERTOS Y CRÉDITOS (LICENCIA MIT)
+---------------------------------------------------
+Autor: 0utKast (https://github.com/0utKast/fallout4-vault13-chronicles)
+Motor y Activos Base: Bethesda Game Studios (Fallout4.esm)
+Inspiración y Lore 1997: Interplay Productions (Tim Cain, Leonard Boyarsky,
+Jason Anderson, Chris Taylor, Mark O'Green, Scott Campbell y equipo original).
+No se redistribuye ningún archivo del juego de 1997. Permisos 100% Abiertos.
+===============================================================================
 """
 
 
@@ -213,8 +188,8 @@ def build_zip(src_dir: str, zip_path: str, readme_name: str, readme_body: str) -
 
 
 def main() -> None:
-    en_zip = os.path.join(RELEASE_DIR, "Vault13Chronicles_EN_v0.9.0_Beta.zip")
-    es_zip = os.path.join(RELEASE_DIR, "CronicasDelRefugio13_ES_v0.9.0_Beta.zip")
+    en_zip = os.path.join(RELEASE_DIR, "Vault13Chronicles_EN_v1.0.0.zip")
+    es_zip = os.path.join(RELEASE_DIR, "CronicasDelRefugio13_ES_v1.0.0.zip")
     build_zip(EN_BUILD_DIR, en_zip, "README_EN.txt", README_EN)
     build_zip(ES_BUILD_DIR, es_zip, "LEEME_ES.txt", README_ES)
 

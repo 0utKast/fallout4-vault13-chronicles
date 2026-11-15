@@ -23,6 +23,9 @@ Function ForceQuestAlias(int aiAliasID, int aiFormID)
 EndFunction
 
 Function ForceAllTandiRescueAliases()
+    If Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bStg40Done
+        Return
+    EndIf
     ForceQuestAlias(0, 0x000035A0)
     ForceQuestAlias(1, 0x000035D8)
     ForceQuestAlias(2, 0x00003005)
@@ -37,6 +40,15 @@ Function ForceAllTandiRescueAliases()
 EndFunction
 
 Function SetupTandiRescueListeners()
+    If Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bStg40Done
+        bStg40Done = True
+        Self.CompleteAllObjectives()
+        If !Self.IsCompleted()
+            Self.CompleteQuest()
+        EndIf
+        ForceAllTandiRescueAliases()
+        Return
+    EndIf
     ForceAllTandiRescueAliases()
     Actor player = Game.GetPlayer()
     Form keyForm = Game.GetFormFromFile(0x0001459, "Vault13Chronicles.esp")
@@ -72,19 +84,21 @@ Function SetupTandiRescueListeners()
     EndIf
     Actor guard1Act = Game.GetFormFromFile(0x000035D9, "Vault13Chronicles.esp") as Actor
     If guard1Act != None
+        RegisterForRemoteEvent(guard1Act as ObjectReference, "OnActivate")
         RegisterForRemoteEvent(guard1Act, "OnCombatStateChanged")
         RegisterForHitEvent(guard1Act)
     EndIf
     Actor guard2Act = Game.GetFormFromFile(0x000035DA, "Vault13Chronicles.esp") as Actor
     If guard2Act != None
+        RegisterForRemoteEvent(guard2Act as ObjectReference, "OnActivate")
         RegisterForRemoteEvent(guard2Act, "OnCombatStateChanged")
         RegisterForHitEvent(guard2Act)
     EndIf
-    If GetStage() < 15
+    If !Self.IsCompleted() && !Self.IsStageDone(40) && !bStg40Done && GetStage() < 15
         Quest shadyQ = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
         Actor aradeshCheck = aradeshRef as Actor
         Actor tandiCheck = tandiRef as Actor
-        if shadyQ != None && shadyQ.GetStage() >= 40 && player != None && (aradeshCheck == None || !aradeshCheck.IsTalking())
+        if shadyQ != None && (shadyQ.IsCompleted() || shadyQ.GetStage() >= 40 || shadyQ.IsStageDone(40)) && player != None && (aradeshCheck == None || !aradeshCheck.IsTalking())
             if player.IsInInterior() || ((aradeshCheck == None || player.GetDistance(aradeshCheck) >= 3200.0) && (tandiCheck == None || player.GetDistance(tandiCheck) >= 2800.0))
                 SetStage(15)
             endif
@@ -101,11 +115,11 @@ Function SetupCampActors(bool abEnable)
     If abEnable
         If lockRef != None
             lockRef.EnableNoWait()
-            lockRef.SetPosition(10480.0, 13580.0, 200.0)
+            lockRef.SetPosition(26580.0, 33680.0, 200.0)
         EndIf
         If petroxRef != None
             petroxRef.EnableNoWait()
-            petroxRef.SetPosition(10400.0, 13360.0, 206.0)
+            petroxRef.SetPosition(26500.0, 33460.0, 206.0)
             petroxRef.SetAngle(0.0, 0.0, 180.0)
             Actor petroxAct = petroxRef as Actor
             If petroxAct != None && !petroxAct.IsDead()
@@ -119,7 +133,7 @@ Function SetupCampActors(bool abEnable)
         EndIf
         If guard1Ref != None
             guard1Ref.EnableNoWait()
-            guard1Ref.SetPosition(10240.0, 13320.0, 206.0)
+            guard1Ref.SetPosition(26340.0, 33420.0, 206.0)
             guard1Ref.SetAngle(0.0, 0.0, 180.0)
             Actor g1Act = guard1Ref as Actor
             If g1Act != None && !g1Act.IsDead()
@@ -133,7 +147,7 @@ Function SetupCampActors(bool abEnable)
         EndIf
         If guard2Ref != None
             guard2Ref.EnableNoWait()
-            guard2Ref.SetPosition(10560.0, 13320.0, 206.0)
+            guard2Ref.SetPosition(26660.0, 33420.0, 206.0)
             guard2Ref.SetAngle(0.0, 0.0, 180.0)
             Actor g2Act = guard2Ref as Actor
             If g2Act != None && !g2Act.IsDead()
@@ -174,7 +188,7 @@ Function MoveTandiToCamp()
         If tandiAct.IsDead()
             tandiAct.Resurrect()
         EndIf
-        tandiAct.SetPosition(10400.0, 13580.0, 206.0)
+        tandiAct.SetPosition(26500.0, 33680.0, 206.0)
         tandiAct.StopCombat()
         tandiAct.EvaluatePackage()
     EndIf
@@ -187,7 +201,7 @@ Function ReturnTandiToShadySands()
         If tandiAct.IsDead()
             tandiAct.Resurrect()
         EndIf
-        tandiAct.SetPosition(2550.0, 9690.0, 160.0)
+        tandiAct.SetPosition(6650.0, 23590.0, 160.0)
         tandiAct.SetAngle(0.0, 0.0, 180.0)
         tandiAct.StopCombat()
         tandiAct.EvaluatePackage()
@@ -291,6 +305,9 @@ Event OnHit(ObjectReference akTarget, ObjectReference akAggressor, Form akSource
         Actor player = Game.GetPlayer()
         Actor aggActor = akAggressor as Actor
         If (player != None && akAggressor == (player as ObjectReference)) || (aggActor != None && aggActor.IsPlayerTeammate())
+            If GetStage() < 20
+                SetStage(20)
+            EndIf
             TriggerHostileKhanCamp()
         EndIf
     EndIf
@@ -319,16 +336,13 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
     ObjectReference sethRef = Game.GetFormFromFile(0x000035A2, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference tandiRef = Game.GetFormFromFile(0x000035A1, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference petroxRef = Game.GetFormFromFile(0x000035D8, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference guard1Ref = Game.GetFormFromFile(0x000035D9, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference guard2Ref = Game.GetFormFromFile(0x000035DA, "Vault13Chronicles.esp") as ObjectReference
 
     If akSender == aradeshRef
         If st == 15
-            Actor aradeshAct = aradeshRef as Actor
-            Topic helloTop = Game.GetFormFromFile(0x00018001, "Vault13Chronicles.esp") as Topic
-            If aradeshAct != None && helloTop != None && !aradeshAct.IsTalking()
-                aradeshAct.Say(helloTop, None, False, None)
-            EndIf
             sceneWaitTicks = 0
-            StartTimer(2.5, 91)
+            StartTimer(1.2, 91)
             StartTimer(22.0, 94)
         ElseIf st == 30
             Utility.Wait(0.5)
@@ -338,12 +352,24 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         EndIf
     ElseIf akSender == sethRef && st == 15
         StartTimer(8.0, 94)
-    ElseIf akSender == petroxRef && st >= 15 && st < 26
+    ElseIf (akSender == petroxRef || (guard1Ref != None && akSender == guard1Ref) || (guard2Ref != None && akSender == guard2Ref)) && st < 20
+        Actor campAct = akSender as Actor
+        If campAct != None && !campAct.IsDead() && !campAct.IsInCombat()
+            If !Self.IsObjectiveDisplayed(15)
+                Self.SetObjectiveDisplayed(15, True, False)
+            EndIf
+            ForceQuestAlias(0, 0x000035A0)
+            Self.SetActive(True)
+            If akSender == petroxRef
+                Debug.Notification("Petrox: «No metas las narices en el cañón Khan, forastero. Si vienes de parte de Aradesh en Shady Sands, habla primero con él.»")
+            Else
+                Debug.Notification("Incursor Khan: «Habla con Aradesh en Shady Sands antes de venir a meter la nariz en nuestro campamento.»")
+            EndIf
+        EndIf
+        Return
+    ElseIf akSender == petroxRef && st >= 20 && st < 26
         Actor petroxAct = petroxRef as Actor
         If petroxAct != None && !petroxAct.IsDead() && !petroxAct.IsInCombat()
-            If st == 15
-                SetStage(20)
-            EndIf
             sceneWaitTicks = 0
             StartTimer(1.2, 92)
         EndIf
@@ -351,13 +377,6 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         Actor petroxCheck = petroxRef as Actor
         If st < 30 && petroxCheck != None && petroxCheck.IsDead()
             SetStage(30)
-        EndIf
-        If GetStage() == 30
-            Actor tandiAct = tandiRef as Actor
-            Topic helloTopTandi = Game.GetFormFromFile(0x00018001, "Vault13Chronicles.esp") as Topic
-            If tandiAct != None && helloTopTandi != None && !tandiAct.IsTalking()
-                tandiAct.Say(helloTopTandi, None, False, None)
-            EndIf
         EndIf
     EndIf
 EndEvent
@@ -367,12 +386,7 @@ Event OnTimer(int aiTimerID)
         Scene aradeshScene = Game.GetFormFromFile(0x00018100, "Vault13Chronicles.esp") as Scene
         Actor aradeshActor = Game.GetFormFromFile(0x000035A0, "Vault13Chronicles.esp") as Actor
         If aradeshScene != None && GetStage() == 15
-            If aradeshScene.IsPlaying()
-                Return
-            ElseIf aradeshActor != None && aradeshActor.IsTalking() && sceneWaitTicks < 45
-                sceneWaitTicks += 1
-                StartTimer(0.35, 91)
-            Else
+            If !aradeshScene.IsPlaying() && !Utility.IsInMenuMode() && (aradeshActor == None || (!aradeshActor.IsInDialogueWithPlayer() && !aradeshActor.IsTalking()))
                 ForceAllTandiRescueAliases()
                 aradeshScene.Start()
             EndIf
@@ -381,14 +395,7 @@ Event OnTimer(int aiTimerID)
         Scene petroxScene = Game.GetFormFromFile(0x00018101, "Vault13Chronicles.esp") as Scene
         Actor petroxActor = Game.GetFormFromFile(0x000035D8, "Vault13Chronicles.esp") as Actor
         If petroxScene != None && GetStage() >= 15 && GetStage() < 26
-            If petroxActor != None && (petroxActor.IsDead() || petroxActor.IsInCombat())
-                Return
-            ElseIf petroxScene.IsPlaying()
-                Return
-            ElseIf petroxActor != None && petroxActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.35, 92)
-            Else
+            If !petroxScene.IsPlaying() && !Utility.IsInMenuMode() && (petroxActor == None || (!petroxActor.IsDead() && !petroxActor.IsInCombat() && !petroxActor.IsInDialogueWithPlayer() && !petroxActor.IsTalking()))
                 ForceAllTandiRescueAliases()
                 petroxScene.Start()
             EndIf
@@ -419,15 +426,11 @@ Event OnTimer(int aiTimerID)
 
         If st >= 15 && st < 30
             If tandi != None && player.GetDistance(tandi) < 5500.0
-                float dx = tandi.GetPositionX() - 10400.0
-                float dy = tandi.GetPositionY() - 13580.0
+                float dx = tandi.GetPositionX() - 26500.0
+                float dy = tandi.GetPositionY() - 33680.0
                 If (dx * dx + dy * dy) > 160000.0
-                    tandi.SetPosition(10400.0, 13580.0, 206.0)
+                    tandi.SetPosition(26500.0, 33680.0, 206.0)
                 EndIf
-            EndIf
-
-            If st == 15 && petrox != None && player.GetDistance(petrox) < 1600.0
-                SetStage(20)
             EndIf
 
             If !bPetroxResolved && ((petrox != None && petrox.IsDead()) || (keyForm != None && player.GetItemCount(keyForm) > 0))
@@ -439,7 +442,7 @@ Event OnTimer(int aiTimerID)
         ElseIf st == 30
             Actor aradesh = Game.GetFormFromFile(0x000035A0, "Vault13Chronicles.esp") as Actor
             If tandi != None && (player == None || player.GetDistance(tandi) > 1800.0 || (aradesh != None && player.GetDistance(aradesh) < 2400.0))
-                If Math.Abs(tandi.GetPositionX() - 2550.0) > 400.0 || Math.Abs(tandi.GetPositionY() - 9690.0) > 400.0
+                If Math.Abs(tandi.GetPositionX() - 6650.0) > 400.0 || Math.Abs(tandi.GetPositionY() - 23590.0) > 400.0
                     ReturnTandiToShadySands()
                 EndIf
             EndIf
@@ -505,6 +508,7 @@ Event OnStageSet(int auiStageID, int auiItemID)
         If !Self.IsObjectiveDisplayed(15)
             Self.SetObjectiveDisplayed(15, True, False)
         EndIf
+        Self.SetActive(True)
 
         Actor garl = Game.GetFormFromFile(0x00002559, "Vault13Chronicles.esp") as Actor
         If garl != None && garl.IsDead()

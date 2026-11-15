@@ -34,6 +34,7 @@ from generate_v13_worldmap_dds import (
     MAP_MAX,
     MAP_MIN,
     MAP_SPAN,
+    V13_WORLD_ANCHORS,
     _coastline_x,
     _draw_fitted_centered_text,
     encode_bc1_image,
@@ -41,6 +42,10 @@ from generate_v13_worldmap_dds import (
     encode_bc1_worldmap_mips,
     global_california_height,
     world_to_px,
+)
+from generate_v13_overhaul_assets import (
+    build_ending_credit_cards,
+    build_vault13_gear_and_sign_assets,
 )
 
 
@@ -113,33 +118,32 @@ def build_worldmap_en() -> str:
     draw.line(coast_pts, fill=10, width=6)
     draw.line(coast_pts, fill=88, width=2)
 
-    # 2. Pre-War Highways & Caravan Trails of Southern California (2161)
+    # 2. Pre-War Highways & Caravan Trails of Southern California (2161, 20x20 Scale)
     roads = [
         [
-            (-6200, 13600), (-4600, 13480), (-3200, 13360), (-2600, 13160),
-            (-2500, 11800), (-220, 9760), (2400, 9600),
-            (5400, 8800), (8200, 7800), (10400, 7300), (12600, 6880),
+            (-18000, 33500), (-12500, 33300), (-7000, 33000), (-500, 28500),
+            (6500, 23500), (14500, 21000), (21500, 18500), (27500, 16000), (33500, 13500),
         ],
         [
-            (2400, 9600), (6400, 13800), (10400, 13400), (14200, 10800), (8200, 7800),
+            (6500, 23500), (16000, 34500), (26500, 33500), (35000, 24500), (21500, 18500),
         ],
         [
-            (2400, 9600), (3000, 6800), (3600, 3800), (8400, 3200),
-            (12000, 800), (11850, -800), (11400, -2400),
-            (10400, -4200), (11400, -8200), (12400, -11800),
+            (6500, 23500), (7000, 14500), (7500, 5500), (14000, 5200), (20500, 5000),
+            (29000, -2000), (28000, -8000), (25500, -11500), (20000, -33500), (31500, -31500),
         ],
-        [(11400, -2400), (12500, -2200), (13600, -2000)],
+        [(28000, -8000), (30800, -7500), (33500, -7000)],
         [
-            (-6200, 13600), (-9800, 13400), (-11600, 7400), (-8600, 4800),
-            (-9200, 2200), (-9800, -2600), (-9200, -5550), (-8400, -8600), (-4800, -13180),
-        ],
-        [
-            (-9800, -2600), (-4800, -6180), (-800, -3800), (2600, -400), (3600, 3800),
-            (-2800, 5600), (-7400, 7600), (-9200, 2200), (-1600, 1200), (-800, -3800),
-            (4800, -5400), (10400, -4200),
+            (-18000, 33500), (-31000, 31000), (-31500, 16500), (-20000, 19500),
+            (-18500, 6500), (-22500, 1200), (-24500, -7500), (-15000, -18500), (-19500, -31500),
         ],
         [
-            (-800, -3800), (-2600, -8400), (-4800, -13180), (600, -12800), (6800, -10400), (4800, -5400),
+            (-24500, -7500), (-15000, -18500), (-3500, -13500), (5500, -4800), (7500, 5500),
+            (-5500, 13000), (-18500, 6500), (-4000, 2000), (-3500, -13500),
+            (10500, -15500), (25500, -11500),
+        ],
+        [
+            (-3500, -13500), (-11500, -22500), (-19500, -31500), (-4500, -31500),
+            (8500, -28000), (20000, -33500), (31500, -31500),
         ],
     ]
     for r in roads:
@@ -147,15 +151,18 @@ def build_worldmap_en() -> str:
         draw.line(r_px, fill=28, width=7)
         draw.line(r_px, fill=98, width=3)
 
-    # 3. Bakersfield / Necropolis Ruined Urban Street Grid
-    for ux in range(9800, 14400, 900):
-        p0 = world_to_px(ux, 1400, S)
-        p1 = world_to_px(ux, -4600, S)
+    # 3. Bakersfield / Necropolis Ruined Urban Street Grid + The Glow Crater Rings
+    for ux in range(24000, 35500, 1800):
+        p0 = world_to_px(ux, 0, S)
+        p1 = world_to_px(ux, -13200, S)
         draw.line([p0, p1], fill=62, width=1)
-    for uy in range(-4400, 1600, 900):
-        p0 = world_to_px(9600, uy, S)
-        p1 = world_to_px(14200, uy, S)
+    for uy in range(-13000, 200, 1800):
+        p0 = world_to_px(23800, uy, S)
+        p1 = world_to_px(35200, uy, S)
         draw.line([p0, p1], fill=62, width=1)
+    gx_px, gy_px = world_to_px(31500, -31500, S)
+    for rad_px in (28, 46, 66):
+        draw.ellipse([gx_px - rad_px, gy_px - rad_px, gx_px + rad_px, gy_px + rad_px], outline=76, width=2)
 
     # 4. Authentic Fallout 1 Sector Grid (28 columns x 30 rows CRT World Map overlay)
     margin = 48
@@ -185,76 +192,44 @@ def build_worldmap_en() -> str:
         font_reg = ImageFont.load_default()
 
     draw.text((76, 68), "VAULT-TEC // SOUTHERN CALIFORNIA [2161] — SATELLITE TOPOGRAPHY", fill=106, font=font_title)
-    draw.text((76, 102), "REGIONAL GRID 28x30 — VAULT 13 / SIERRA NEVADA / THE BONEYARD", fill=86, font=font_reg)
+    draw.text((76, 102), "REGIONAL GRID 28x30 — VAULT 13 / SIERRA NEVADA / BONEYARD / THE GLOW", fill=86, font=font_reg)
 
     region_labels_en = [
-        (-11200, 14100, "MARIPOSA MILITARY BASE"),
-        (-4800, 14200, "VAULT 13 / MT. WHITNEY"),
-        (1600, 10300, "SHADY SANDS"),
-        (5200, 14400, "RADSCORPION LAIR"),
-        (9400, 14000, "PETROX'S RAIDER CAMP"),
-        (11800, 11400, "KHAN SLAVER STRONGHOLD"),
-        (6800, 8400, "KHAN CANYON PASS"),
-        (11200, 7600, "VAULT 15 CANYON"),
-        (-13200, 8000, "BLUE POLICE BOX (TARDIS)"),
-        (-8600, 8200, "CRASHED FLYING SAUCER"),
-        (-3800, 6200, "SKULZ HIDEOUT (KENJI)"),
-        (2600, 4500, "JUNKTOWN"),
-        (7200, 3900, "BOB'S USED CARS"),
-        (-10600, 2900, "IRWIN'S OCCUPIED FARM"),
-        (-2600, 1800, "GIZMO'S CASINO"),
-        (1600, 250, "PATRICK THE CELT"),
-        (10600, 1500, "THE WATERSHED (VAULT 12)"),
-        (9800, -5100, "BAKERSFIELD / NECROPOLIS"),
-        (-11400, -1900, "LOST HILLS (BROTHERHOOD)"),
-        (-1800, -3200, "THE HUB"),
-        (-6400, -5600, "MISSING CARAVAN PASS"),
-        (3600, -4800, "NUKA-COLA TRUCK"),
-        (-10000, -8000, "THE GLOW (WEST TEK)"),
-        (-6200, -12500, "THE CATHEDRAL"),
-        (-400, -12200, "ADYTUM / THE BONEYARD"),
-        (5200, -9800, "MOTHER DEATHCLAW NEST"),
-        (10800, -11200, "GIANT FOOTPRINT"),
-        (-14800, -9800, "PACIFIC OCEAN"),
+        (-34500, 32800, "MARIPOSA MILITARY BASE"),
+        (-10200, 34800, "VAULT 13 / MT. WHITNEY"),
+        (3800, 25600, "SHADY SANDS"),
+        (12800, 36200, "RADSCORPION LAIR"),
+        (23600, 35200, "PETROX'S RAIDER CAMP"),
+        (29200, 26200, "KHAN SLAVER STRONGHOLD"),
+        (18200, 20200, "KHAN CANYON PASS"),
+        (30500, 15200, "VAULT 15 CANYON"),
+        (-34800, 18200, "BLUE POLICE BOX (TARDIS)"),
+        (-23200, 21200, "CRASHED FLYING SAUCER"),
+        (-8600, 14800, "SKULZ HIDEOUT (KENJI)"),
+        (4800, 7600, "JUNKTOWN"),
+        (17600, 6800, "BOB'S USED CARS"),
+        (-21800, 8200, "IRWIN'S OCCUPIED FARM"),
+        (-7000, 3800, "GIZMO'S CASINO"),
+        (2600, -3000, "PATRICK THE CELT"),
+        (25600, -200, "THE WATERSHED (VAULT 12)"),
+        (24800, -13200, "BAKERSFIELD / NECROPOLIS"),
+        (-28500, -5600, "LOST HILLS (BROTHERHOOD)"),
+        (-6200, -11400, "THE HUB"),
+        (-18800, -16800, "MISSING CARAVAN PASS"),
+        (7400, -13800, "NUKA-COLA TRUCK"),
+        (-22800, -29600, "THE CATHEDRAL"),
+        (-7800, -29600, "ADYTUM / THE BONEYARD"),
+        (5200, -26200, "MOTHER DEATHCLAW NEST"),
+        (16800, -31800, "GIANT FOOTPRINT"),
+        (26800, -29400, "THE GLOW (WEST TEK)"),
+        (-36500, -22500, "PACIFIC OCEAN"),
     ]
     for lx, ly, ltxt in region_labels_en:
         px_x, px_y = world_to_px(lx, ly, S)
         draw.text((px_x - 60, px_y), ltxt, fill=92, font=font_reg)
 
     # 6. Location survey rings at exact 3D Worldspace coordinates
-    loc_coords = [
-        (-6200, 13600),
-        (-3200, 13360),
-        (-2600, 13160),
-        (2400, 9600),
-        (6400, 13800),
-        (10400, 13400),
-        (14200, 10800),
-        (8200, 7800),
-        (12600, 6880),
-        (3600, 3800),
-        (-2800, 5600),
-        (-1600, 1200),
-        (8400, 3200),
-        (-11600, 7400),
-        (-7400, 7600),
-        (2600, -400),
-        (-9200, 2200),
-        (-800, -3800),
-        (-4800, -6180),
-        (4800, -5400),
-        (12000, 800),
-        (11400, -2400),
-        (13600, -2000),
-        (10400, -4200),
-        (-9800, -2600),
-        (-8400, -8600),
-        (-9800, 13400),
-        (-4800, -13180),
-        (600, -12800),
-        (6800, -10400),
-        (12400, -11800),
-    ]
+    loc_coords = [(int(ax), int(ay)) for (ax, ay, *_rest) in V13_WORLD_ANCHORS.values()]
     for cx, cy in loc_coords:
         x0, y0 = world_to_px(cx, cy, S)
         draw.ellipse([x0 - 15, y0 - 15, x0 + 15, y0 + 15], outline=106, width=2)
@@ -742,6 +717,27 @@ def copy_shared_dds_textures() -> None:
                 os.path.join(THIS_DIR, "assets", "junktown_3d", "Textures", "V13Chronicles", "Junktown", fn),
             )
         )
+    for mon_fn in [
+        "CathedralStone_d.dds",
+        "LostHillsConcrete_d.dds",
+        "MariposaMilitary_d.dds",
+        "GlowCrater_d.dds",
+        "ShadyAdobe_d.dds",
+        "ShadyPlaque_d.dds",
+        "JunktownGate_d.dds",
+        "HubWaterTower_d.dds",
+        "MasterThrone_d.dds",
+        "CathedralBanner_d.dds",
+        "CathedralStainedGlass_d.dds",
+        "CathedralAltarRelief_d.dds",
+        "MasterVaultPlaque_d.dds",
+    ]:
+        pairs.append(
+            (
+                os.path.join(ES_ROOT_DIR, "assets", "monuments_3d", "Textures", "V13Chronicles", "Monuments", mon_fn),
+                os.path.join(THIS_DIR, "assets", "monuments_3d", "Textures", "V13Chronicles", "Monuments", mon_fn),
+            )
+        )
     for src, dst in pairs:
         if os.path.exists(src):
             os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -755,6 +751,9 @@ def generate_all_english_textures() -> None:
     build_location_signs_en()
     build_garage_cabinet13_en_dds()
     build_elvis_velvet_painting_en_dds()
+    en_tex_root = os.path.join(THIS_DIR, "assets", "textures")
+    build_vault13_gear_and_sign_assets(lang="EN", tex_root_dir=en_tex_root)
+    build_ending_credit_cards(lang="EN", tex_root_dir=en_tex_root)
 
 
 if __name__ == "__main__":

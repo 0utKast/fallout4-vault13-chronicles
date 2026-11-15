@@ -53,6 +53,7 @@ bool lastPumpStateRepaired = false
 int pendingCheckpointJump = 0
 bool isExecutingCheckpointJump = false
 int lastCheckpointJumpID = 0
+int ugPumpWaitTicks = 0
 int checkpointJumpRetries = 0
 bool waterPlantInstallQueued = false
 bool waterPlantConsoleOpenedWithChip = false
@@ -71,6 +72,7 @@ bool bShowingPart1End = false
 bool bPumpPromptQueued = false
 bool bPumpMissingPartsHold = false
 bool bWaterPlantPromptBusy = false
+int lastV13DoorSyncStage = -1
 
 Function SanitizeLegacyQuestStage(int aiTargetStage)
     if !Self.IsRunning()
@@ -91,7 +93,7 @@ Function HealNecropolisStateFromCellAndInventory()
         return
     endif
     Quest act1Quest = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as Quest
-    if act1Quest != None && act1Quest.GetStage() > 0 && act1Quest.GetStage() < 40
+    if act1Quest != None && !act1Quest.IsCompleted() && !act1Quest.IsStageDone(40) && act1Quest.GetStage() > 0 && act1Quest.GetStage() < 40
         introShown = false
         v13CrisisResolved = false
         v13CrisisRewardGiven = false
@@ -187,13 +189,15 @@ Function EnsureSingleActiveObjective(int aiActiveObjID)
         endif
         if !Self.IsObjectiveDisplayed(aiActiveObjID)
             Self.SetObjectiveDisplayed(aiActiveObjID, true, false)
+            Self.SetActive(true)
         endif
-        Self.SetActive(true)
     endif
 EndFunction
 
 int Function GetEffectiveAct2Stage()
-    if rewardsGiven && waterChipInstalledInPlant
+    if Self.IsCompleted() || Self.IsStageDone(40) || (rewardsGiven && waterChipInstalledInPlant)
+        rewardsGiven = true
+        waterChipInstalledInPlant = true
         return 40
     endif
     if waterChipInstalledInPlant
@@ -284,7 +288,7 @@ Function SyncVault13CrisisAndCelebrationActors()
     ObjectReference waterCrate = Game.GetFormFromFile(0x00002185, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference crisisLight = Game.GetFormFromFile(0x00002186, "Vault13Chronicles.esp") as ObjectReference
     Scene theresaScene = Game.GetFormFromFile(0x00005104, "Vault13Chronicles.esp") as Scene
-    Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     bool act3Active = (q3 != None && q3.GetStage() >= 20)
     int curStage = GetEffectiveAct2Stage()
 
@@ -795,15 +799,26 @@ Function RepairNecropolisWaterPump()
         d2A34.BlockActivation(false, false)
     endif
 
-    ForceAllAct2Aliases()
-    EnsureSingleActiveObjective(26)
-    RefreshDisplayedAct2Objective()
-    Debug.Notification("[Cuenca de Necrópolis] ¡GRAN BOMBA DE AGUA REPARADA! Esclusa de la Estación del Refugio 12 desbloqueada.")
-
     Actor player = Game.GetPlayer()
     Form pumpParts = Game.GetFormFromFile(0x0000111D, "Vault13Chronicles.esp")
     Actor ugLeader = Game.GetFormFromFile(0x00002A18, "Vault13Chronicles.esp") as Actor
     ObjectReference pumpRunning = Game.GetFormFromFile(0x00002A57, "Vault13Chronicles.esp") as ObjectReference
+
+    if ugLeader != None
+        if ugLeader.IsDisabled()
+            ugLeader.Enable(false)
+        endif
+        if ugLeader.IsDead()
+            ugLeader.Resurrect()
+        endif
+        ugLeader.StopCombat()
+        ugLeader.SetPosition(80.0, 7820.0, 0.0)
+        ugLeader.SetAngle(0.0, 0.0, 180.0)
+        if player != None
+            ugLeader.SetLookAt(player, false)
+        endif
+        ugLeader.EvaluatePackage()
+    endif
 
     if player != None && pumpParts != None && player.GetItemCount(pumpParts) > 0
         player.RemoveItem(pumpParts, player.GetItemCount(pumpParts), true, None)
@@ -826,31 +841,17 @@ Function RepairNecropolisWaterPump()
         Game.RewardPlayerXP(250, false)
     endif
 
+    ForceAllAct2Aliases()
     if Self.GetStage() < 26
         Self.SetStage(26)
     else
         ApplyV13Act2Stage(26)
     endif
-
-    if ugLeader != None
-        if ugLeader.IsDisabled()
-            ugLeader.Enable(false)
-        endif
-        if ugLeader.IsDead()
-            ugLeader.Resurrect()
-        endif
-        ugLeader.StopCombat()
-        ugLeader.SetPosition(80.0, 7820.0, 0.0)
-        ugLeader.SetAngle(0.0, 0.0, 145.0)
-        if player != None
-            ugLeader.SetLookAt(player, false)
-        endif
-        ugLeader.EvaluatePackage()
-    endif
+    Debug.Notification("[Cuenca de Necrópolis] ¡GRAN BOMBA DE AGUA REPARADA! Esclusa de la Estación del Refugio 12 desbloqueada.")
 
     EffectShader constFX = Game.GetFormFromFile(0x002494E4, "Fallout4.esm") as EffectShader
     Form pulseExpl = Game.GetFormFromFile(0x000C32DA, "Fallout4.esm")
-    Sound sfxPumpRepair = Game.GetFormFromFile(0x00001064, "Vault13Chronicles.esp") as Sound
+    Sound sfxPumpRepair = Game.GetFormFromFile(0x00001065, "Vault13Chronicles.esp") as Sound
     if sfxPumpRepair != None && player != None
         sfxPumpRepair.Play(player)
     endif
@@ -861,15 +862,8 @@ Function RepairNecropolisWaterPump()
         constFX.Play(player, 1.8)
     endif
 
-    if ugLeader != None
-        if player != None
-            ugLeader.SetLookAt(player, false)
-        endif
-        Topic ugThanksTopic = Game.GetFormFromFile(0x00005049, "Vault13Chronicles.esp") as Topic
-        if ugThanksTopic != None && !ugLeader.IsTalking()
-            ugLeader.Say(ugThanksTopic, None, false)
-        endif
-    endif
+    ugPumpWaitTicks = 0
+    StartTimer(0.35, 18)
 EndFunction
 
 Function SetWaterPlantState(bool abRepaired)
@@ -1064,7 +1058,7 @@ Function UpdateWaterPlantSequence()
 
     int curStage = GetEffectiveAct2Stage()
     if curStage >= 40
-        Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+        Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
         if q3 != None && q3.GetStage() >= 20
             waterChipInstalledInPlant = true
         endif
@@ -1159,7 +1153,7 @@ Function TriggerWaterPlantCelebrationStep()
     Idle idleCheer = Game.GetFormFromFile(0x0010BA3A, "Fallout4.esm") as Idle
     Idle idleClap = Game.GetFormFromFile(0x00141F3C, "Fallout4.esm") as Idle
     Idle idleStop = Game.GetFormFromFile(0x00029380, "Fallout4.esm") as Idle
-    Sound sfxCheer = Game.GetFormFromFile(0x00001061, "Vault13Chronicles.esp") as Sound
+    Sound sfxCheer = Game.GetFormFromFile(0x00001063, "Vault13Chronicles.esp") as Sound
 
     bool jacorenInDial = (act2RetScene != None && act2RetScene.IsPlaying()) || (jacoren != None && jacoren.IsInDialogueWithPlayer())
     if jacorenInDial
@@ -1353,8 +1347,8 @@ Function InstallWaterChipInMainframe()
     EffectShader shockFX = Game.GetFormFromFile(0x0006F122, "Fallout4.esm") as EffectShader
     EffectShader constFX = Game.GetFormFromFile(0x002494E4, "Fallout4.esm") as EffectShader
     Form pulseExpl = Game.GetFormFromFile(0x000C32DA, "Fallout4.esm")
-    Sound sfxTurbine = Game.GetFormFromFile(0x00001060, "Vault13Chronicles.esp") as Sound
-    Sound sfxCheerInit = Game.GetFormFromFile(0x00001061, "Vault13Chronicles.esp") as Sound
+    Sound sfxTurbine = Game.GetFormFromFile(0x00001062, "Vault13Chronicles.esp") as Sound
+    Sound sfxCheerInit = Game.GetFormFromFile(0x00001063, "Vault13Chronicles.esp") as Sound
     Idle idleCheer = Game.GetFormFromFile(0x0010BA3A, "Fallout4.esm") as Idle
 
     if sfxTurbine != None && player != None
@@ -1546,13 +1540,16 @@ Function SyncHarryPatrolFactions(bool abHostileToPlayer)
     ActorValue confAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
     ActorValue assistAV = Game.GetFormFromFile(0x000002BF, "Fallout4.esm") as ActorValue
 
+    Cell wshCell = Game.GetFormFromFile(0x00002900, "Vault13Chronicles.esp") as Cell
+    Actor playerRef = Game.GetPlayer()
+    bool keepNeutralForHarry = (!abHostileToPlayer && !harryEvacuated && !waterChipExtracted && playerRef != None && wshCell != None && playerRef.GetParentCell() == wshCell)
     if smFac != None
         smFac.SetAlly(smFac, false, false)
         if playerFac != None
-            if abHostileToPlayer
-                smFac.SetEnemy(playerFac, false, false)
+            if keepNeutralForHarry
+                smFac.SetEnemy(playerFac, true, true)
             else
-                smFac.SetAlly(playerFac, true, true)
+                smFac.SetEnemy(playerFac, false, false)
             endif
         endif
     endif
@@ -1624,8 +1621,25 @@ Function SyncHarryPatrolFactions(bool abHostileToPlayer)
     endif
 EndFunction
 
+bool Function IsHarryInActiveSceneOrDialogue()
+    Scene harryScene = Game.GetFormFromFile(0x00005109, "Vault13Chronicles.esp") as Scene
+    Scene harrySceneOld = Game.GetFormFromFile(0x00005108, "Vault13Chronicles.esp") as Scene
+    Scene harrySceneWsh = Game.GetFormFromFile(0x0000510A, "Vault13Chronicles.esp") as Scene
+    Actor harry = Game.GetFormFromFile(0x00002A11, "Vault13Chronicles.esp") as Actor
+    if (harryScene != None && harryScene.IsPlaying()) || (harrySceneOld != None && harrySceneOld.IsPlaying()) || (harrySceneWsh != None && harrySceneWsh.IsPlaying())
+        return true
+    endif
+    if harry != None && harry.IsInDialogueWithPlayer()
+        return true
+    endif
+    if harryDialogueMenuOpen
+        return true
+    endif
+    return false
+EndFunction
+
 Function RefreshHarryPatrolWeaponsAndAI()
-    if harryPatrolRefreshedV4
+    if harryPatrolRefreshedV4 || IsHarryInActiveSceneOrDialogue()
         return
     endif
     harryPatrolRefreshedV4 = true
@@ -2081,6 +2095,11 @@ Function EvacuateHarryPatrol()
     if player != None
         player.StopCombatAlarm()
     endif
+    Faction smFacRestore = Game.GetFormFromFile(0x00058305, "Fallout4.esm") as Faction
+    Faction playerFacRestore = Game.GetFormFromFile(0x0001C21C, "Fallout4.esm") as Faction
+    if smFacRestore != None && playerFacRestore != None
+        smFacRestore.SetEnemy(playerFacRestore, false, false)
+    endif
 EndFunction
 
 bool Function ForceQuestAlias(int aiAliasID, int aiFormID)
@@ -2111,16 +2130,19 @@ Function RefreshDisplayedAct2Objective()
     objIDs[11] = 30
     objIDs[12] = 35
     objIDs[13] = 38
+    bool hasDisplayed = false
     int idx = 0
     while idx < 14
         int oid = objIDs[idx]
         if Self.IsObjectiveDisplayed(oid) && !Self.IsObjectiveCompleted(oid)
-            Self.SetObjectiveDisplayed(oid, false, false)
-            Self.SetObjectiveDisplayed(oid, true, false)
-            Self.SetActive(true)
+            hasDisplayed = true
         endif
         idx += 1
     endwhile
+    if hasDisplayed && Self.IsActive()
+        Self.SetActive(false)
+        Self.SetActive(true)
+    endif
 EndFunction
 
 Function RegisterPlayerEvents()
@@ -2295,6 +2317,12 @@ Function RegisterPlayerEvents()
         RegisterForRemoteEvent(theresaSceneReg, "OnBegin")
         RegisterForRemoteEvent(theresaSceneReg, "OnPhaseBegin")
         RegisterForRemoteEvent(theresaSceneReg, "OnEnd")
+    endif
+    Scene act2IntroSceneReg = Game.GetFormFromFile(0x00005100, "Vault13Chronicles.esp") as Scene
+    if act2IntroSceneReg != None
+        RegisterForRemoteEvent(act2IntroSceneReg, "OnBegin")
+        RegisterForRemoteEvent(act2IntroSceneReg, "OnPhaseBegin")
+        RegisterForRemoteEvent(act2IntroSceneReg, "OnEnd")
     endif
 EndFunction
 
@@ -3218,6 +3246,14 @@ Function ApplyV13Act2Stage(int auiStage)
         intercomResolved = true
     endif
 
+    if auiStage == 15
+        ForceQuestAlias(0, 0x00002110)
+        EnsureSingleActiveObjective(15)
+    elseif auiStage == 18
+        ForceQuestAlias(15, 0x00002153)
+        EnsureSingleActiveObjective(18)
+    endif
+
     SyncVault13CrisisAndCelebrationActors()
 
     if auiStage >= 23
@@ -3243,9 +3279,11 @@ Function ApplyV13Act2Stage(int auiStage)
         if act1S != None
             act1S.SyncVault13ExpeditionDoors()
             act1S.UpdateSouthernCaliforniaMapMarkers()
+            lastV13DoorSyncStage = auiStage
         endif
     elseif act1S != None && auiStage != lastAppliedAct2Stage
         act1S.SyncVault13ExpeditionDoors()
+        lastV13DoorSyncStage = auiStage
     endif
 
     if auiStage >= 15 && !introShown
@@ -3267,6 +3305,7 @@ Function ApplyV13Act2Stage(int auiStage)
         SyncVault13CrisisAndCelebrationActors()
         if act1S != None
             act1S.SyncVault13ExpeditionDoors()
+            lastV13DoorSyncStage = auiStage
         endif
         if savedNecroStageBeforeCrisis > 20
             int restoreStg = savedNecroStageBeforeCrisis
@@ -3284,8 +3323,8 @@ Function ApplyV13Act2Stage(int auiStage)
             EnsureSingleActiveObjective(20)
             if !Self.IsObjectiveDisplayed(20)
                 Self.SetObjectiveDisplayed(20, true, false)
+                Self.SetActive(true)
             endif
-            Self.SetActive(true)
         endif
     endif
 
@@ -3293,29 +3332,16 @@ Function ApplyV13Act2Stage(int auiStage)
         EnsureSingleActiveObjective(15)
         ForceAllAct2Aliases()
     elseif auiStage == 18
-        if !Self.IsObjectiveCompleted(15)
-            Self.SetObjectiveCompleted(15, true)
-        endif
-        if Self.IsObjectiveDisplayed(20)
-            Self.SetObjectiveDisplayed(20, false, false)
-        endif
-        if !Self.IsObjectiveDisplayed(18)
-            Self.SetObjectiveDisplayed(18, true, false)
-            Self.SetActive(true)
-        endif
+        ForceQuestAlias(15, 0x00002153)
+        EnsureSingleActiveObjective(18)
         ForceAllAct2Aliases()
-        SyncVault13CrisisAndCelebrationActors()
-        if act1S != None
-            act1S.SyncVault13ExpeditionDoors()
-        endif
     elseif auiStage == 20
         EnsureSingleActiveObjective(20)
         ForceAllAct2Aliases()
         if !Self.IsObjectiveDisplayed(20)
             Self.SetObjectiveDisplayed(20, true, false)
+            Self.SetActive(true)
         endif
-        RefreshDisplayedAct2Objective()
-        Self.SetActive(true)
     elseif auiStage == 21
         if !Self.IsObjectiveCompleted(15)
             Self.SetObjectiveCompleted(15, true)
@@ -3495,52 +3521,69 @@ Function ApplyV13Act2Stage(int auiStage)
         if !Self.IsObjectiveCompleted(38)
             Self.SetObjectiveCompleted(38, true)
         endif
+        if Self.IsObjectiveDisplayed(38)
+            Self.SetObjectiveDisplayed(38, false, false)
+        endif
         if !Self.IsCompleted()
             Self.CompleteAllObjectives()
             Self.CompleteQuest()
         endif
         if (!part1EndShown || !part1EndCardShownV2) && !bShowingPart1End
             bShowingPart1End = true
-            if !Utility.IsInMenuMode()
-                part1EndShown = true
-                part1EndCardShownV2 = true
-                Message part1EndMsg = Game.GetFormFromFile(0x00001450, "Vault13Chronicles.esp") as Message
-                if part1EndMsg == None
-                    part1EndMsg = Game.GetFormFromFile(0x00001152, "Vault13Chronicles.esp") as Message
+            part1EndShown = true
+            part1EndCardShownV2 = true
+            Actor playerEnd = Game.GetPlayer()
+            Sound sfxEndCheer = Game.GetFormFromFile(0x00001063, "Vault13Chronicles.esp") as Sound
+            if sfxEndCheer != None && playerEnd != None
+                sfxEndCheer.Play(playerEnd)
+            endif
+            V13SideQuestHubSyndicateScript qHubS = Game.GetFormFromFile(0x0001A000, "Vault13Chronicles.esp") as V13SideQuestHubSyndicateScript
+            V13SideQuestWaterMerchantsScript qWmS = Game.GetFormFromFile(0x0001E000, "Vault13Chronicles.esp") as V13SideQuestWaterMerchantsScript
+            if (qHubS != None && qHubS.IsWaterCaravanHired()) || (qWmS != None && qWmS.IsWaterCaravanHired())
+                Debug.Notification("[Supervisor Jacoren] Las caravanas de agua de El Eje salvaron al Refugio, pero han revelado nuestra posición a patrullas de supermutantes...")
+            endif
+            Debug.Notification("[Crónicas del Refugio 13] ¡El agua fluye de nuevo, pero un ejército mutante acecha! Habla con el Supervisor Jacoren sobre la nueva amenaza.")
+            bShowingPart1End = false
+        endif
+        Quest act3Q = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
+        if act3Q != None
+            V13Act3QuestScript act3S = act3Q as V13Act3QuestScript
+            if act3S != None
+                act3S.BeginAct3FromJacoren(jacorenFinaleTriggered)
+            else
+                if !act3Q.IsRunning()
+                    act3Q.Start()
                 endif
-                if part1EndMsg != None
-                    Actor playerEnd = Game.GetPlayer()
-                    Sound sfxEndCheer = Game.GetFormFromFile(0x00001061, "Vault13Chronicles.esp") as Sound
-                    if sfxEndCheer != None && playerEnd != None
-                        sfxEndCheer.Play(playerEnd)
-                    endif
-                    int endChoice = part1EndMsg.Show(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-                    if endChoice == 1
-                        ObjectReference mnemoDest = Game.GetFormFromFile(0x00002002, "Vault13Chronicles.esp") as ObjectReference
-                        if playerEnd != None && mnemoDest != None
-                            playerEnd.MoveTo(mnemoDest, 0.0, 0.0, 0.0, true)
-                            Debug.Notification("[Archivo Mnemosyne - 2287] Has regresado a la Commonwealth con el equipo y las reliquias de 2161.")
-                        endif
-                    else
-                        Debug.Notification("[Refugio 13] La Puerta Dimensional/Temporal en el Despacho del Supervisor queda abierta para regresar a la Commonwealth cuando quieras.")
-                    endif
-                else
-                    part1EndShown = false
-                    part1EndCardShownV2 = false
+                if act3Q.GetStage() < 15
+                    act3Q.SetStage(15)
                 endif
             endif
-            bShowingPart1End = false
         endif
         StartTimer(0.2, 1)
     endif
     lastAppliedAct2Stage = auiStage
     ForceAllAct2Aliases()
-    RefreshDisplayedAct2Objective()
     StartTimer(0.15, 12)
     bApplyingAct2Stage = false
 EndFunction
 
 Function WakeUpAct2()
+    if Self.IsCompleted() || Self.IsStageDone(40) || (rewardsGiven && waterChipInstalledInPlant)
+        rewardsGiven = true
+        waterChipInstalledInPlant = true
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+        Quest act3DoneWake = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
+        if act3DoneWake != None
+            V13Act3QuestScript act3DoneS = act3DoneWake as V13Act3QuestScript
+            if act3DoneS != None
+                act3DoneS.BeginAct3FromJacoren(false)
+            endif
+        endif
+        return
+    endif
     if !Self.IsRunning()
         Self.Start()
     endif
@@ -3558,20 +3601,21 @@ Function CheckProgressionAndLevelGate()
         return
     endif
 
+    int curStage = GetEffectiveAct2Stage()
+
     Cell v13CellSync = Game.GetFormFromFile(0x00002100, "Vault13Chronicles.esp") as Cell
     Cell playerCellSync = player.GetParentCell()
-    if playerCellSync != None && playerCellSync == v13CellSync
+    if playerCellSync != None && playerCellSync == v13CellSync && curStage != lastV13DoorSyncStage
         V13Act1QuestScript act1DoorSync = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as V13Act1QuestScript
         if act1DoorSync != None
             act1DoorSync.SyncVault13ExpeditionDoors()
+            lastV13DoorSyncStage = curStage
         endif
     endif
 
-    int curStage = GetEffectiveAct2Stage()
-
     if curStage < 15
         Quest act1Quest = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as Quest
-        if act1Quest != None && act1Quest.GetStage() >= 40
+        if act1Quest != None && (act1Quest.IsCompleted() || act1Quest.GetStage() >= 40 || act1Quest.IsStageDone(40))
             Scene act1RetScene = Game.GetFormFromFile(0x00004101, "Vault13Chronicles.esp") as Scene
             if act1RetScene != None && act1RetScene.IsPlaying()
                 act1RetScene.Stop()
@@ -3615,7 +3659,7 @@ Function CheckProgressionAndLevelGate()
     if curStage == 35 && !waterChipInstalledInPlant
         UpdateWaterPlantSequence()
     endif
-    if (act1S != None && act1S.IsJacorenInDialogueOrScene()) || (ugScene != None && ugScene.IsPlaying()) || (setScene != None && setScene.IsPlaying()) || (theresaScene != None && theresaScene.IsPlaying()) || (garretScene1 != None && garretScene1.IsPlaying()) || (garretScene2 != None && garretScene2.IsPlaying())
+    if (act1S != None && act1S.IsJacorenInDialogueOrScene()) || IsHarryInActiveSceneOrDialogue() || (ugScene != None && ugScene.IsPlaying()) || (setScene != None && setScene.IsPlaying()) || (theresaScene != None && theresaScene.IsPlaying()) || (garretScene1 != None && garretScene1.IsPlaying()) || (garretScene2 != None && garretScene2.IsPlaying())
         return
     endif
 
@@ -3623,7 +3667,6 @@ Function CheckProgressionAndLevelGate()
     UpdateWaterPlantSequence()
     WorldSpace ws2161 = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
     if act1S != None && ws2161 != None && player.GetWorldSpace() == ws2161
-        act1S.UpdateSouthernCaliforniaMapMarkers()
         act1S.SyncWorldMap2161()
     endif
 
@@ -3749,6 +3792,7 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
     bPumpPromptQueued = false
     bPumpMissingPartsHold = false
     bWaterPlantPromptBusy = false
+    lastV13DoorSyncStage = -1
     HealNecropolisStateFromCellAndInventory()
     Actor pLoad = Game.GetPlayer()
     Form chipLoad = Game.GetFormFromFile(0x00001112, "Vault13Chronicles.esp")
@@ -3948,17 +3992,13 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
                     return
                 endif
             endif
-            Topic gHello = Game.GetFormFromFile(0x00005001, "Vault13Chronicles.esp") as Topic
-            if gHello != None && (garretObj as Actor) != None && !(garretObj as Actor).IsTalking()
-                (garretObj as Actor).Say(gHello, None, false, None)
-            endif
         endif
         StartTimer(0.2, 1)
     elseif harryObj != None && akSender == harryObj
-        if stgNow < 26
-            Self.SetStage(26)
-        endif
         ForceQuestAlias(10, 0x00002A11)
+        if IsHarryInActiveSceneOrDialogue() || harryCombatPending || harryCombatStarted
+            return
+        endif
     elseif d2A34Obj != None && akSender == d2A34Obj
         if !necroPumpRepaired && stgNow < 26
             Debug.Notification("[Cuenca de Necrópolis] Repara primero la Gran Bomba de Agua aquí fuera (junto a la consola de control) antes de entrar en la Estación de Purificación.")
@@ -4020,7 +4060,6 @@ Event Scene.OnPhaseBegin(Scene akSender, int auiPhaseIndex)
             harrySceneOutcome = 2
             harryCombatPending = true
             harryCombatWaitTicks = 0
-            SyncHarryPatrolFactions(true)
             if GetEffectiveAct2Stage() < 28
                 Self.SetStage(28)
             endif
@@ -4035,6 +4074,7 @@ Event Scene.OnEnd(Scene akSender)
     Scene harrySceneWsh = Game.GetFormFromFile(0x0000510A, "Vault13Chronicles.esp") as Scene
     Scene act2RetScene = Game.GetFormFromFile(0x00005101, "Vault13Chronicles.esp") as Scene
     Scene theresaScene = Game.GetFormFromFile(0x00005104, "Vault13Chronicles.esp") as Scene
+    Scene act2IntroScene = Game.GetFormFromFile(0x00005100, "Vault13Chronicles.esp") as Scene
     if (harryScene != None && akSender == harryScene) || (harrySceneOld != None && akSender == harrySceneOld) || (harrySceneWsh != None && akSender == harrySceneWsh)
         harrySceneStarted = false
         harryDialogueMenuOpen = false
@@ -4042,6 +4082,11 @@ Event Scene.OnEnd(Scene akSender)
             BeginHarryEvacuationWalk()
         elseif harrySceneOutcome == 2 || harryCombatPending || GetEffectiveAct2Stage() == 28
             StartHarryCombat()
+        endif
+    elseif act2IntroScene != None && akSender == act2IntroScene
+        if Self.GetStage() >= 15 && Self.GetStage() < 18 && !v13CrisisResolved
+            Self.SetStage(18)
+            ApplyV13Act2Stage(18)
         endif
     elseif theresaScene != None && akSender == theresaScene
         if v13CrisisResolved || GetEffectiveAct2Stage() >= 20
@@ -4065,15 +4110,16 @@ Event Scene.OnEnd(Scene akSender)
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
+    lastV13DoorSyncStage = -1
     int stgLoc = GetEffectiveAct2Stage()
     if stgLoc >= 15 && stgLoc < 40
         ForceAllAct2Aliases()
-        RefreshDisplayedAct2Objective()
         StartTimer(0.15, 12)
     endif
 EndEvent
 
 Event OnPlayerTeleport()
+    lastV13DoorSyncStage = -1
     int stgTel = GetEffectiveAct2Stage()
     if stgTel >= 15 && stgTel < 40
         if stgTel >= 20
@@ -4084,7 +4130,6 @@ Event OnPlayerTeleport()
             endif
         endif
         ForceAllAct2Aliases()
-        RefreshDisplayedAct2Objective()
         StartTimer(0.15, 12)
     endif
 EndEvent
@@ -4107,7 +4152,7 @@ Event OnTimer(int aiTimerID)
         Cell sewerCell = Game.GetFormFromFile(0x00002F00, "Vault13Chronicles.esp") as Cell
         Cell watershedCell = Game.GetFormFromFile(0x00002900, "Vault13Chronicles.esp") as Cell
         int effStg = GetEffectiveAct2Stage()
-        if (effStg >= 15 && (effStg < 40 || !rewardsGiven || !Self.IsCompleted() || !part1EndShown || !part1EndCardShownV2)) || (act1Quest != None && act1Quest.GetStage() >= 40 && effStg < 40) || (jacoren != None && jacoren.GetPositionZ() < -200.0)
+        if (effStg >= 15 && effStg < 40) || !rewardsGiven || !Self.IsCompleted() || !part1EndShown || !part1EndCardShownV2 || (act1Quest != None && act1Quest.GetStage() >= 40 && effStg < 40) || (jacoren != None && jacoren.GetPositionZ() < -200.0)
             if player != None && ((hallCell != None && player.GetParentCell() == hallCell) || (sewerCell != None && player.GetParentCell() == sewerCell) || (watershedCell != None && player.GetParentCell() == watershedCell))
                 StartTimer(0.8, 1)
             else
@@ -4155,16 +4200,16 @@ Event OnTimer(int aiTimerID)
         Scene harrySceneWsh7 = Game.GetFormFromFile(0x0000510A, "Vault13Chronicles.esp") as Scene
         bool scenePlaying7 = (harryScene7 != None && harryScene7.IsPlaying()) || (harrySceneOld7 != None && harrySceneOld7.IsPlaying()) || (harrySceneWsh7 != None && harrySceneWsh7.IsPlaying())
         if harryCombatPending && !harryCombatStarted && !harryEvacuated
-            SyncHarryPatrolFactions(true)
             harryCombatWaitTicks += 1
-            if harry7 == None || harry7.IsDead() || (harryCombatWaitTicks >= 2 && !harry7.IsTalking()) || harryCombatWaitTicks >= 6
+            if (!scenePlaying7 && (harry7 == None || harry7.IsDead() || (!harry7.IsTalking() && !harry7.IsInDialogueWithPlayer() && harryCombatWaitTicks >= 3))) || harryCombatWaitTicks >= 75
+                SyncHarryPatrolFactions(true)
                 StartHarryCombat()
             else
                 StartTimer(0.2, 7)
             endif
         elseif harryEvacPending && !harryEvacWalkStarted && !harryEvacuated
             harryCombatWaitTicks += 1
-            if harry7 == None || harry7.IsDead() || (!scenePlaying7 && !harry7.IsTalking() && !harry7.IsInDialogueWithPlayer()) || harryCombatWaitTicks >= 10
+            if harry7 == None || harry7.IsDead() || (!scenePlaying7 && !harry7.IsTalking() && !harry7.IsInDialogueWithPlayer()) || harryCombatWaitTicks >= 75
                 BeginHarryEvacuationWalk()
             else
                 StartTimer(0.2, 7)
@@ -4189,6 +4234,13 @@ Event OnTimer(int aiTimerID)
                     Self.SetStage(40)
                 endif
                 ApplyV13Act2Stage(40)
+                Quest act3Fin = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
+                if act3Fin != None
+                    V13Act3QuestScript act3FinS = act3Fin as V13Act3QuestScript
+                    if act3FinS != None
+                        act3FinS.BeginAct3FromJacoren(true)
+                    endif
+                endif
             endif
         endif
     elseif aiTimerID == 10
@@ -4327,6 +4379,31 @@ Event OnTimer(int aiTimerID)
             ForceAllAct2Aliases()
             RefreshDisplayedAct2Objective()
         endif
+    elseif aiTimerID == 18
+        if Utility.IsInMenuMode()
+            if ugPumpWaitTicks < 25
+                ugPumpWaitTicks += 1
+                StartTimer(0.25, 18)
+            endif
+            return
+        endif
+        Actor player18 = Game.GetPlayer()
+        Actor ugLeader18 = Game.GetFormFromFile(0x00002A18, "Vault13Chronicles.esp") as Actor
+        if ugLeader18 != None && !ugLeader18.IsDead()
+            if ugLeader18.IsDisabled()
+                ugLeader18.Enable(false)
+            endif
+            ugLeader18.SetPosition(80.0, 7820.0, 0.0)
+            ugLeader18.SetAngle(0.0, 0.0, 180.0)
+            if player18 != None
+                ugLeader18.SetLookAt(player18, false)
+            endif
+            Topic ugThanks18 = Game.GetFormFromFile(0x00005049, "Vault13Chronicles.esp") as Topic
+            if ugThanks18 != None && !ugLeader18.IsTalking() && !ugLeader18.IsInDialogueWithPlayer()
+                ugLeader18.Say(ugThanks18, None, false)
+            endif
+        endif
+        RefreshDisplayedAct2Objective()
     endif
 EndEvent
 
@@ -4442,6 +4519,7 @@ Function ExecuteMnemosyneCheckpointJump(int aiMenuID)
     bPumpPromptQueued = false
     bPumpMissingPartsHold = false
     bWaterPlantPromptBusy = false
+    lastV13DoorSyncStage = -1
 
     ; 2. TELEPORT PLAYER IMMEDIATELY (and start Timer 16 to guarantee arrival once terminal closes)
     MovePlayerToCheckpointTarget(aiMenuID)
@@ -4578,7 +4656,7 @@ Function ExecuteMnemosyneCheckpointJump(int aiMenuID)
         Self.SetStage(40)
         Self.CompleteAllObjectives()
         Self.CompleteQuest()
-        Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+        Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
         if q3 != None
             if !q3.IsRunning()
                 q3.Start()
@@ -4598,4 +4676,48 @@ Function ExecuteMnemosyneCheckpointJump(int aiMenuID)
     ForceAllAct2Aliases()
     RefreshDisplayedAct2Objective()
     StartTimer(0.2, 1)
+EndFunction
+
+Function SilentCompleteAct2ForJump()
+    introShown = true
+    v13CrisisResolved = true
+    v13CrisisRewardGiven = true
+    garretIntroDone = true
+    garretArmoryUnlockedNotified = true
+    sewerPasswordFound = true
+    bSewerChamberUnlocked = true
+    ezequielGreeted = true
+    pumpPartsRecovered = true
+    pumpPartsNotified = true
+    necroPumpRepaired = true
+    waterChipExtracted = true
+    chipExtractedNotified = true
+    waterChipInstalledInPlant = true
+    rewardsGiven = true
+    part1EndShown = true
+    part1EndCardShownV2 = true
+    jacorenFinaleTriggered = true
+    if !Self.IsRunning() && !Self.IsCompleted()
+        Self.Start()
+    endif
+    Self.SetObjectiveDisplayed(15, false, false)
+    Self.SetObjectiveDisplayed(18, false, false)
+    Self.SetObjectiveDisplayed(20, false, false)
+    Self.SetObjectiveDisplayed(21, false, false)
+    Self.SetObjectiveDisplayed(22, false, false)
+    Self.SetObjectiveDisplayed(23, false, false)
+    Self.SetObjectiveDisplayed(24, false, false)
+    Self.SetObjectiveDisplayed(25, false, false)
+    Self.SetObjectiveDisplayed(26, false, false)
+    Self.SetObjectiveDisplayed(27, false, false)
+    Self.SetObjectiveDisplayed(28, false, false)
+    Self.SetObjectiveDisplayed(30, false, false)
+    Self.SetObjectiveDisplayed(35, false, false)
+    Self.SetObjectiveDisplayed(38, false, false)
+    SetWaterPlantState(true)
+    bApplyingAct2Stage = true
+    Self.SetStage(40)
+    bApplyingAct2Stage = false
+    Self.CompleteAllObjectives()
+    Self.CompleteQuest()
 EndFunction

@@ -58,6 +58,9 @@ Event OnActivate(ObjectReference akActionRef)
 EndEvent
 
 Event Terminal.OnMenuItemRun(Terminal akSender, int auiMenuItemID, ObjectReference akTerminalRef)
+    if Self.IsDisabled() || (akTerminalRef != None && akTerminalRef != Self)
+        return
+    endif
     Quest q1 = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as Quest
     V13Act1QuestScript act1S = q1 as V13Act1QuestScript
     Quest q2 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
@@ -177,6 +180,14 @@ Event Terminal.OnMenuItemRun(Terminal akSender, int auiMenuItemID, ObjectReferen
         if sPC != None
             sPC.QueueJumpToTardis()
         endif
+    elseif (akSender == mnemoBase || akSender == None) && auiMenuItemID == 24
+        if q1 == None || !q1.IsRunning()
+            Quest q5Jump = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
+            V13Act5QuestScript act5Jump = q5Jump as V13Act5QuestScript
+            if act5Jump != None
+                act5Jump.QueueJumpToCathedral()
+            endif
+        endif
     elseif akSender == Game.GetFormFromFile(0x000011B0, "Vault13Chronicles.esp") as Terminal
         Quest qGFT = Game.GetFormFromFile(0x0001B000, "Vault13Chronicles.esp") as Quest
         V13SideQuestTardisScript sGFT = qGFT as V13SideQuestTardisScript
@@ -194,6 +205,42 @@ Event Terminal.OnMenuItemRun(Terminal akSender, int auiMenuItemID, ObjectReferen
         V13SideQuestTardisScript sPCT = qPCT as V13SideQuestTardisScript
         if sPCT != None
             sPCT.NotifyTardisTerminalRead()
+        endif
+    elseif akSender == Game.GetFormFromFile(0x00001535, "Vault13Chronicles.esp") as Terminal
+        Quest qGlowG = Game.GetFormFromFile(0x00013000, "Vault13Chronicles.esp") as Quest
+        V13SideQuestGlowScript sGlowG = qGlowG as V13SideQuestGlowScript
+        if sGlowG != None && auiMenuItemID == 1
+            sGlowG.RepairWestTekGenerator()
+        endif
+    elseif akSender == Game.GetFormFromFile(0x00001536, "Vault13Chronicles.esp") as Terminal
+        Quest qGlowF = Game.GetFormFromFile(0x00013000, "Vault13Chronicles.esp") as Quest
+        V13SideQuestGlowScript sGlowF = qGlowF as V13SideQuestGlowScript
+        if sGlowF != None && auiMenuItemID == 1
+            sGlowF.DownloadMaxsonAndFEVLogs()
+        endif
+    elseif akSender == Game.GetFormFromFile(0x00001537, "Vault13Chronicles.esp") as Terminal
+        Quest qGlowZ = Game.GetFormFromFile(0x00013000, "Vault13Chronicles.esp") as Quest
+        V13SideQuestGlowScript sGlowZ = qGlowZ as V13SideQuestGlowScript
+        if sGlowZ != None
+            if auiMenuItemID == 1
+                sGlowZ.QueryZAXPhilosophy()
+            elseif auiMenuItemID == 2
+                sGlowZ.PlayChessWithZAX()
+            elseif auiMenuItemID == 3
+                sGlowZ.OverrideZAXSecurityVault()
+            endif
+        endif
+    elseif akSender == Game.GetFormFromFile(0x00001538, "Vault13Chronicles.esp") as Terminal
+        Quest qLHPA = Game.GetFormFromFile(0x000D1000, "Vault13Chronicles.esp") as Quest
+        V13SideQuestLostHillsPAScript sLHPA = qLHPA as V13SideQuestLostHillsPAScript
+        if sLHPA != None && auiMenuItemID == 1
+            sLHPA.RequestSystolicMotivatorFromTerminal()
+        endif
+    elseif akSender == Game.GetFormFromFile(0x00001539, "Vault13Chronicles.esp") as Terminal
+        Quest qAct3V = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
+        V13Act3QuestScript sAct3V = qAct3V as V13Act3QuestScript
+        if sAct3V != None && auiMenuItemID == 1
+            sAct3V.DownloadVreeAutopsyFromTerminal()
         endif
     endif
 EndEvent

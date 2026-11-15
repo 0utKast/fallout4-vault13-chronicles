@@ -637,7 +637,7 @@ def run_full_qa_audit() -> int:
         for e in alias_errors + qobj_errors:
             report.err(e)
 
-    # Check QUST.DNAM (Allow Repeated Stages 0x0008 == 0) and INFO.TIQS (start-only (stg, 0xFFFF))
+    # Check QUST.DNAM (Allow Repeated Stages 0x0008 == 0) and INFO.TIQS (end-only (0xFFFF, stg))
     repeat_stage_qusts: list[str] = []
     for qr in qust_records:
         for st, sv in qr.subs:
@@ -651,17 +651,17 @@ def run_full_qa_audit() -> int:
             for st, sv in r.subs:
                 if st == "TIQS" and len(sv) == 4:
                     b_stg, e_stg = struct.unpack("<HH", sv)
-                    if b_stg == 0xFFFF or e_stg != 0xFFFF:
+                    if b_stg != 0xFFFF or e_stg == 0xFFFF:
                         bad_tiqs_infos.append(f"INFO 0x{r.fid:08X}: TIQS=({b_stg}, {e_stg})")
     if not repeat_stage_qusts and not bad_tiqs_infos:
         report.ok(
-            f"Cero notificaciones repetidas de misión: las {len(qust_records)} misiones desactivan Allow Repeated Stages (DNAM & 0x0008 == 0) y todos los TIQS disparan solo al inicio (stg, 0xFFFF)."
+            f"Cero notificaciones repetidas ni cortes de audio: las {len(qust_records)} misiones desactivan Allow Repeated Stages (DNAM & 0x0008 == 0) y todos los TIQS disparan una sola vez al finalizar el audio (0xFFFF, stg)."
         )
     else:
         for rq in repeat_stage_qusts:
             report.err(f"QUST con Allow Repeated Stages activo: {rq}")
         for bt in bad_tiqs_infos:
-            report.err(f"INFO TIQS con doble disparo: {bt}")
+            report.err(f"INFO TIQS inválido (no OnEnd): {bt}")
 
     # Audit all Papyrus .psc source files against .esp FormIDs, Stages, Objectives & Aliases
     psc_files = sorted(glob.glob(os.path.join(PAPYRUS_SRC_DIR, "*.psc")))
@@ -703,7 +703,8 @@ def run_full_qa_audit() -> int:
                     )
 
         # 2. If this script is attached to QUST records, verify stages, objectives and ForceQuestAlias
-        q_list = qust_by_script.get(psc_name, [])
+        #    (skip passive legacy stub 0x01006000 which immediately forwards to V13Act3Quest 0x01006002)
+        q_list = [qr for qr in qust_by_script.get(psc_name, []) if qr.fid != 0x01006000]
         if q_list:
             for m_st in re_setstage.finditer(psc_txt):
                 stg_val = int(m_st.group(1))
@@ -980,13 +981,13 @@ def run_full_qa_audit() -> int:
         and r.parent_wrld == 0x01003400
         and any(st == "XMRK" for st, _ in r.subs)
     ]
-    if len(ext_lands) == 64 and len(ext_map_markers) >= 23:
+    if len(ext_lands) == 400 and len(ext_map_markers) >= 31:
         report.ok(
-            f"Malla topográfica 3D del Sur de California (2161) verificada: {len(ext_lands)}/64 celdas exteriores con registro LAND (VHGT/VNML) y {len(ext_map_markers)} MapMarkers con viaje rápido."
+            f"Malla topográfica 3D 20x20 del Sur de California (2161) verificada: {len(ext_lands)}/400 celdas exteriores con registro LAND (VHGT/VNML) y {len(ext_map_markers)} MapMarkers con viaje rápido."
         )
     else:
         report.err(
-            f"Topografía exterior incompleta: {len(ext_lands)} registros LAND (esperados 64) y {len(ext_map_markers)} MapMarkers (esperados >= 23)."
+            f"Topografía exterior incompleta: {len(ext_lands)} registros LAND (esperados 400) y {len(ext_map_markers)} MapMarkers (esperados >= 31)."
         )
     ext_achrs: list[tuple[ParsedRecord, int, float, float, float]] = []
     ext_refrs: list[tuple[ParsedRecord, int, float, float, float]] = []
@@ -1120,7 +1121,8 @@ def run_full_qa_audit() -> int:
     roaming_hostiles = [
         (r, b, x, y, z)
         for (r, b, x, y, z) in ext_achrs
-        if 0x01003580 <= r.fid <= 0x0100359B and (r.flags & 0x0800) == 0
+        if (0x01003580 <= r.fid <= 0x0100359B or 0x01003700 <= r.fid <= 0x0100372B)
+        and (r.flags & 0x0800) == 0
     ]
     friendly_npcs = [
         (r, b, x, y, z)
@@ -1177,18 +1179,18 @@ def run_full_qa_audit() -> int:
         for szw in safe_zone_warnings:
             report.warn(szw)
 
-    # 4.5 Check Global Spatial Distribution across the 32,768x32,768 Map & Cross-Mission Boss Isolation
+    # 4.5 Check Global Spatial Distribution across the 81,920x81,920 Map & Cross-Mission Boss Isolation
     boss_fids = [
-        0x010035AC,  # Mutascorpión Emperador (SQ1)
-        0x010035C5,  # Kenji (SQ2)
-        0x010035CC,  # Gizmo (SQ8)
-        0x010035CE,  # Vinnie (SQ8)
-        0x010035BA,  # Petrox (SQ7)
-        0x010035DE,  # Tolan (SQ4)
-        0x010035D7,  # Krag (SQ3)
+        0x010035A6,  # Mutascorpión Emperador (SQ1)
+        0x010035C4,  # Kenji (SQ2)
+        0x010035DE,  # Gizmo (SQ8)
+        0x010035EC,  # Vinnie (SQ8)
+        0x010035D8,  # Petrox (SQ7)
+        0x010035CE,  # Tolan (SQ4)
+        0x010035C9,  # Krag (SQ3)
         0x010035EA,  # Guardián Sanguinario de las Caravanas (SQ9)
-        0x010035E5,  # ZAX-WT01 (SQ5)
-        0x010035E8,  # Madre Sanguinario (SQ6)
+        0x010035D2,  # ZAX-WT01 (SQ5)
+        0x010035D7,  # Madre Sanguinario (SQ6)
     ]
     boss_positions = [
         (r, b, x, y, z)
@@ -1200,32 +1202,59 @@ def run_full_qa_audit() -> int:
         r1, _b1, x1, y1, _z1 = boss_positions[i]
         for j in range(i + 1, len(boss_positions)):
             r2, _b2, x2, y2, _z2 = boss_positions[j]
-            # Gizmo (0x010035CC) and Vinnie (0x010035CE) belong to the same SQ8 district
-            if {r1.fid, r2.fid} == {0x010035CC, 0x010035CE}:
+            # Gizmo (0x010035DE) and Vinnie (0x010035EC) belong to the same SQ8 district
+            if {r1.fid, r2.fid} == {0x010035DE, 0x010035EC}:
                 continue
             d_boss = math.hypot(x1 - x2, y1 - y2)
-            if d_boss < 2800.0:
+            if d_boss < 10000.0:
                 cross_mission_errors.append(
-                    f"Jefes de misiones distintas demasiado próximos: 0x{r1.fid:08X} y 0x{r2.fid:08X} a solo {d_boss:.0f} uds"
+                    f"Jefes de misiones distintas demasiado próximos: 0x{r1.fid:08X} y 0x{r2.fid:08X} a solo {d_boss:.0f} uds (< 10.000 uds)"
                 )
-    # Check 3x3 sector occupancy across [-16384..+16384] x [-16384..+16384]
+    # Check 3x3 sector occupancy across [-40960..+40960] x [-40960..+40960]
     occupied_sectors: set[tuple[int, int]] = set()
     for mm in ext_map_markers:
         for st, sv in mm.subs:
             if st == "DATA" and len(sv) >= 12:
                 mx, my, _mz = struct.unpack_from("<3f", sv, 0)
-                sx = 0 if mx < -4000.0 else (1 if mx < 5000.0 else 2)
-                sy = 0 if my < -4000.0 else (1 if my < 5000.0 else 2)
+                sx = 0 if mx < -12000.0 else (1 if mx < 12000.0 else 2)
+                sy = 0 if my < -12000.0 else (1 if my < 12000.0 else 2)
                 occupied_sectors.add((sx, sy))
     if not cross_mission_errors and len(occupied_sectors) == 9:
         report.ok(
-            f"Distribución espacial global y aislamiento entre misiones verificados: 9/9 sectores del mapa (32.768x32.768 uds) ocupados por {len(ext_map_markers)} marcadores y distancia mínima > 3.500 uds entre jefes de distintas misiones."
+            f"Distribución espacial global y aislamiento entre misiones verificados: 9/9 sectores del mapa (81.920x81.920 uds) ocupados por {len(ext_map_markers)} marcadores y distancia mínima > 10.000 uds entre jefes de distintas misiones."
         )
     else:
         for cme in cross_mission_errors:
             report.err(cme)
         if len(occupied_sectors) < 9:
             report.err(f"Sectores del mapa ocupados: {len(occupied_sectors)}/9")
+
+    # 4.6 Check Havok-solid Covenant perimeter walls (0x000E97CC/CE/EC) and zero collisionless graybox statics (0x000E04A6..A8)
+    collisionless_wall_refs: list[int] = []
+    solid_wall_count = 0
+    for r in records[1:]:
+        if r.rtype == "REFR" and (r.flags & 0x0800) == 0:
+            b_fid = 0
+            rz_val = 0.0
+            for st, sv in r.subs:
+                if st == "NAME" and len(sv) == 4:
+                    b_fid = struct.unpack("<I", sv)[0]
+                elif st == "DATA" and len(sv) >= 12:
+                    rz_val = struct.unpack_from("<3f", sv, 0)[2]
+            if rz_val > -500.0:
+                if b_fid in (0x000E04A6, 0x000E04A7, 0x000E04A8):
+                    collisionless_wall_refs.append(r.fid)
+                elif b_fid == 0x000E97CC:
+                    solid_wall_count += 1
+    if not collisionless_wall_refs and solid_wall_count >= 32:
+        report.ok(
+            f"Colisión física Havok de murallas verificada: {solid_wall_count} tramos CovWall01 (0x000E97CC) sólidos y 0 referencias sin colisión (0x000E04A6..A8)."
+        )
+    else:
+        if collisionless_wall_refs:
+            report.err(f"Murallas sin colisión física 0x000E04A6..A8 detectadas: {[hex(x) for x in collisionless_wall_refs[:10]]}")
+        if solid_wall_count < 32:
+            report.err(f"Tramos sólidos CovWall01 insuficientes: {solid_wall_count} (esperados >= 32)")
 
     # ------------------------------------------------------------------
     # MÓDULO 5: TRAZABILIDAD DE ACTIVOS (ESP -> NIF -> BGSM/BGEM -> DDS)
@@ -1308,7 +1337,7 @@ def run_full_qa_audit() -> int:
         report.err(f"Falta descriptor Pip-Boy LODSettings ({lod_key}, 16 bytes) en Main.ba2.")
     else:
         lod_vals = struct.unpack("<hhIII", main_ba2_files[lod_key])
-        if lod_vals != (-4, -4, 32, 4, 32):
+        if lod_vals != (-12, -12, 32, 4, 32):
             report.err(f"Descriptor LODSettings inválido: {lod_vals}")
         else:
             report.ok(

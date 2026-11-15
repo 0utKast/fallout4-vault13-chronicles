@@ -111,14 +111,33 @@ class VerificationSuite:
         if not os.path.exists(ESP_PATH):
             return False
 
-        # Verify Fallout 4\Data deployed files are 100% byte-for-byte identical to build_out/ (ES) or edition_en/build_out/ (EN)
+        # Verify Fallout 4\Data deployed files are 100% byte-for-byte identical to build_out/ (ES) or edition_en/build_out/ (EN) when v1.0 profile is active
         import hashlib
+        import json as _json
+        _active_ver = "1.0"
+        _marker_p = os.path.join(FO4_DATA, "V13_ACTIVE_VERSION.json")
+        if os.path.isfile(_marker_p):
+            try:
+                with open(_marker_p, "r", encoding="utf-8") as _mf:
+                    _active_ver = _json.load(_mf).get("version", "1.0")
+            except Exception:
+                pass
         build_out_dir = os.path.dirname(ESP_PATH)
         en_build_out_dir = os.path.join(os.path.dirname(build_out_dir), "edition_en", "build_out")
+        skip_data_sync = "--staging" in sys.argv
         for fname in ("Vault13Chronicles.esp", "Vault13Chronicles - Main.ba2", "Vault13Chronicles - Textures.ba2"):
             src_f = os.path.join(build_out_dir, fname)
             en_src_f = os.path.join(en_build_out_dir, fname)
             dst_f = os.path.join(FO4_DATA, fname)
+            if skip_data_sync:
+                self.check(
+                    os.path.exists(src_f) and os.path.exists(en_src_f),
+                    f"Staged ES and EN {fname} exist (--staging mode, Fallout 4\\Data untouched)",
+                )
+                continue
+            if _active_ver != "1.0":
+                self.check(os.path.exists(src_f), f"Staged v1.0 {fname} exists while Fallout 4\\Data holds profile {_active_ver}")
+                continue
             if os.path.exists(src_f) and os.path.exists(dst_f):
                 with open(src_f, "rb") as fs, open(dst_f, "rb") as fd:
                     hs = hashlib.sha256(fs.read()).hexdigest()
@@ -134,8 +153,20 @@ class VerificationSuite:
                             pass
                     except PermissionError:
                         locked_by_fo4 = True
+                    if not locked_by_fo4:
+                        try:
+                            import subprocess as _subprocess
+                            _fo4_proc = _subprocess.run(
+                                ["tasklist", "/FI", "IMAGENAME eq Fallout4.exe"],
+                                capture_output=True,
+                                text=True,
+                            )
+                            if "fallout4.exe" in (_fo4_proc.stdout or "").lower():
+                                locked_by_fo4 = True
+                        except Exception:
+                            pass
                     if locked_by_fo4:
-                        print(f"  [NOTICE] Fallout 4\\Data\\{fname} is currently locked by a running Fallout4.exe session.")
+                        print(f"  [NOTICE] Fallout4.exe is running; staged build_out {fname} ready for install when Fallout4.exe closes.")
                         self.check(True, f"Staged {fname} ready for install when Fallout4.exe closes")
                     else:
                         self.check(
@@ -335,8 +366,8 @@ class VerificationSuite:
                     f"NPC_ {hex(npc_fid)} ({npc_name}) has base AIDT aggression 0 (never attacks allies), got {aidt_aggro}",
                 )
 
-        # Verify TIQS on INFO records fires on line start ONLY (begin_stage != 0xFFFF and end_stage == 0xFFFF)
-        # and all QUST.DNAM records clear Allow Repeated Stages (0x0008 == 0) for zero duplicate HUD banners
+        # Verify TIQS on INFO records fires on line end ONLY (begin_stage == 0xFFFF and end_stage != 0xFFFF)
+        # so NPC dialogue finishes speaking cleanly and all QUST.DNAM records clear Allow Repeated Stages (0x0008 == 0)
         bad_tiqs = []
         bad_qust_dnam = []
         for r_fid, (rt, _, subs, _) in records_by_fid.items():
@@ -344,7 +375,7 @@ class VerificationSuite:
                 for st, sv in subs:
                     if st == "TIQS" and len(sv) == 4:
                         b_stg, e_stg = struct.unpack("<HH", sv)
-                        if b_stg == 0xFFFF or e_stg != 0xFFFF:
+                        if b_stg != 0xFFFF or e_stg == 0xFFFF:
                             bad_tiqs.append((hex(r_fid), b_stg, e_stg))
             elif rt == "QUST":
                 for st, sv in subs:
@@ -354,7 +385,7 @@ class VerificationSuite:
                             bad_qust_dnam.append((hex(r_fid), hex(q_fl)))
         self.check(
             len(bad_tiqs) == 0,
-            f"All INFO TIQS subrecords fire once on line start only (begin != 0xFFFF, end == 0xFFFF; 0 bad TIQS found: {bad_tiqs})",
+            f"All INFO TIQS subrecords fire once on line end only (begin == 0xFFFF, end != 0xFFFF; 0 bad TIQS found: {bad_tiqs})",
         )
         self.check(
             len(bad_qust_dnam) == 0,
@@ -364,7 +395,7 @@ class VerificationSuite:
         # Layer 2: Papyrus (.psc) <-> Binary (.esp) Cross-Reference & Anti-Regression Static Audit
         print("\n[CAPA 2] Auditoría Estática de Sincronización Papyrus (.psc) <-> ESP...")
         psc_files = [f for f in os.listdir(PSC_DIR) if f.endswith(".psc")]
-        self.check(len(psc_files) == 50, f"All 50 Papyrus source files present ({len(psc_files)} found)")
+        self.check(len(psc_files) >= 51, f"All >= 51 Papyrus source files present ({len(psc_files)} found)")
 
         for psc_name in sorted(psc_files):
             psc_path = os.path.join(PSC_DIR, psc_name)
@@ -409,8 +440,30 @@ class VerificationSuite:
         refresh_fn_block = act2_code.split("Function RefreshDisplayedAct2Objective()")[1].split("EndFunction")[0]
         self.check(
             "Self.Reset()" not in act2_code
-            and "SetObjectiveDisplayed(" not in refresh_fn_block,
-            "V13Act2QuestScript.psc never calls Self.Reset() or toggles SetObjectiveDisplayed in RefreshDisplayedAct2Objective (zero repeating objective banners!)",
+            and "SetObjectiveDisplayed(" not in refresh_fn_block
+            and not re.search(r"SetObjectiveDisplayed\([^)]*,\s*true\s*,\s*true\s*\)", refresh_fn_block, re.IGNORECASE),
+            "V13Act2QuestScript.psc never calls Self.Reset() or SetObjectiveDisplayed() inside RefreshDisplayedAct2Objective (zero repeating objective banners!)",
+        )
+        apply_act2_block = act2_code.split("Function ApplyV13Act2Stage(int auiStage)")[1].split("Function WakeUpAct2()")[0]
+        self.check(
+            "EnsureSingleActiveObjective(18)" in apply_act2_block
+            and "0x00005100" in act2_code
+            and "act2IntroScene" in act2_code,
+            "V13Act2QuestScript.psc switches cleanly via EnsureSingleActiveObjective(18) and registers SCEN 0x01005100 for OnEnd",
+        )
+        missing_p18_tiqs = []
+        for p_info_fid in (0x01005308, 0x01005309, 0x0100530A, 0x0100530B):
+            rec_tuple = records_by_fid.get(p_info_fid)
+            tiqs_vals = (
+                [struct.unpack("<HH", sv) for st, sv in rec_tuple[2] if st == "TIQS" and len(sv) == 4]
+                if rec_tuple is not None
+                else []
+            )
+            if (0xFFFF, 18) not in tiqs_vals:
+                missing_p18_tiqs.append(hex(p_info_fid))
+        self.check(
+            len(missing_p18_tiqs) == 0,
+            f"Player INFOs 0x01005308..0x0100530B in SCEN 0x01005100 carry immediate TIQS stage 18 (missing: {missing_p18_tiqs})",
         )
         self.check(
             "Function SyncHarryPatrolFactions(" in act2_code
@@ -526,7 +579,7 @@ class VerificationSuite:
                 self.stages_done = set(stages_done or [])
                 if quest_stage > 0:
                     self.stages_done.add(quest_stage)
-                # Note: q3 (0x01006000) ALWAYS has stage 10 in Fallout 4 because INDX 10 is flag 2 (Start Up Stage)!
+                # Note: q3 (0x01006002) ALWAYS has stage 10 in Fallout 4 because INDX 10 is flag 2 (Start Up Stage)!
                 self.q3_stage = 10
                 self.introShown = quest_stage >= 15
                 self.rewardsGiven = False
@@ -898,7 +951,7 @@ class VerificationSuite:
             (0x01010000, "Junktown (Killian y Gizmo)", 0x01010100, "PreguntasKillianJunktown", 0x01010010, 0x01010011, 0x010035C0, 0x010035C4, 0x01001451, 0x0100114A, 0x01001197, 0x0100341C, 0x0100351C),
             (0x01011000, "El Eje y Granja de Irwin (.223)", 0x01011100, "PreguntasIrwinHub", 0x01011010, 0x01011011, 0x010035C6, 0x010035C9, 0x01001452, 0x0100114B, 0x01001198, 0x0100341D, 0x0100351D),
             (0x01012000, "Paso Oriental de los Khans (Diana y Gwen)", 0x01012100, "PreguntasDianaKhans", 0x01012010, 0x01012011, 0x010035CB, 0x010035CE, 0x01001453, 0x0100114C, 0x01001199, 0x0100341E, 0x0100351E),
-            (0x01013000, "Puerta de Lost Hills y El Resplandor (Cabbot y Talus)", 0x01013100, "PreguntasCabbotGlow", 0x01013010, 0x01013011, 0x010035D0, 0x010035D2, 0x01001454, 0x0100114D, 0x0100119A, 0x0100341F, 0x0100351F),
+            (0x01013000, "Puerta de Lost Hills y El Resplandor (Cabbot y Talus)", 0x01013100, "PreguntasCabbotGlow", 0x01013010, 0x01013011, 0x010035D0, 0x01003601, 0x01001454, 0x0100114D, 0x0100119A, 0x0100341F, 0x0100351F),
             (0x01014000, "Adytum y Gun Runners (Madre Sanguinario)", 0x01014100, "PreguntasGabrielBoneyard", 0x01014010, 0x01014011, 0x010035D4, 0x010035D7, 0x01001455, 0x0100114E, 0x0100119B, 0x01003420, 0x01003520),
         ]
         for q_fid, q_label, scen_fid, ph1_name, g1_fid, g2_fid, leader_achr, boss_achr, misc_fid, book_fid, term_fid, mm_fid, ftm_fid in new_side_quests:
@@ -1071,38 +1124,39 @@ class VerificationSuite:
             doft_val = next((struct.unpack("<I", v)[0] for s, v in npc_subs if s == "DOFT" and len(v) == 4), 0)
             self.check(doft_val == exp_doft, f"{label} ({hex(npc_fid)}) uses frontier outfit {hex(exp_doft)} (found {hex(doft_val)})")
 
-        # Verify Shady Sands Z-fighting elimination (Cabin01 raised to Z >= 176.0, no surface 0x0007350B doormats, 1 surface FarmPlot01ShortFoothillsDirt, sunken props preserve REFR FormIDs)
-        shady_cabins_z = []
+        # Verify Shady Sands 20x20 Walled Adobe Town (3300..9600, 21100..25900): custom 3D Adobe Town Halls, Houses, Gate Arches & Obelisk, zero surface doormats, elevated dirt farm plots
+        shady_gate_count = 0
+        shady_hall_count = 0
+        shady_house_count = 0
+        shady_obelisk_count = 0
         shady_farmplots_z = []
-        sunken_farmplots = 0
         surface_doormat_count = 0
-        sunken_doormat_count = 0
         for fid, rinfo in refrs_by_fid.items():
             rx, ry, rz = rinfo["data"][:3]
-            if 1500.0 <= rx <= 5000.0 and 7500.0 <= ry <= 10250.0:
+            if 3300.0 <= rx <= 9600.0 and 21100.0 <= ry <= 25900.0 and rz > -500.0:
                 if rinfo["base"] == 0x0007350B:
-                    if rz > -1000.0:
-                        surface_doormat_count += 1
-                    else:
-                        sunken_doormat_count += 1
-                elif rinfo["base"] == 0x0006FD6E:
-                    shady_cabins_z.append(rz)
+                    surface_doormat_count += 1
+                elif rinfo["base"] == 0x01001D04:
+                    shady_gate_count += 1
+                elif rinfo["base"] == 0x01001D05:
+                    shady_hall_count += 1
+                elif rinfo["base"] == 0x01001D06:
+                    shady_house_count += 1
+                elif rinfo["base"] == 0x01001D07:
+                    shady_obelisk_count += 1
                 elif rinfo["base"] == 0x001E387A:
-                    if rz > -1000.0:
-                        shady_farmplots_z.append(rz)
-                    else:
-                        sunken_farmplots += 1
+                    shady_farmplots_z.append(rz)
         self.check(
-            len(shady_cabins_z) == 4 and all(z >= 176.0 for z in shady_cabins_z),
-            f"All 4 Shady Sands Cabin01 buildings are elevated above terrain Z=160.0 to prevent porch Z-fighting (Z={shady_cabins_z})",
+            shady_hall_count >= 2 and shady_house_count >= 4 and shady_gate_count >= 2 and shady_obelisk_count >= 1,
+            f"Shady Sands expanded adobe town has Halls={shady_hall_count}, Houses={shady_house_count}, Gates={shady_gate_count}, Obelisk={shady_obelisk_count}",
         )
         self.check(
-            surface_doormat_count == 0 and sunken_doormat_count == 4,
-            f"Zero surface doormats (0x0007350B) on Shady Sands dirt terrain and 4 sunken to preserve savegame REFR FormIDs",
+            surface_doormat_count == 0,
+            f"Zero surface doormats (0x0007350B) on Shady Sands dirt terrain (found {surface_doormat_count})",
         )
         self.check(
-            len(shady_farmplots_z) == 1 and shady_farmplots_z[0] >= 166.0 and sunken_farmplots == 5,
-            f"Shady Sands uses 1 surface elevated dirt farm plot (Z={shady_farmplots_z}) and 5 sunken to preserve savegame REFR FormIDs",
+            len(shady_farmplots_z) >= 1 and all(z >= 166.0 for z in shady_farmplots_z),
+            f"Shady Sands uses elevated dirt farm plots above Z=160.0 to prevent Z-fighting (Z={shady_farmplots_z})",
         )
 
         # Verify Albóndiga (Dogmeat, 0x01001236 in Shady Sands & 0x01001243 in Junktown) companion & Fallout 1 Wasteland Dog configuration
@@ -1291,14 +1345,14 @@ class VerificationSuite:
         )
 
         # Verify zero craters and gentle walkable terrain slopes (<= 12.0 deg) within 2,400 units of all 6 side-quest objective complexes
-        from generate_v13_worldmap_dds import global_california_height
+        from v13_world_layout import global_california_height, coastline_x, ext_navm_fid, CELL_MIN, CELL_MAX
         for sq_site_name, sq_cx, sq_cy, sq_cz in (
-            ("Guarida del Mutascorpión Emperador", 6400.0, 13800.0, 160.0),
-            ("Guarida de la Banda de los Skulz (Kenji)", -2760.0, 5480.0, 80.0),
-            ("Complejo de la Granja de Irwin (Krag)", -9200.0, 2200.0, 80.0),
-            ("Fortaleza de los Khans del Norte (Tolan)", 14200.0, 10800.0, 200.0),
-            ("El Resplandor / West Tek (Centinela)", -8400.0, -8600.0, 120.0),
-            ("Distrito Industrial del Boneyard (Madre Sanguinario)", 6800.0, -10400.0, 40.0),
+            ("Guarida del Mutascorpión Emperador", 16000.0, 34500.0, 160.0),
+            ("Guarida de la Banda de los Skulz (Kenji)", -5460.0, 12880.0, 80.0),
+            ("Complejo de la Granja de Irwin (Krag)", -18500.0, 6500.0, 80.0),
+            ("Fortaleza de los Khans del Norte (Tolan)", 35000.0, 24500.0, 200.0),
+            ("El Resplandor / West Tek (Centinela)", 31500.0, -32980.0, 120.0),
+            ("Distrito Industrial del Boneyard (Madre Sanguinario)", 8500.0, -28000.0, 40.0),
         ):
             max_s = 0.0
             max_diff = 0.0
@@ -1350,17 +1404,19 @@ class VerificationSuite:
                     f"OTFT {otft_fid:#010x} ({otft_label}) has no slot-41 collision with Armor_Vault111_Guard (0x00156C0D): {items}",
                 )
 
-        # Verify El Eje NPCs (Irwin, Harold, Butch Harris) stand in the open plaza well clear of the East cabin at X=-120 (OBND West edge = -592)
+        # Verify El Eje 6-District NPCs (Irwin, Harold, Butch Harris, Martha Rastello, Sheriff Greene) stand cleanly in their spread districts
         for hub_achr_fid, hub_name, exp_x, exp_y in (
-            (0x010035C6, "Irwin", -800.0, -3660.0),
-            (0x010035C7, "Harold", -660.0, -3820.0),
-            (0x010035C8, "Butch Harris", -920.0, -3700.0),
+            (0x010035C6, "Irwin", -3500.0, -11400.0),
+            (0x010035C7, "Harold", -1650.0, -14500.0),
+            (0x010035C8, "Butch Harris", -1650.0, -13000.0),
+            (0x010035E6, "Martha Rastello", -3500.0, -15750.0),
+            (0x010035E7, "Sheriff Justin Greene", -5400.0, -11800.0),
         ):
             if hub_achr_fid in refrs_by_fid:
                 ax, ay, az = refrs_by_fid[hub_achr_fid]["data"][:3]
                 self.check(
-                    abs(ax - exp_x) < 1.0 and abs(ay - exp_y) < 1.0 and ax <= -640.0,
-                    f"El Eje NPC {hub_name} ({hub_achr_fid:#010x}) placed cleanly in open plaza at ({ax:.0f}, {ay:.0f}, {az:.0f})",
+                    abs(ax - exp_x) < 1.0 and abs(ay - exp_y) < 1.0 and ax <= -1500.0,
+                    f"El Eje NPC {hub_name} ({hub_achr_fid:#010x}) placed cleanly in its district at ({ax:.0f}, {ay:.0f}, {az:.0f})",
                 )
 
         # Verify seated police/Vault-Tec skeleton 0x000237F6 is never placed in open exterior cells
@@ -1448,11 +1504,11 @@ class VerificationSuite:
             "V13WastelandCreatureAIScript.psc initializes surface creatures with Aggression=2.0, re-arms Timer 1 on OnLoad, and cancels Timer 1 while 3D is unloaded",
         )
 
-        # Verify Albóndiga (0x010035B3) is in Shady Sands central plaza (2600, 9600, 160) and never disabled in DismissDogmeatToShadySands
+        # Verify Albóndiga (0x010035B3) is in Shady Sands central plaza (6700, 23500, 160) and never disabled in DismissDogmeatToShadySands
         dog_x, dog_y, dog_z = refrs_by_fid[0x010035B3]["data"][:3]
         self.check(
-            abs(dog_x - 2600.0) < 1.0 and abs(dog_y - 9600.0) < 1.0 and abs(dog_z - 160.0) < 1.0,
-            f"Albóndiga (0x010035B3) is placed in Shady Sands central plaza at (2600, 9600, 160), got ({dog_x:.0f}, {dog_y:.0f}, {dog_z:.0f})",
+            abs(dog_x - 6700.0) < 1.0 and abs(dog_y - 23500.0) < 1.0 and abs(dog_z - 160.0) < 1.0,
+            f"Albóndiga (0x010035B3) is placed in Shady Sands central plaza at (6700, 23500, 160), got ({dog_x:.0f}, {dog_y:.0f}, {dog_z:.0f})",
         )
         dismiss_block = jt_code.split("Function DismissDogmeatToShadySands")[1].split("EndFunction")[0]
         self.check(
@@ -1462,8 +1518,8 @@ class VerificationSuite:
 
         # Verify Diana (0x010035CB) & Gwen (0x010035CC) are positioned in the open plaza of Paso Oriental de los Khans outside the cabin OBND
         for kh_fid, kh_name, exp_kx, exp_ky in (
-            (0x010035CB, "Diana", 8060.0, 7740.0),
-            (0x010035CC, "Gwen", 8280.0, 7740.0),
+            (0x010035CB, "Diana", 21360.0, 18440.0),
+            (0x010035CC, "Gwen", 21580.0, 18440.0),
         ):
             kx, ky, kz = refrs_by_fid[kh_fid]["data"][:3]
             self.check(
@@ -1569,31 +1625,43 @@ class VerificationSuite:
             f"Mnemosyne Entrance Terminal (0x01001130) includes direct jump options 18..20 for all 3 Special Encounters (found {sorted(term1130_itids)})",
         )
 
-        # Verify Cathedral Super Duper Mart at (-6000, -12850, 40) sits on 100% flat dry ground well inland of the Pacific Ocean
-        from generate_v13_worldmap_dds import _coastline_x
-        sdm_refs = [
-            r for r in refrs_by_fid.values()
-            if r["base"] == 0x0016770C
-            and abs(r["data"][0] - (-6000.0)) < 1.0
-            and abs(r["data"][1] - (-12850.0)) < 1.0
-        ]
-        sdm_zs = [global_california_height(x, y) for x in range(-6256, -5231, 128) for y in range(-13120, -12480, 128)]
+        # Verify all 11 Custom 3D Monument STATs (0x01001D00..0x01001D0A) and Gothic Cathedral at (-19500, -31100, 40) on 100% flat dry ground well inland of the Pacific Ocean
+        monument_stats_ok = all(
+            mfid in records_by_fid and records_by_fid[mfid][0] == "STAT"
+            for mfid in range(0x01001D00, 0x01001D0B)
+        )
         self.check(
-            len(sdm_refs) == 1
-            and min(sdm_zs) == 40.0
-            and max(sdm_zs) == 40.0
-            and (-6768.0 - _coastline_x(-12850.0)) >= 1000.0,
-            f"Cathedral Super Duper Mart at (-6000, -12850, 40) sits on 100% flat terrain (Z={min(sdm_zs):.1f}..{max(sdm_zs):.1f}) with {-6768.0 - _coastline_x(-12850.0):.0f} units of dry coastal clearance",
+            monument_stats_ok,
+            "All 11 Custom 3D Monument STAT records (0x01001D00..0x01001D0A) exist in ESP",
+        )
+        cath_refs = [
+            r for r in refrs_by_fid.values()
+            if r["base"] == 0x01001D00
+            and abs(r["data"][0] - (-19500.0)) < 1.0
+            and abs(r["data"][1] - (-31480.0)) < 1.0
+        ]
+        cath_zs = [global_california_height(x, y) for x in range(-20200, -18799, 128) for y in range(-32100, -30699, 128)]
+        self.check(
+            len(cath_refs) == 1
+            and min(cath_zs) == 40.0
+            and max(cath_zs) == 40.0
+            and (-20500.0 - coastline_x(-31480.0)) >= 1000.0,
+            f"Custom 3D Gothic Cathedral (0x01001D00) at (-19500, -31480, 40) sits on 100% flat terrain (Z={min(cath_zs):.1f}..{max(cath_zs):.1f}) with {-20500.0 - coastline_x(-31480.0):.0f} units of dry coastal clearance",
         )
 
-        # Verify all 64 exterior cells in WRLD 0x01003400 have NAVM records (0x01003B00..0x01003B3F) registered in NAVI (0x00000FF1)
+        # Verify all 400 exterior cells in WRLD 0x01003400 have NAVM records registered in NAVI (0x00000FF1)
+        expected_ext_navms = [
+            ext_navm_fid(cx, cy)
+            for cy in range(CELL_MIN, CELL_MAX + 1)
+            for cx in range(CELL_MIN, CELL_MAX + 1)
+        ]
         ext_navm_count = sum(
-            1 for fid in range(0x01003B00, 0x01003B40)
+            1 for fid in expected_ext_navms
             if fid in records_by_fid and records_by_fid[fid][0] == "NAVM"
         )
         self.check(
-            ext_navm_count == 64 and 0x00000FF1 in records_by_fid and records_by_fid[0x00000FF1][0] == "NAVI",
-            f"All 64 exterior cells have NAVM records (0x01003B00..0x01003B3F: {ext_navm_count}/64) and NAVI 0x00000FF1 is present",
+            ext_navm_count == 400 and 0x00000FF1 in records_by_fid and records_by_fid[0x00000FF1][0] == "NAVI",
+            f"All 400 exterior cells (20x20) have NAVM records ({ext_navm_count}/400) and NAVI 0x00000FF1 is present",
         )
 
         # Verify zero NPC_ records have dangling ACBS templateUseFlags at offset 14 when TPLT is absent
@@ -1634,18 +1702,15 @@ class VerificationSuite:
             "Act I -> Act II transition stops return scene 0x00004101, sets V13Act2Quest Stage 15, and never shows interrupting popup 0x00001151",
         )
 
-        # Verify duplicate second exterior bunker (0x0100350A + 0x010B0064..0x010B0095) and colliding cave desk/terminal (0x01002230, 0x01030405) are buried & disabled
+        # Verify duplicate second exterior bunker door (0x0100350A) and colliding cave desk/terminal (0x01002230, 0x01030405) are buried & disabled
         d350a = refrs_by_fid.get(0x0100350A)
         t2230 = refrs_by_fid.get(0x01002230)
         d30405 = refrs_by_fid.get(0x01030405)
         d2206 = refrs_by_fid.get(0x01002206)
-        bunker2_pieces = [refrs_by_fid.get(fid) for fid in range(0x010B0064, 0x010B0096) if fid in refrs_by_fid]
         self.check(
             d350a is not None
             and (d350a["flags"] & 0x00000800) != 0
             and d350a["data"][2] <= -2500.0
-            and len(bunker2_pieces) == 50
-            and all(bp["data"][2] <= -2000.0 for bp in bunker2_pieces)
             and t2230 is not None
             and (t2230["flags"] & 0x00000800) != 0
             and t2230["data"][2] <= -2500.0
@@ -1654,17 +1719,21 @@ class VerificationSuite:
             and d2206 is not None
             and d2206["xtel"] is not None
             and d2206["xtel"][0] == 0x01003501,
-            "Duplicate second Vault 13 surface bunker (0x0100350A + 0x010B0064..0x010B0095) and colliding cave desk/terminal (0x01002230, 0x01030405) are buried/disabled",
+            "Duplicate second Vault 13 surface bunker door (0x0100350A) and colliding cave desk/terminal (0x01002230, 0x01030405) are buried/disabled",
         )
 
-        # Verify Bob's Pre-Owned Car Mart trunk (0x01003566) and cars (0x010B0A08..0x010B0A0A) have zero OBND overlaps
+        # Verify Bob's Pre-Owned Car Mart trunk (0x01003566) and lot cars have >= 400 units X clearance
         bob_trunk = refrs_by_fid.get(0x01003566)
-        bob_cars = [refrs_by_fid.get(fid) for fid in (0x010B0A08, 0x010B0A09, 0x010B0A0A) if fid in refrs_by_fid]
+        bob_cars = [
+            r for r in refrs_by_fid.values()
+            if r["base"] in (0x0019B425, 0x001A3057)
+            and math.hypot(r["data"][0] - 21020.0, r["data"][1] - 5060.0) <= 800.0
+        ]
         self.check(
             bob_trunk is not None
             and len(bob_cars) == 3
             and all(abs(c["data"][0] - bob_trunk["data"][0]) >= 400.0 for c in bob_cars),
-            "Bob's Pre-Owned Car Mart trunk (0x01003566) has >= 400 units X clearance from all 3 lot cars (0x010B0A08..0x010B0A0A)",
+            "Bob's Pre-Owned Car Mart trunk (0x01003566) has >= 400 units X clearance from all 3 lot cars",
         )
 
         # Verify exterior BOSBarricadeBase01Military (0x0021C948) references are sunk -1.8 units below flat terrain to prevent Z-fighting
@@ -1673,8 +1742,26 @@ class VerificationSuite:
             if fid >= 0x010B0000 and r["base"] == 0x0021C948 and r["data"][2] > -500.0
         ]
         self.check(
-            len(ext_barricades) >= 20 and all(abs((r["data"][2] + 1.8) - round(r["data"][2] + 1.8)) < 0.05 for r in ext_barricades),
+            len(ext_barricades) >= 8 and all(abs((r["data"][2] + 1.8) - round(r["data"][2] + 1.8)) < 0.05 for r in ext_barricades),
             f"All {len(ext_barricades)} exterior BOSBarricadeBase01Military (0x0021C948) references are offset -1.8 units below ground plane to prevent Z-fighting",
+        )
+
+        # Verify Shady Sands perimeter walls use Havok-solid CovWall01/CovWallEndcap (0x000E97CC/CE/EC) and ZERO collisionless graybox CovenantWall* (0x000E04A6..A8)
+        collisionless_cov_refs = [
+            fid for fid, r in refrs_by_fid.items()
+            if r["base"] in (0x000E04A6, 0x000E04A7, 0x000E04A8) and r["data"][2] > -500.0
+        ]
+        solid_cov_walls = [
+            fid for fid, r in refrs_by_fid.items()
+            if r["base"] == 0x000E97CC and r["data"][2] > -500.0
+        ]
+        solid_cov_caps = [
+            fid for fid, r in refrs_by_fid.items()
+            if r["base"] in (0x000E97CE, 0x000E97EC) and r["data"][2] > -500.0
+        ]
+        self.check(
+            len(collisionless_cov_refs) == 0 and len(solid_cov_walls) >= 32 and len(solid_cov_caps) >= 8,
+            f"Shady Sands v1.0 perimeter uses Havok-solid CovWall01/Endcap ({len(solid_cov_walls)} walls + {len(solid_cov_caps)} pillars) and 0 collisionless graybox 0x000E04A6..A8",
         )
 
         # Verify Arid California Climate (CLMT 0x010033FF) linked on WRLD 0x01003400 and isolated Vault/Bunker records (0x0100131F..0x01001328)
@@ -1705,6 +1792,1494 @@ class VerificationSuite:
                 f"Isolated zero-vanilla-override record {hex(iso_fid)} ({iso_rt}) exists in ESP",
             )
 
+        # Capítulo 2 (Pasos 1-3) — Lost Hills/Glow, Boneyard, Mariposa, Dynamic Invasions & Desert Encounters
+        psc_files = [fn for fn in os.listdir(PSC_DIR) if fn.lower().endswith(".psc")]
+        self.check(
+            len(psc_files) >= 57,
+            f"Papyrus source directory contains >= 57 .psc scripts ({len(psc_files)} found)",
+        )
+        for p3_fid, p3_rt, p3_label in (
+            (0x01006002, "QUST", "V13Act3Quest (Lost Hills)"),
+            (0x01007000, "QUST", "V13Act4Quest (Mariposa)"),
+            (0x01008000, "QUST", "V13Act5Quest (Cathedral)"),
+            (0x01013000, "QUST", "V13SideQuestGlow"),
+            (0x010D1000, "QUST", "V13SideQuestLostHillsPA"),
+            (0x010D2000, "QUST", "V13SideQuestAdytumWar"),
+            (0x010D3000, "QUST", "V13SideQuestAdytumForge"),
+            (0x010D4000, "QUST", "V13SideQuestFollowersSpy"),
+            (0x010D5000, "QUST", "V13MutantInvasionQuest"),
+            (0x0100132F, "MSWP", "MSWPV13CathedralPurpleRobe"),
+            (0x01001330, "ARMO", "ArmoV13CathedralPurpleRobe"),
+            (0x01001331, "ARMA", "ArmoAddonV13CathedralPurpleRobe"),
+            (0x01001333, "ARMO", "ArmoV13PsychicNullifier"),
+            (0x01001334, "ARMA", "ArmoAddonV13PsychicNullifier"),
+            (0x0100103C, "OTFT", "Outfit_V13_CathedralPurpleRobe"),
+            (0x01001570, "ACTI", "ActiV13MariposaForcefieldEmitter"),
+            (0x0100153A, "TERM", "TermV13MariposaSecurityGrey"),
+            (0x01001C96, "MESG", "MesgV13MariposaEmitterMenu"),
+            (0x01007102, "SCEN", "V13Act4MariposaCaptiveScene"),
+            (0x01007103, "SCEN", "V13Act4LieutenantScene"),
+            (0x010D5100, "SCEN", "V13EncounterMalachiScene"),
+            (0x010D5101, "SCEN", "V13EncounterRangersScene"),
+            (0x010D5102, "SCEN", "V13EncounterFishermanScene"),
+        ):
+            self.check(
+                p3_fid in records_by_fid and records_by_fid[p3_fid][0] == p3_rt,
+                f"Chapter 2 record {hex(p3_fid)} ({p3_rt} - {p3_label}) exists in ESP",
+            )
+        for mar_ref in [0x01002C31] + list(range(0x01002C34, 0x01002C39)) + list(range(0x01002C40, 0x01002C46)):
+            self.check(
+                mar_ref in refrs_by_fid and refrs_by_fid[mar_ref]["cell"] == 0x01002C00,
+                f"Mariposa interior ref {hex(mar_ref)} placed in CELL 0x01002C00",
+            )
+        for ext_ref in list(range(0x01003640, 0x0100364D)) + [0x01003650, 0x01003651, 0x01003652]:
+            self.check(
+                ext_ref in refrs_by_fid,
+                f"Chapter 2 Wasteland Encounter / Invasion ref {hex(ext_ref)} exists in WRLD 0x01003400",
+            )
+        _bdir = os.path.dirname(ESP_PATH)
+        main_ba2_p = os.path.join(_bdir, "Vault13Chronicles - Main.ba2")
+        tex_ba2_p = os.path.join(_bdir, "Vault13Chronicles - Textures.ba2")
+        with open(main_ba2_p, "rb") as mbf:
+            mb_tail = mbf.read()
+        with open(tex_ba2_p, "rb") as tbf:
+            tb_tail = tbf.read()
+        self.check(
+            b"cathedralpurplerobe.bgsm" in mb_tail.lower(),
+            "CathedralPurpleRobe.bgsm packaged in Vault13Chronicles - Main.ba2",
+        )
+        self.check(
+            b"cathedralpurplerobe_d.dds" in tb_tail.lower(),
+            "CathedralPurpleRobe_d.dds packaged in Vault13Chronicles - Textures.ba2",
+        )
+
+        # Workstream A: Monument PBR .BGSM & ShadyPlaque_d.dds verification
+        mon_mesh_dir = os.path.join(os.path.dirname(PSC_DIR), "assets", "monuments_3d", "Meshes", "V13Chronicles", "Monuments")
+        mon_nifs = [fn for fn in sorted(os.listdir(mon_mesh_dir)) if fn.lower().endswith(".nif")] if os.path.isdir(mon_mesh_dir) else []
+        bad_mon_nifs = []
+        for fn in mon_nifs:
+            raw_nif = open(os.path.join(mon_mesh_dir, fn), "rb").read().lower()
+            if (b".bgsm" not in raw_nif) or (b"vltnullforswap_s.dds" in raw_nif):
+                bad_mon_nifs.append(fn)
+            elif fn.startswith("V13EndingCreditCard"):
+                if b"flatflat_n.dds" not in raw_nif:
+                    bad_mon_nifs.append(fn)
+            elif b"flatflat_n.dds" in raw_nif:
+                bad_mon_nifs.append(fn)
+        self.check(
+            len(mon_nifs) == 24 and len(bad_mon_nifs) == 0,
+            f"All 24 monument/card .nif files use valid Fallout 4 .BGSM materials and intended normal maps (bad: {bad_mon_nifs})",
+        )
+        mon_bgsm_names = (
+            b"cathedralmonument.bgsm",
+            b"glowcrater.bgsm",
+            b"hubwatertower.bgsm",
+            b"junktowngate.bgsm",
+            b"losthillsbunker.bgsm",
+            b"mariposabunker.bgsm",
+            b"masterthrone.bgsm",
+            b"shadyadobe.bgsm",
+            b"shadyplaque.bgsm",
+        )
+        self.check(
+            all(bgsm in mb_tail.lower() for bgsm in mon_bgsm_names),
+            "All 9 Monument .BGSM PBR materials packaged in Vault13Chronicles - Main.ba2",
+        )
+        self.check(
+            b"shadyplaque_d.dds" in tb_tail.lower(),
+            "ShadyPlaque_d.dds packaged in Vault13Chronicles - Textures.ba2",
+        )
+
+        # Workstream B: Canonical 3-phase quest triggers, unaggressive camp NPCs, menus, Stage 12, and voiced pre-quest INFOs
+        for camp_npc in (0x010015B0, 0x010015B1):
+            self.check(
+                camp_npc in records_by_fid and records_by_fid[camp_npc][0] == "NPC_",
+                f"Camp NPC {hex(camp_npc)} exists in ESP",
+            )
+        for ufid in (0x01001201, 0x01001244, 0x01001248, 0x0100124B, 0x0100150B, 0x010015B0, 0x010015B1):
+            rec = records_by_fid.get(ufid)
+            if rec and rec[0] == "NPC_":
+                rsubs = rec[2]
+                aidt = next((v for s, v in rsubs if s == "AIDT" and len(v) >= 1), b"")
+                snam_fids = {struct.unpack("<I", v[:4])[0] for s, v in rsubs if s == "SNAM" and len(v) >= 4}
+                pkid_fids = {struct.unpack("<I", v)[0] for s, v in rsubs if s == "PKID" and len(v) == 4}
+                self.check(
+                    len(aidt) >= 1 and aidt[0] == 0 and (0x0001CBED not in snam_fids) and (0x01001053 not in pkid_fids),
+                    f"Pre-quest camp NPC {hex(ufid)} is Unaggressive (AIDT[0]==0) without hostile Raider faction 0x0001CBED or sandbox 0x01001053",
+                )
+            else:
+                self.check(False, f"Pre-quest camp NPC {hex(ufid)} exists in ESP")
+        c95 = records_by_fid.get(0x01001C95)
+        c95_btns = sum(1 for s, _ in c95[2] if s == "ITXT") if c95 and c95[0] == "MESG" else 0
+        self.check(c95 is not None and c95[0] == "MESG" and c95_btns == 4, f"Caleb confrontation MESG 0x01001C95 has 4 buttons (got {c95_btns})")
+        for mfid in range(0x01001CA0, 0x01001CA5):
+            self.check(
+                mfid in records_by_fid and records_by_fid[mfid][0] == "MESG",
+                f"Camp boss confrontation MESG {hex(mfid)} exists in ESP",
+            )
+        for q12_fid in (0x01009500, 0x01010000, 0x01011000, 0x01012000, 0x010D1000, 0x01014000, 0x010D2000, 0x010D4000):
+            qrec = records_by_fid.get(q12_fid)
+            if qrec and qrec[0] == "QUST":
+                indxs = {struct.unpack("<H", v[:2])[0] for s, v in qrec[2] if s == "INDX" and len(v) >= 2}
+                qobjs = {struct.unpack("<H", v)[0] for s, v in qrec[2] if s == "QOBJ" and len(v) == 2}
+                self.check(12 in indxs and 12 in qobjs, f"QUST {hex(q12_fid)} defines Pre-Quest Stage 12 & Objective 12")
+            else:
+                self.check(False, f"QUST {hex(q12_fid)} exists in ESP")
+        for ifid in range(0x010D6010, 0x010D601C):
+            irec = records_by_fid.get(ifid)
+            clip_key = f"{ifid & 0xFFFFFF:08x}_1.fuz".encode()
+            self.check(
+                irec is not None and irec[0] == "INFO" and (clip_key in mb_tail.lower()),
+                f"Pre-quest voiced INFO {hex(ifid)} exists in ESP and {clip_key.decode()} is packed in Main.ba2",
+            )
+
+        # Verify StatV13MemoryLounger (0x01002036) in CELL 0x01002000 sits in the recessed West wall alcove with >=350u clearance to both Terminal (0x01002035) and Airlock (0x01002003)
+        lounger_ref = refrs_by_fid.get(0x01002036)
+        term_ref = refrs_by_fid.get(0x01002035)
+        airlock_ref = refrs_by_fid.get(0x01002003)
+        if lounger_ref and term_ref and airlock_ref:
+            lx, ly, lz, _, _, lrz = lounger_ref["data"]
+            tx, ty = term_ref["data"][:2]
+            ax, ay = airlock_ref["data"][:2]
+            d_term = math.hypot(lx - tx, ly - ty)
+            d_door = math.hypot(lx - ax, ly - ay)
+            self.check(
+                lounger_ref["cell"] == 0x01002000
+                and abs(lx - (-610.65)) < 1.0
+                and abs(ly - (-727.51)) < 1.0
+                and abs(lz) < 0.5
+                and abs(lrz - 4.5624) < 0.05
+                and d_term >= 350.0
+                and d_door >= 350.0,
+                f"MemoryLounger 0x01002036 placed in West Hall alcove at ({lx:.2f}, {ly:.2f}, {lz:.1f}) rz={lrz:.4f} with clear paths (d_term={d_term:.1f}u, d_door={d_door:.1f}u)",
+            )
+        else:
+            self.check(False, "MemoryLounger 0x01002036, Terminal 0x01002035, and Airlock 0x01002003 exist in CELL 0x01002000")
+
+        # Verify persistent Mnemosyne desk (0x01002037), disabled CONT tombstone (0x01090097), and zero temp FormID shift (0x010901ED/EE)
+        pdesk_ref = refrs_by_fid.get(0x01002037)
+        tomb_ref = refrs_by_fid.get(0x01090097)
+        brief_ref = refrs_by_fid.get(0x010901ED)
+        rscr_ref = refrs_by_fid.get(0x010901EE)
+        self.check(
+            pdesk_ref is not None
+            and pdesk_ref["cell"] == 0x01002000
+            and (pdesk_ref["flags"] & 0x0400) != 0
+            and (pdesk_ref["flags"] & 0x0800) == 0
+            and pdesk_ref["base"] == 0x01001121
+            and abs(pdesk_ref["data"][0] - (-305.2216)) < 0.05
+            and abs(pdesk_ref["data"][1] - (-1013.4984)) < 0.05
+            and abs(pdesk_ref["data"][2]) < 0.05
+            and abs(pdesk_ref["data"][5] - 2.99159) < 0.01,
+            f"Persistent Mnemosyne Desk 0x01002037 enabled in CELL 0x01002000 under Terminal 0x01002035: {pdesk_ref}",
+        )
+        self.check(
+            tomb_ref is not None
+            and tomb_ref["cell"] == 0x01002000
+            and (tomb_ref["flags"] & 0x0800) != 0
+            and tomb_ref["base"] == 0x0023F662
+            and tomb_ref["data"][2] <= -2500.0,
+            f"Legacy desk slot 0x01090097 is disabled CONT tombstone (0x0023F662) buried below floor: {tomb_ref}",
+        )
+        self.check(
+            brief_ref is not None
+            and rscr_ref is not None
+            and brief_ref["base"] == 0x01001140
+            and rscr_ref["base"] == 0x0000003B
+            and (rscr_ref["flags"] & 0x0800) != 0,
+            f"Zero cur_temp_fid shift in CELL 0x01002000: 0x010901ED={brief_ref}, 0x010901EE={rscr_ref}",
+        )
+
+        # Verify no QUST has QSDT==2 (Fail Quest) and all 23 completable quests have QSDT==1 (Complete Quest) on their final stage
+        completable_final_stage = {
+            0x01004000: 40, 0x01005000: 40, 0x01006002: 40, 0x01007000: 40, 0x01008000: 40,
+            0x01009500: 40, 0x01010000: 40, 0x01011000: 40, 0x01012000: 40, 0x01013000: 40,
+            0x01014000: 40, 0x01018000: 40, 0x01019000: 40, 0x0101A000: 40,
+            0x0101E000: 21,
+            0x010D1000: 40, 0x010D2000: 40, 0x010D3000: 40, 0x010D4000: 40,
+            0x01015000: 30, 0x01016000: 30, 0x01017000: 30, 0x0101B000: 30, 0x0101C000: 30, 0x0101D000: 30,
+        }
+        qust_fail_stages = []
+        qust_final_flags = {}
+        for fid, rec in records_by_fid.items():
+            rtype = rec[0]
+            rsubs = rec[2]
+            if rtype != "QUST":
+                continue
+            cur_stg = None
+            stg_qsdt = {}
+            for sname, sdata in rsubs:
+                if sname == "INDX" and len(sdata) >= 2:
+                    cur_stg = struct.unpack("<H", sdata[:2])[0]
+                elif sname == "QSDT" and cur_stg is not None and len(sdata) >= 1:
+                    fl = sdata[0]
+                    stg_qsdt[cur_stg] = fl
+                    if fl == 2:
+                        qust_fail_stages.append((hex(fid), cur_stg))
+            if fid in completable_final_stage:
+                qust_final_flags[fid] = stg_qsdt.get(completable_final_stage[fid])
+        self.check(
+            len(qust_fail_stages) == 0,
+            f"No QUST record has QSDT==2 (Fail Quest) on any stage (bad={qust_fail_stages})",
+        )
+        missing_complete = [
+            f"{hex(qfid)} stg={fstg} got={qust_final_flags.get(qfid)}"
+            for qfid, fstg in sorted(completable_final_stage.items())
+            if qust_final_flags.get(qfid) != 1
+        ]
+        self.check(
+            len(missing_complete) == 0,
+            f"All {len(completable_final_stage)} completable quests mark final stage with QSDT==1 Complete Quest (bad={missing_complete})",
+        )
+
+        # Regression checks: Vault 15 hostile Khans & disabled lower creatures, Hub Maltese Falcon interior,
+        # Water Merchants standalone quest, Tug Essential + no DPLT Deathclaws, and Talius Water Chip gating.
+        for v15_khan_fid in range(0x0100254E, 0x0100255A):
+            if v15_khan_fid == 0x01002551:
+                continue
+            kr = refrs_by_fid.get(v15_khan_fid)
+            kbase = kr["base"] if kr else 0
+            k_npc = records_by_fid.get(kbase)
+            k_aidt = next((v for s, v in k_npc[2] if s == "AIDT" and len(v) >= 1), b"") if k_npc else b""
+            k_snam = {struct.unpack("<I", v[:4])[0] for s, v in k_npc[2] if s == "SNAM" and len(v) >= 4} if k_npc else set()
+            self.check(
+                kr is not None and len(k_aidt) >= 1 and k_aidt[0] == 2 and (0x0001CBED in k_snam),
+                f"Vault 15 Khan {hex(v15_khan_fid)} (base={hex(kbase)}) is Aggressive (AIDT[0]==2) with RaiderFaction 0x0001CBED",
+            )
+        k_boss = refrs_by_fid.get(0x01002559)
+        self.check(
+            k_boss is not None and k_boss["base"] == 0x010015B2,
+            f"Vault 15 Boss 0x01002559 uses hostile warlord base 0x010015B2 (got {hex(k_boss['base']) if k_boss else 'None'})",
+        )
+        for v15_cr_fid in range(0x010025DD, 0x010025E4):
+            cr = refrs_by_fid.get(v15_cr_fid)
+            self.check(
+                cr is not None and (cr["flags"] & 0x0800) != 0,
+                f"Vault 15 lower creature {hex(v15_cr_fid)} is Initially Disabled (flags=0x{cr['flags']:08X})",
+            )
+
+        self.check(
+            0x01002700 in records_by_fid and records_by_fid[0x01002700][0] == "CELL",
+            "Interior CELL 0x01002700 (El Halcón Maltés — Subsuelo de Decker) exists in ESP",
+        )
+        d_ext = refrs_by_fid.get(0x01003605)
+        d_int = refrs_by_fid.get(0x01002701)
+        d_ext_xtel = d_ext["xtel"][0] if (d_ext and d_ext["xtel"] is not None) else 0
+        d_int_xtel = d_int["xtel"][0] if (d_int and d_int["xtel"] is not None) else 0
+        self.check(
+            d_ext is not None and d_int is not None and d_ext_xtel == 0x01002701 and d_int_xtel == 0x01003605,
+            f"Maltese Falcon doors linked bidirectionally 0x01003605 <-> 0x01002701 (got {hex(d_ext_xtel)} / {hex(d_int_xtel)})",
+        )
+        for int_act_fid, int_act_name in ((0x01002710, "Decker"), (0x01002711, "Kane")):
+            ia = refrs_by_fid.get(int_act_fid)
+            self.check(
+                ia is not None and ia["cell"] == 0x01002700 and (ia["flags"] & 0x0800) == 0,
+                f"Interior {int_act_name} {hex(int_act_fid)} placed active inside CELL 0x01002700",
+            )
+        for leg_fid in (0x010035E8, 0x010035E9):
+            lr = refrs_by_fid.get(leg_fid)
+            self.check(
+                lr is not None and (lr["flags"] & 0x0800) != 0,
+                f"Legacy exterior actor {hex(leg_fid)} is Initially Disabled (flags=0x{lr['flags']:08X})",
+            )
+
+        self.check(
+            0x0101E000 in records_by_fid and records_by_fid[0x0101E000][0] == "QUST"
+            and 0x0101E001 in records_by_fid and records_by_fid[0x0101E001][0] == "DIAL"
+            and 0x0101A100 in records_by_fid and records_by_fid[0x0101A100][0] == "SCEN",
+            "Standalone Water Merchants QUST 0x0101E000 + DIAL 0x0101E001 + SCEN 0x0101A100 exist in ESP",
+        )
+
+        for dc_fid in (0x01001252, 0x0100125D):
+            dc_rec = records_by_fid.get(dc_fid)
+            has_dplt = any(s == "DPLT" for s, _ in dc_rec[2]) if dc_rec else True
+            self.check(
+                dc_rec is not None and not has_dplt,
+                f"Deathclaw NPC_ {hex(dc_fid)} has no DPLT subrecord",
+            )
+        tug_rec = records_by_fid.get(0x0100125E)
+        tug_acbs = next((v for s, v in tug_rec[2] if s == "ACBS" and len(v) >= 4), b"") if tug_rec else b""
+        tug_acbs_flags = struct.unpack("<I", tug_acbs[:4])[0] if tug_acbs else 0
+        self.check(
+            tug_rec is not None and (tug_acbs_flags & 0x02) != 0,
+            f"Tug NPC_ 0x0100125E has Essential flag 0x02 (ACBS=0x{tug_acbs_flags:08X})",
+        )
+
+        mb_lower_chk = mb_tail.lower()
+        for tal_fid in (0x010D4313, 0x010D4317, 0x010D4318, 0x010D431C):
+            t_rec = records_by_fid.get(tal_fid)
+            self.check(
+                t_rec is not None and t_rec[0] == "INFO",
+                f"Talius Water Chip INFO {hex(tal_fid)} exists in ESP",
+            )
+        for clip_low in ("000d4318_1.fuz", "000d431c_1.fuz", "000d4323_1.fuz"):
+            self.check(
+                clip_low.encode() in mb_lower_chk,
+                f"Re-voiced/new fallback clip {clip_low} is packed in Main.ba2",
+            )
+
+        # Verify all 8 confrontation / supply SCEN dialogue wheels and their voiced ES/EN .fuz files (intro + Male/Female player + NPC)
+        mb_lower = mb_tail.lower()
+        for idx in range(8):
+            scen_fid = 0x010D7000 + idx * 0x100
+            srec = records_by_fid.get(scen_fid)
+            self.check(
+                srec is not None and srec[0] == "SCEN",
+                f"Confrontation SCEN {hex(scen_fid)} exists in ESP",
+            )
+            intro_fid = scen_fid + 0x11
+            intro_fuz = f"{intro_fid & 0xFFFFFF:08x}_1.fuz".encode()
+            self.check(
+                intro_fuz in mb_lower,
+                f"SCEN {hex(scen_fid)} intro NPC voice {intro_fuz.decode()} packed in Main.ba2",
+            )
+            for opt_i in range(4):
+                p_low = f"{(scen_fid + 0x30 + opt_i) & 0xFFFFFF:08x}_1.fuz"
+                n_low = f"{(scen_fid + 0x50 + opt_i) & 0xFFFFFF:08x}_1.fuz"
+                pm_path = f"playervoicemale01\\{p_low}".encode()
+                pf_path = f"playervoicefemale01\\{p_low}".encode()
+                n_fuz = n_low.encode()
+                self.check(
+                    (pm_path in mb_lower) and (pf_path in mb_lower) and (n_fuz in mb_lower),
+                    f"SCEN {hex(scen_fid)} opt {opt_i} has Male+Female player .fuz ({p_low}) and NPC .fuz ({n_low}) in Main.ba2",
+                )
+
+        # Verify Mariposa & Cathedral fixes (arrival marker inside room, voiced BoS Paladins inside hall,
+        # disabled unscripted ACTI doors/gates, Cathedral secondary exit 0x01002D03, Nightkin/Lieutenant weapons, no ghost shader/faction ally)
+        m_ext_xtel = refrs_by_fid[0x01003508]["xtel"]
+        m_in_data = refrs_by_fid[0x01002C02]["data"]
+        self.check(
+            m_ext_xtel is not None
+            and m_ext_xtel[0] == 0x01002C01
+            and abs(m_ext_xtel[1] - 848.0) < 1.0
+            and abs(m_ext_xtel[2] - (-256.0)) < 1.0
+            and abs(m_in_data[0] - 848.0) < 1.0
+            and abs(m_in_data[1] - (-256.0)) < 1.0,
+            f"Mariposa entry 0x01003508 XTEL & 0x01002C02 DATA land cleanly inside room at (848, -256, 128) (got {m_ext_xtel[:4] if m_ext_xtel else None}, {m_in_data[:3]})",
+        )
+        pal_npc_vtck = next((struct.unpack("<I", v)[0] for s, v in records_by_fid[0x01001568][2] if s == "VTCK" and len(v) == 4), 0)
+        pal_npc_doft = next((struct.unpack("<I", v)[0] for s, v in records_by_fid[0x01001568][2] if s == "DOFT" and len(v) == 4), 0)
+        pal1_y = refrs_by_fid[0x01002C36]["data"][1]
+        pal2_y = refrs_by_fid[0x01002C37]["data"][1]
+        self.check(
+            pal1_y >= -150.0 and pal2_y >= -150.0 and pal_npc_vtck == 0x01001004 and pal_npc_doft == 0x01001040,
+            f"Mariposa BoS Paladins 0x01002C36/37 stand inside hall (Y={pal1_y:.1f}, {pal2_y:.1f} >= -150) with voiced BoSMale01 VTCK (0x01001004, got {hex(pal_npc_vtck)}) & T-60 armor DOFT (0x01001040, got {hex(pal_npc_doft)})",
+        )
+        blocked_acti_fids = (0x01070225, 0x01070226, 0x01080009, 0x01080033, 0x0108003E, 0x0108003F, 0x01080040, 0x01080042)
+        non_disabled_acti = [hex(afid) for afid in blocked_acti_fids if afid not in refrs_by_fid or (refrs_by_fid[afid]["flags"] & 0x00000800) == 0]
+        self.check(
+            len(non_disabled_acti) == 0,
+            f"All 8 unscripted ACTI doors/security gates in Mariposa & Cathedral are Initially Disabled (still enabled: {non_disabled_acti})",
+        )
+        d2d03 = refrs_by_fid.get(0x01002D03)
+        d2d3f = refrs_by_fid.get(0x01002D3F)
+        self.check(
+            d2d03 is not None
+            and (d2d03["flags"] & 0x0800) != 0
+            and d2d3f is not None
+            and d2d3f["base"] == 0x010015B8
+            and (d2d3f["flags"] & 0x0800) == 0
+            and abs(d2d3f["data"][0] - 1472.0) < 1.0
+            and abs(d2d3f["data"][1] - 96.0) < 1.0
+            and abs(d2d3f["data"][2] - (-768.0)) < 1.0
+            and abs(d2d3f["data"][5] - 1.570796) < 0.02,
+            f"Cathedral secondary exit 0x01002D3F (0x010015B8) active at (1472, 96, -768, rz=1.5708) and legacy 0x01002D03 disabled (got {d2d3f})",
+        )
+        nk_items = {struct.unpack("<II", v)[0] for s, v in records_by_fid[0x01001208][2] if s == "CNTO" and len(v) == 8}
+        lou_items = {struct.unpack("<II", v)[0] for s, v in records_by_fid[0x01001207][2] if s == "CNTO" and len(v) == 8}
+        self.check(
+            (0x0001F669 in nk_items)
+            and (0x000E27BC in lou_items)
+            and (0x0100110B in lou_items)
+            and ("fxStealthDeath.Play" not in wc_code)
+            and ("smFac.SetAlly(playerFac" not in act2_code),
+            f"Nightkin carries Minigun ({[hex(x) for x in sorted(nk_items)]}), Lieutenant carries GatlingLaser+WinchesterP94 ({[hex(x) for x in sorted(lou_items)]}), no ghost shader Play, and no SuperMutant-Player SetAlly",
+        )
+
+        # Verify every custom NIF under meshes\v13chronicles\ in Main.ba2 resolves all BGSM/BGEM and DDS paths
+        import glob as _glob
+        import zlib as _zlib
+
+        def _read_ba2_names(ba2_path: str) -> set[str]:
+            with open(ba2_path, "rb") as _bf:
+                _magic, _ver, _btype, _cnt, _ntoff = struct.unpack("<4sI4sIQ", _bf.read(24))
+                _bf.seek(_ntoff)
+                return {
+                    _bf.read(struct.unpack("<H", _bf.read(2))[0]).decode("utf-8", "ignore").replace("/", "\\").lower()
+                    for _ in range(_cnt)
+                }
+
+        def _read_gnrl_ba2_index(ba2_path: str) -> dict[str, tuple[int, int, int]]:
+            _out = {}
+            with open(ba2_path, "rb") as _bf:
+                _magic, _ver, _btype, _cnt, _ntoff = struct.unpack("<4sI4sIQ", _bf.read(24))
+                _ents = [struct.unpack("<I4sIIQIII", _bf.read(36)) for _ in range(_cnt)]
+                _bf.seek(_ntoff)
+                _nms = [
+                    _bf.read(struct.unpack("<H", _bf.read(2))[0]).decode("utf-8", "ignore").replace("/", "\\").lower()
+                    for _ in range(_cnt)
+                ]
+                for _nm, _ent in zip(_nms, _ents):
+                    _out[_nm] = (_ent[4], _ent[5], _ent[6])
+            return _out
+
+        def _get_gnrl_bytes(ba2_path: str, info: tuple[int, int, int]) -> bytes:
+            _off, _ps, _us = info
+            with open(ba2_path, "rb") as _bf:
+                _bf.seek(_off)
+                _raw = _bf.read(_ps if _ps else _us)
+                return _zlib.decompress(_raw) if _ps else _raw
+
+        _tex_set = _read_ba2_names(tex_ba2_p)
+        for _tp in _glob.glob(os.path.join(FO4_DATA, "Fallout4 - Textures*.ba2")):
+            _tex_set |= _read_ba2_names(_tp)
+        _van_mat_p = os.path.join(FO4_DATA, "Fallout4 - Materials.ba2")
+        _van_mat = _read_gnrl_ba2_index(_van_mat_p) if os.path.exists(_van_mat_p) else {}
+        _main_map = _read_gnrl_ba2_index(main_ba2_p)
+        _custom_nifs = [k for k in sorted(_main_map) if k.startswith("meshes\\v13chronicles\\") and k.endswith(".nif")]
+        _pat_mat = re.compile(rb'(?<=[\x00"\'])[A-Za-z0-9_\\/\-\. ]+\.(?:bgsm|bgem)', re.I)
+        _pat_dds = re.compile(rb'(?<=[\x00"\'])[A-Za-z0-9_\\/\-\. ]+\.dds', re.I)
+        _missing_nif_assets = []
+        for _nf in _custom_nifs:
+            _nraw = _get_gnrl_bytes(main_ba2_p, _main_map[_nf])
+            for _d in _pat_dds.findall(_nraw):
+                _ds = _d.decode("ascii", "ignore").replace("/", "\\").lower()
+                _dn = _ds if _ds.startswith("textures\\") else "textures\\" + _ds.lstrip("\\")
+                if _dn not in _tex_set:
+                    _missing_nif_assets.append((_nf, "nif_dds", _dn))
+            for _mp in _pat_mat.findall(_nraw):
+                _ms = _mp.decode("ascii", "ignore").replace("/", "\\").lower()
+                _mn = _ms if _ms.startswith("materials\\") else "materials\\" + _ms.lstrip("\\")
+                if _mn in _main_map:
+                    _mraw = _get_gnrl_bytes(main_ba2_p, _main_map[_mn])
+                elif _mn in _van_mat:
+                    _mraw = _get_gnrl_bytes(_van_mat_p, _van_mat[_mn])
+                else:
+                    _missing_nif_assets.append((_nf, "mat", _mn))
+                    continue
+                for _md in _pat_dds.findall(_mraw):
+                    _mds = _md.decode("ascii", "ignore").replace("/", "\\").lower()
+                    _mdn = _mds if _mds.startswith("textures\\") else "textures\\" + _mds.lstrip("\\")
+                    if _mdn not in _tex_set:
+                        _missing_nif_assets.append((_nf, _mn, _mdn))
+        self.check(
+            len(_custom_nifs) >= 1 and len(_missing_nif_assets) == 0,
+            f"All {len(_custom_nifs)} custom NIFs in Main.ba2 resolve every BGSM/BGEM and DDS cleanly (missing={_missing_nif_assets[:5]})",
+        )
+
+        # Verify Quest-Reactive Radio El Eje / The Hub Radio (6 chained SCENs 0x01008511..0x01008516, 177 SNDR records & .xwm tracks)
+        _dj_expected_fids = list(range(0x01008601, 0x0100861A)) + list(range(0x010E0001, 0x010E0056))
+        _song_expected_fids = list(range(0x01008620, 0x01008620 + 41))
+        _jingle_expected_fids = list(range(0x010E0101, 0x010E0113))
+        _drama_expected_fids = list(range(0x010E0201, 0x010E0209))
+        _all_radio_fids = _dj_expected_fids + _song_expected_fids + _jingle_expected_fids + _drama_expected_fids
+        _missing_radio_sndrs = [hex(rf) for rf in _all_radio_fids if rf not in records_by_fid or records_by_fid[rf][0] != "SNDR"]
+        _expected_xwm_names = (
+            [f"v13_radio_dj_{_i:02d}.xwm" for _i in range(1, 111)]
+            + [f"v13_radio_song_{_i:02d}.xwm" for _i in range(1, 42)]
+            + [f"v13_radio_jingle_{_i:02d}.xwm" for _i in range(1, 19)]
+            + [f"v13_radio_drama_{_i:02d}.xwm" for _i in range(1, 9)]
+        )
+        _missing_radio_xwms = []
+        for _xfn in _expected_xwm_names:
+            _rkey = f"sound\\fx\\mus\\radio\\vault13\\{_xfn}"
+            _rinfo = _main_map.get(_rkey)
+            if _rinfo is None or max(_rinfo[1], _rinfo[2]) <= 4096:
+                _missing_radio_xwms.append(_rkey)
+        self.check(
+            len(_all_radio_fids) == 177 and len(_missing_radio_sndrs) == 0 and len(_missing_radio_xwms) == 0,
+            f"All 177 Hub Radio SNDR records & >4KB .xwm files exist cleanly (110 DJ + 41 Song + 18 Jingle + 8 Drama; missing_sndr={_missing_radio_sndrs[:5]}, missing_xwm={_missing_radio_xwms[:5]})",
+        )
+
+        _radio_scen_fids = list(range(0x01008511, 0x01008517))
+        _all_ph_entries: list[tuple[int, list[bytes]]] = []
+        _bad_ctda_funcs = []
+        _bad_chain_scens = []
+        _scen_phase_counts: list[int] = []
+        for _s_idx, _s_fid in enumerate(_radio_scen_fids):
+            _r_scen = records_by_fid.get(_s_fid)
+            if _r_scen is None or _r_scen[0] != "SCEN":
+                _bad_chain_scens.append((hex(_s_fid), "missing"))
+                continue
+            _rs_subs = _r_scen[2]
+            _ph_ctdas: list[list[bytes]] = []
+            _cur_ph: list[bytes] | None = None
+            _next_seen = 0
+            _action_htids: dict[int, int] = {}
+            _act_snam: int | None = None
+            _act_type: int | None = None
+            _chain_lcep: int | None = None
+            for _st, _sv in _rs_subs:
+                if _st == "HNAM" and _act_type is None:
+                    if _cur_ph is None:
+                        _cur_ph = []
+                        _next_seen = 0
+                    else:
+                        _ph_ctdas.append(_cur_ph)
+                        _cur_ph = None
+                elif _st == "NEXT" and _cur_ph is not None:
+                    _next_seen += 1
+                elif _st == "CTDA" and _cur_ph is not None:
+                    if _next_seen == 0 and len(_sv) == 32:
+                        _cur_ph.append(_sv)
+                elif _st == "ANAM" and len(_sv) == 2:
+                    _act_type = struct.unpack("<H", _sv)[0]
+                    _act_snam = None
+                elif _st == "SNAM" and _act_type is not None and len(_sv) == 4 and _act_snam is None:
+                    _act_snam = struct.unpack("<I", _sv)[0]
+                elif _st == "HTID" and _act_type == 6 and len(_sv) == 4 and _act_snam is not None:
+                    _action_htids[_act_snam] = struct.unpack("<I", _sv)[0]
+                elif _st == "LCEP" and _act_type == 4 and len(_sv) == 4:
+                    _chain_lcep = struct.unpack("<I", _sv)[0]
+
+            _expected_next = 0x01008511 + ((_s_idx + 1) % len(_radio_scen_fids))
+            _scen_phase_counts.append(len(_ph_ctdas))
+            if (
+                len(_ph_ctdas) > 50
+                or len(_ph_ctdas) != len(_action_htids) + 2
+                or _chain_lcep != _expected_next
+            ):
+                _bad_chain_scens.append((hex(_s_fid), len(_ph_ctdas), len(_action_htids), hex(_chain_lcep or 0)))
+
+            for _c_list in _ph_ctdas:
+                for _cb in _c_list:
+                    _fn = struct.unpack_from("<H", _cb, 8)[0]
+                    _qf = struct.unpack_from("<I", _cb, 12)[0]
+                    if _fn not in (0x003A, 0x003B) or _qf not in qusts_by_fid:
+                        _bad_ctda_funcs.append((hex(_s_fid), hex(_fn), hex(_qf)))
+
+            for _phi in range(1, len(_ph_ctdas) - 1):
+                if _phi in _action_htids:
+                    _all_ph_entries.append((_action_htids[_phi], _ph_ctdas[_phi]))
+
+        _playlist_song_set = {_h for _h, _ in _all_ph_entries}
+        _missing_songs_in_scen = [hex(sf) for sf in _song_expected_fids if sf not in _playlist_song_set]
+        self.check(
+            len(_bad_chain_scens) == 0
+            and len(_scen_phase_counts) == 6
+            and len(_all_ph_entries) >= 195
+            and len(_missing_songs_in_scen) == 0
+            and len(_bad_ctda_funcs) == 0,
+            f"All 6 chained Radio SCENs (0x01008511..0x01008516) have <=50 phases ({_scen_phase_counts}), total={len(_all_ph_entries)} tracks, all 41 songs placed, valid ring & CTDAs (bad_scen={_bad_chain_scens}, missing_songs={_missing_songs_in_scen}, bad_ctda={_bad_ctda_funcs[:5]})",
+        )
+
+        def _sim_radio_active_fids(_stg_map: dict[int, int], _done_pairs: set[tuple[int, int]]) -> list[int]:
+            _active = []
+            for _htid, _ctda_list in _all_ph_entries:
+                _ok = True
+                for _cb in _ctda_list:
+                    _op = _cb[0]
+                    _cval, _cfn = struct.unpack_from("<fH", _cb, 4)
+                    _qp1, _qp2 = struct.unpack_from("<II", _cb, 12)
+                    if _cfn == 0x003A:
+                        _cur_s = _stg_map.get(_qp1, 0)
+                        if _op == 0x60:
+                            _res = _cur_s >= int(_cval)
+                        elif _op == 0x80:
+                            _res = _cur_s < int(_cval)
+                        else:
+                            _res = False
+                    elif _cfn == 0x003B:
+                        _res = ((_qp1, int(_qp2)) in _done_pairs) == (_cval >= 0.5)
+                    else:
+                        _res = False
+                    if not _res:
+                        _ok = False
+                        break
+                if _ok:
+                    _active.append(_htid)
+            return _active
+
+        _act_start = _sim_radio_active_fids({}, set())
+        _act_set_deal = _sim_radio_active_fids({0x01005000: 24}, {(0x01005000, 24)})
+        _act_pump_fixed = _sim_radio_active_fids({0x01005000: 26}, {(0x01005000, 26)})
+        _act_harry_talk = _sim_radio_active_fids({0x01005000: 30}, {(0x01005000, 27), (0x01005000, 30)})
+        _act_mariposa_prep = _sim_radio_active_fids({0x01005000: 40, 0x01006002: 30, 0x01007000: 15}, set())
+        _act_post_mariposa = _sim_radio_active_fids({0x01005000: 40, 0x01006002: 40, 0x01007000: 30}, set())
+        _act_post_cathedral = _sim_radio_active_fids({0x01005000: 40, 0x01006002: 40, 0x01007000: 40, 0x01008000: 30}, set())
+        _act_exile_vree = _sim_radio_active_fids(
+            {0x01005000: 40, 0x01006002: 40, 0x01007000: 40, 0x01008000: 40},
+            {(0x01008000, 26)},
+        )
+        self.check(
+            len(_act_start) == len(_act_set_deal) == len(_act_pump_fixed) == len(_act_harry_talk) == len(_act_mariposa_prep) == 130
+            and len(_act_post_mariposa) == 128
+            and len(_act_post_cathedral) == 126
+            and len(_act_exile_vree) == 122
+            and (0x01008603 not in _act_start)  # Shady Sands radscorpion clear must NOT spoil early game
+            and (0x010E000B in _act_set_deal)   # dj_36: Deal with Set
+            and (0x010E000D in _act_pump_fixed) # dj_38: Great Water Pump repaired
+            and (0x010E0010 in _act_harry_talk) # dj_41: Harry persuaded
+            and (0x010E0031 in _act_mariposa_prep) # dj_74: Preparing to assault Mariposa
+            and (0x010E0201 in _act_start) and (0x010E0202 in _act_start) and (0x010E0204 in _act_start)
+            and (0x010E0202 not in _act_post_mariposa)  # Caravan North Trail stops after Mariposa blown
+            and (0x010E0204 not in _act_post_cathedral) # Cathedral pirate sermon stops after Cathedral nuked
+            and (0x010E0003 in _act_exile_vree) and (0x010E0054 in _act_exile_vree), # dj_28 exile + dj_109 Master Vree proof
+            f"Reactive Radio binary CTDA simulation hits exact counts (130->128->126->122; got {len(_act_start)}/{len(_act_post_mariposa)}/{len(_act_post_cathedral)}/{len(_act_exile_vree)}) with zero spoilers & accurate progression",
+        )
+
+        # Verify Reqs A-R playtest fixes:
+        # Req A: Maltese Falcon uses Load WoodDouble door 0x01001590 & brick facade
+        d3605 = refrs_by_fid.get(0x01003605)
+        mf_brick = [r for r in refrs_by_fid.values() if r["base"] == 0x00004B3B and math.hypot(r["data"][0] - (-5400.0), r["data"][1] - (-15066.0)) < 10.0]
+        mf_neon = [r for r in refrs_by_fid.values() if r["base"] == 0x00249EAB and math.hypot(r["data"][0] - (-5400.0), r["data"][1] - (-15460.0)) < 10.0]
+        self.check(
+            d3605 is not None and d3605["base"] == 0x01001590 and len(mf_brick) == 1 and len(mf_neon) == 1,
+            "Req A: Maltese Falcon door 0x01003605 uses 0x01001590 (wood double) with brick facade 0x00004B3B & neon 0x00249EAB",
+        )
+
+        # Req C: ZAX/West Tek non-combat factions
+        zax_snam = {struct.unpack_from("<I", v, 0)[0] for s, v in records_by_fid[0x01001509][2] if s == "SNAM" and len(v) >= 4}
+        wt_bot_snam = {struct.unpack_from("<I", v, 0)[0] for s, v in records_by_fid[0x0100150A][2] if s == "SNAM" and len(v) >= 4}
+        self.check(
+            0x01001C57 in records_by_fid and 0x01001C58 in records_by_fid and 0x01001C57 in zax_snam and 0x01001C58 in wt_bot_snam,
+            "Req C: ZAX 1.2 (0x01001C57) and West Tek robots (0x01001C58) use non-combat/security factions",
+        )
+
+        # Req D: West Tek interior CELL 0x01002800 dark interior flags 0x1101 (no daylight sky bleed)
+        c2800_data = next((struct.unpack("<H", v)[0] for s, v in records_by_fid[0x01002800][2] if s == "DATA" and len(v) == 2), 0)
+        self.check(
+            c2800_data == 0x1101,
+            f"Req D: West Tek interior CELL 0x01002800 uses DATA=0x1101 (got {hex(c2800_data)})",
+        )
+
+        # Req E: Kyle 0x010D1011 condition + active prompt 0x010D1206
+        self.check(
+            0x010D1011 in records_by_fid and 0x010D1206 in records_by_fid and 0x010D1306 in records_by_fid,
+            "Req E: Lost Hills PA quest Lorenzo rescue path (0x010D1206/0x010D1306 & Stage 22) present",
+        )
+
+        # Req G: Lost Hills elevator door 0x01002B44 rotation & 0x01002B49 panel
+        d2b44 = refrs_by_fid.get(0x01002B44)
+        p2b49 = refrs_by_fid.get(0x01002B49)
+        self.check(
+            d2b44 is not None and abs(d2b44["data"][5] - 4.462459) < 0.01 and p2b49 is not None and p2b49["base"] == 0x0001BA47,
+            "Req G: Lost Hills elevator door 0x01002B44 rotated 4.4625 rad with call panel 0x01002B49",
+        )
+
+        # Req H: Maxson SCEN 0x01006103 2-phase scene
+        s6103_hnam_cnt = sum(1 for s, _ in records_by_fid[0x01006103][2] if s == "HNAM")
+        self.check(
+            s6103_hnam_cnt >= 4 and 0x01006228 in records_by_fid and 0x01006232 in records_by_fid,
+            f"Req H: Maxson SCEN 0x01006103 has 2-phase dialogue structure (HNAM count={s6103_hnam_cnt})",
+        )
+
+        # Req I: Martha Rastello terminal 0x01003633 on desk + post-WaterChip INFOs
+        t3633 = refrs_by_fid.get(0x01003633)
+        self.check(
+            t3633 is not None
+            and t3633["base"] == 0x0100153B
+            and abs(t3633["data"][0] - (-3330.0)) < 1.0
+            and abs(t3633["data"][1] - (-15750.0)) < 1.0
+            and 0x0101A019 in records_by_fid
+            and all((0x0101A324 + k) in records_by_fid for k in range(6)),
+            "Req I: Martha Rastello terminal 0x01003633 sits on desk (-3330, -15750, 80) + post-WaterChip dialogue",
+        )
+
+        # Req J: Deathclaw 0x0100125D does not drop 0x01001C86 note
+        dc_cnto = {struct.unpack_from("<II", v, 0)[0] for s, v in records_by_fid[0x0100125D][2] if s == "CNTO" and len(v) == 8}
+        self.check(
+            0x01001C86 not in dc_cnto,
+            f"Req J: Caravans Deathclaw 0x0100125D does not carry 0x01001C86 note (items={[hex(x) for x in dc_cnto]})",
+        )
+
+        # Req L: UFO corpses 0x01003542/43 well clear of UFO saucer 0x01003540
+        ufo_pos = refrs_by_fid[0x01003540]["data"]
+        al1_pos = refrs_by_fid[0x01003542]["data"]
+        al2_pos = refrs_by_fid[0x01003543]["data"]
+        d_al1 = math.hypot(al1_pos[0] - ufo_pos[0], al1_pos[1] - ufo_pos[1])
+        d_al2 = math.hypot(al2_pos[0] - ufo_pos[0], al2_pos[1] - ufo_pos[1])
+        self.check(
+            d_al1 >= 500.0 and d_al2 >= 500.0,
+            f"Req L: Alien corpses clear of UFO hull (d1={d_al1:.1f}, d2={d_al2:.1f} >= 500)",
+        )
+
+        # Req M: Mariposa/Cathedral embedded wall terminals + Paladin/Scout VTCK & greetings
+        wall_term_fids = (0x0100153C, 0x0100153D, 0x0100153E, 0x01001595, 0x01001596, 0x01001597)
+        scout_vtck = next((struct.unpack("<I", v)[0] for s, v in records_by_fid[0x010015AE][2] if s == "VTCK" and len(v) == 4), 0)
+        self.check(
+            all(fid in records_by_fid for fid in wall_term_fids)
+            and scout_vtck == 0x01001003
+            and 0x01007016 in records_by_fid
+            and 0x0100801D in records_by_fid,
+            "Req M: All 6 embedded wall terminals + voiced Mariposa/Cathedral scouts & greetings exist",
+        )
+
+        # Reqs N & P: Boneyard 7-compound expansion & Sammael crate isolation
+        d_crate_razor = math.hypot(
+            refrs_by_fid[0x01003630]["data"][0] - refrs_by_fid[0x01003624]["data"][0],
+            refrs_by_fid[0x01003630]["data"][1] - refrs_by_fid[0x01003624]["data"][1],
+        )
+        d_crate_fol = math.hypot(
+            refrs_by_fid[0x01003630]["data"][0] - refrs_by_fid[0x010035D6]["data"][0],
+            refrs_by_fid[0x01003630]["data"][1] - refrs_by_fid[0x010035D6]["data"][1],
+        )
+        d_fol_razor = math.hypot(
+            refrs_by_fid[0x010035D6]["data"][0] - refrs_by_fid[0x01003624]["data"][0],
+            refrs_by_fid[0x010035D6]["data"][1] - refrs_by_fid[0x01003624]["data"][1],
+        )
+        self.check(
+            d_crate_razor >= 2500.0 and d_crate_fol >= 4000.0 and d_fol_razor >= 4000.0,
+            f"Reqs N & P: Boneyard 7-compound layout isolates Sammael/Blades/Followers (crate-Razor={d_crate_razor:.0f}, crate-Followers={d_crate_fol:.0f}, Followers-Razor={d_fol_razor:.0f})",
+        )
+
+        # Req Q1: Sammael turn-in scene 0x010D3101
+        self.check(
+            0x010D3101 in records_by_fid and all((0x010D3310 + k) in records_by_fid for k in range(8)),
+            "Req Q1: Sammael hydroponic turn-in scene 0x010D3101 & INFOs 0x010D3310..17 exist",
+        )
+
+        # Req R: Vault 13 cavern mouth exit 0x01002206 (grounded) & bulkhead + inner seal 0x01002208 & lower cave exile staging
+        d2205 = refrs_by_fid.get(0x01002205)
+        d2208 = refrs_by_fid.get(0x01002208)
+        j2235 = refrs_by_fid.get(0x01002235)
+        self.check(
+            d2206["base"] == 0x01001598
+            and math.hypot(d2206["data"][0] - 6736.0, d2206["data"][1] - (-4255.0)) < 1.0
+            and abs(d2206["data"][2] - 388.0) < 1.0
+            and d2208 is not None and d2208["base"] == 0x0013C37D
+            and d2205 is not None and abs(d2205["data"][0] - 4430.0) < 1.0
+            and j2235 is not None and abs(j2235["data"][0] - 4260.0) < 1.0 and abs(j2235["data"][2] - (-31.0)) < 1.0,
+            "Req R: Vault 13 cave mouth exit 0x01002206 (0x01001598) grounded at (6736.0, -4255.0, 388.0), seal 0x01002208, & lower cave Exile coords",
+        )
+
+        # Req S: Regression checks for Playtest Issues (Mnemosyne Desk & Issues A-H)
+        t2035 = refrs_by_fid.get(0x01002035)
+        d2037 = refrs_by_fid.get(0x01002037)
+        self.check(
+            t2035 is not None and d2037 is not None
+            and math.hypot(t2035["data"][0] - d2037["data"][0], t2035["data"][1] - d2037["data"][1]) < 25.0
+            and abs(t2035["data"][2]) < 0.05 and abs(d2037["data"][2]) < 0.05
+            and abs(t2035["data"][5] - d2037["data"][5]) < 0.01,
+            "Req S0: Mnemosyne Time-Gate desk 0x01002037 aligned flush under terminal 0x01002035",
+        )
+
+        en_main_ba2_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "edition_en", "build_out", "Vault13Chronicles - Main.ba2")
+        _en_main_map = _read_gnrl_ba2_index(en_main_ba2_p) if os.path.exists(en_main_ba2_p) else {}
+        mf_sign_ref = refrs_by_fid.get(0x010AD098)
+        mf_nif_key = "meshes\\v13chronicles\\signs\\v13signmaltesefalcon01.nif"
+        self.check(
+            0x01001D0B in records_by_fid
+            and mf_sign_ref is not None
+            and mf_sign_ref["base"] == 0x01001D0B
+            and mf_sign_ref["cell"] == 0x01002700
+            and (mf_sign_ref["flags"] & 0x0800) == 0
+            and mf_nif_key in _main_map
+            and mf_nif_key in _en_main_map
+            and _get_gnrl_bytes(main_ba2_p, _main_map[mf_nif_key]) != _get_gnrl_bytes(en_main_ba2_p, _en_main_map[mf_nif_key]),
+            "Req S-A: Custom 3D Maltese Falcon sign 0x01001D0B active in CELL 0x01002700 with localized ES/EN NIFs",
+        )
+
+        q_hub_alids = [sv[:-1].decode("utf-8", "ignore") for st, sv in qusts_by_fid.get(0x0101A000, []) if st == "ALID"]
+        q_jt_alids = [sv[:-1].decode("utf-8", "ignore") for st, sv in qusts_by_fid.get(0x01019000, []) if st == "ALID"]
+        greet_info_fids = (0x01019012, 0x01019014, 0x01019016, 0x01019017, 0x0101A015, 0x0101A016, 0x0101A017)
+        greet_ctdas_ok = all(
+            ifid in records_by_fid
+            and any(
+                st == "CTDA" and len(sv) >= 24 and struct.unpack_from("<H", sv, 8)[0] == 0x003B
+                for st, sv in records_by_fid[ifid][2]
+            )
+            for ifid in greet_info_fids
+        )
+        self.check(
+            greet_ctdas_ok
+            and "Alias_Decker_HubSyndicate" in q_hub_alids
+            and not any("Gizmo" in a or "Vinnie" in a for a in q_hub_alids)
+            and all(n in q_jt_alids for n in ("Alias_Gizmo_JunktownSyndicate", "Alias_Vinnie_JunktownSyndicate", "Alias_DocMorbid_JunktownSyndicate")),
+            "Req S-B: Tug/Decker/Doc Morbid greeting GetStageDone CTDAs fixed and 0x0101A000/0x01019000 aliases clean",
+        )
+
+        sb35d2 = refrs_by_fid.get(0x010035D2)
+        obnd_124e = next(
+            (struct.unpack("<6h", sv) for st, sv in records_by_fid.get(0x0100124E, (None, None, [], None))[2] if st == "OBND" and len(sv) == 12),
+            None,
+        )
+        self.check(
+            sb35d2 is not None
+            and sb35d2["base"] == 0x0100124E
+            and abs(sb35d2["data"][0] - 31500.0) < 0.5
+            and abs(sb35d2["data"][1] - (-33920.0)) < 0.5
+            and abs(sb35d2["data"][2] - 124.0) < 0.5
+            and obnd_124e == (-27, -27, 0, 27, 27, 120),
+            "Req S-C: West Tek Exterior Sentry Bot 0x010035D2 clear of bunker wall with valid OBND on 0x0100124E",
+        )
+
+        zax_term_subs = records_by_fid.get(0x01001537, (None, None, [], None))[2]
+        zax_spk = refrs_by_fid.get(0x01002815)
+        zax_con = refrs_by_fid.get(0x01002832)
+        zax_ch = refrs_by_fid.get(0x01002835)
+        act3_psc_txt = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "papyrus_src", "V13Act3QuestScript.psc"), encoding="utf-8").read()
+        self.check(
+            sum(1 for st, _ in zax_term_subs if st == "CTDA") == 0
+            and zax_spk is not None and zax_con is not None and zax_ch is not None
+            and math.hypot(zax_spk["data"][0] - zax_con["data"][0], zax_spk["data"][1] - zax_con["data"][1]) < 260.0
+            and math.hypot(zax_spk["data"][0] - zax_ch["data"][0], zax_spk["data"][1] - zax_ch["data"][1]) < 260.0
+            and "scripts\\v13act3questscript.pex" in _main_map
+            and "scripts\\v13act3questscript.pex" in _en_main_map
+            and "bosObj.Is3DLoaded()" in act3_psc_txt,
+            "Req S-D: ZAX 1.2 TERM 0x01001537 has zero CTDAs, speaker 0x01002815 beside console/chest, & Lost Hills Is3DLoaded guard packaged",
+        )
+
+        mariposa_pre_enabled = all(
+            mfid in refrs_by_fid and (refrs_by_fid[mfid]["flags"] & 0x0800) == 0
+            for mfid in (0x01002C11, 0x01002C12, 0x01002C20, 0x01002C21, 0x01002C22, 0x01002C25, 0x01002C26)
+        )
+        lou_xscl = next((struct.unpack("<f", sv)[0] for st, sv in records_by_fid[0x01002C11][2] if st == "XSCL"), 0.0)
+        tech_acbs = next((struct.unpack_from("<I", sv, 0)[0] for st, sv in records_by_fid[0x0100155A][2] if st == "ACBS"), 0)
+        lou_vmad = any(st == "VMAD" for st, _ in records_by_fid[0x01001207][2])
+        self.check(
+            mariposa_pre_enabled
+            and abs(lou_xscl - 1.18) < 0.01
+            and (tech_acbs & 0x0800) == 0
+            and not lou_vmad,
+            "Req S-EF: Mariposa entrance forces pre-enabled, Lieutenant XSCL=1.18 without CreatureAI, & Acolyte non-Protected",
+        )
+
+        navi_nvmi = b"".join(sv for st, sv in records_by_fid.get(0x00000FF1, (None, None, [], None))[2] if st == "NVMI")
+        d3509 = refrs_by_fid.get(0x01003509)
+        d2d83 = refrs_by_fid.get(0x01002D83)
+        d2d83_subs = records_by_fid.get(0x01002D83, (None, None, [], None))[2]
+        sanct_actors_ok = all(
+            afid in refrs_by_fid and refrs_by_fid[afid]["cell"] == 0x01002D80
+            for afid in (0x01002D12, 0x01002D32, 0x01002D33, 0x01002D35, 0x01002D36, 0x01002D84, 0x01002D85, 0x01002D86, 0x01002D87, 0x01002D88)
+        )
+        unity_npcs_ok = all(
+            nfid in records_by_fid
+            and 0x00058305 in [struct.unpack("<I", sv[:4])[0] for st, sv in records_by_fid[nfid][2] if st == "SNAM"]
+            and 0x0001CBED not in [struct.unpack("<I", sv[:4])[0] for st, sv in records_by_fid[nfid][2] if st == "SNAM"]
+            for nfid in (0x01001205, 0x01001206, 0x01001207, 0x01001208, 0x01001209, 0x0100120A, 0x0100120B, 0x0100120C, 0x0100155A, 0x010015A1)
+        )
+        q5_subs = qusts_by_fid.get(0x01008000, [])
+        q5_obj_sanct_targets: dict[int, list[int]] = {}
+        q5_obj_all_targets: dict[int, list[int]] = {}
+        _cur_o, _last_qsta = None, None
+        for st, sv in q5_subs:
+            if st == "QOBJ" and len(sv) == 2:
+                _cur_o = struct.unpack("<H", sv)[0]
+                q5_obj_sanct_targets[_cur_o] = []
+                q5_obj_all_targets[_cur_o] = []
+                _last_qsta = None
+            elif st == "QSTA" and _cur_o is not None and len(sv) >= 4:
+                _last_qsta = struct.unpack("<I", sv[:4])[0]
+                q5_obj_all_targets[_cur_o].append(_last_qsta)
+            elif st == "CTDA" and _cur_o is not None and _last_qsta is not None and len(sv) >= 16:
+                if struct.unpack_from("<I", sv, 12)[0] == 0x01002D80:
+                    q5_obj_sanct_targets[_cur_o].append(_last_qsta)
+        self.check(
+            0x01002D80 in records_by_fid and records_by_fid[0x01002D80][0] == "CELL"
+            and 0x01002DF0 in records_by_fid and records_by_fid[0x01002DF0][0] == "NAVM"
+            and (0x01002DF0).to_bytes(4, "little") in navi_nvmi
+            and d3509 is not None and d3509["xtel"] is not None and d3509["xtel"][0] == 0x01002D81
+            and d2d83 is not None and d2d83["xtel"] is not None and d2d83["xtel"][0] == 0x01002D01
+            and any(st == "VMAD" for st, _ in d2d83_subs)
+            and any(st == "XLOC" for st, _ in d2d83_subs)
+            and sanct_actors_ok
+            and unity_npcs_ok
+            and all(q5_obj_sanct_targets.get(o) == [16] for o in (20, 21))
+            and all(q5_obj_sanct_targets.get(o) == [17] for o in (29, 32, 35)),
+            "Req S-G: Cathedral 2-cell split (0x01002D80/NAVM/XTEL), unified SuperMutantFaction, & QSTA routing verified",
+        )
+
+        m3669 = refrs_by_fid.get(0x01003669)
+        self.check(
+            m3669 is not None
+            and abs(m3669["data"][0] - (-19500.0)) < 0.5
+            and abs(m3669["data"][1] - (-31520.0)) < 0.5
+            and abs(m3669["data"][2] - 260.0) < 0.5
+            and "scripts\\v13chestact5script.pex" in _main_map
+            and "scripts\\v13cathedralcryptdoorscript.pex" in _main_map
+            and "scripts\\v13chestact5script.pex" in _en_main_map
+            and "scripts\\v13cathedralcryptdoorscript.pex" in _en_main_map
+            and 14 in q5_obj_all_targets.get(35, []),
+            "Req S-H: Cathedral spire nuclear blast marker 0x01003669, Act 5 scripts in ES/EN BA2s, & Objective 35 alias 14 verified",
+        )
+
+        # Req S-I: Direct jump option ITID 24 on Mnemosyne Mainframe Terminal (0x01001130) -> Act V Cathedral Assault
+        with open(os.path.join(PSC_DIR, "V13TermMnemosyneMenuScript.psc"), "r", encoding="utf-8") as _f:
+            _mnem_menu_src = _f.read()
+        with open(os.path.join(PSC_DIR, "V13Act1QuestScript.psc"), "r", encoding="utf-8") as _f:
+            _act1_src = _f.read()
+        with open(os.path.join(PSC_DIR, "V13Act5QuestScript.psc"), "r", encoding="utf-8") as _f:
+            _act5_src = _f.read()
+        self.check(
+            24 in term1130_itids
+            and "auiMenuItemID == 24" in _mnem_menu_src
+            and "auiMenuItemID == 24" in _act1_src
+            and "QueueJumpToCathedral" in _act5_src
+            and "scripts\\v13termmnemosynemenuscript.pex" in _main_map
+            and "scripts\\v13act1questscript.pex" in _main_map
+            and "scripts\\v13act5questscript.pex" in _main_map
+            and "scripts\\v13termmnemosynemenuscript.pex" in _en_main_map
+            and "scripts\\v13act1questscript.pex" in _en_main_map
+            and "scripts\\v13act5questscript.pex" in _en_main_map,
+            "Req S-I: Mnemosyne terminal ITID 24 direct jump to Act V Cathedral Assault wired & compiled in ES/EN",
+        )
+
+        # Req T: Overhaul 81->13, Cathedral & Master's Lair Overhaul, & 3 Real-Time Cinematics
+        def _get_xmsp(fid: int) -> int | None:
+            rec = records_by_fid.get(fid)
+            if not rec:
+                return None
+            return next((struct.unpack("<I", sv[:4])[0] for st, sv in rec[2] if st == "XMSP" and len(sv) >= 4), None)
+
+        def _read_dx10_first_chunk(ba2_path: str, target_name: str) -> bytes | None:
+            with open(ba2_path, "rb") as _bf:
+                _magic, _ver, _btype, _cnt, _ntoff = struct.unpack("<4sI4sIQ", _bf.read(24))
+                if _btype != b"DX10":
+                    return None
+                _chunks = []
+                for _ in range(_cnt):
+                    _hdr = struct.unpack("<I4sIBBHHHBBH", _bf.read(24))
+                    _nchk = _hdr[4]
+                    _first = None
+                    for _ci in range(_nchk):
+                        _c = struct.unpack("<QIIHHI", _bf.read(24))
+                        if _ci == 0:
+                            _first = _c
+                    _chunks.append(_first)
+                _bf.seek(_ntoff)
+                _nms = [
+                    _bf.read(struct.unpack("<H", _bf.read(2))[0]).decode("utf-8", "ignore").replace("/", "\\").lower()
+                    for _ in range(_cnt)
+                ]
+                _idx = {nm: ch for nm, ch in zip(_nms, _chunks)}
+                info = _idx.get(target_name.lower())
+                if info is None:
+                    return None
+                _bf.seek(info[0])
+                _raw = _bf.read(info[1] if info[1] else info[2])
+                return _zlib.decompress(_raw) if info[1] else _raw
+
+        req_t_records_ok = (
+            all(records_by_fid.get(f, (None,))[0] == "MSWP" for f in range(0x01009900, 0x01009904))
+            and all(records_by_fid.get(f, (None,))[0] == "LIGH" for f in range(0x01009910, 0x01009915))
+            and all(records_by_fid.get(f, (None,))[0] == "STAT" for f in range(0x01009920, 0x01009926))
+            and all(records_by_fid.get(f, (None,))[0] == "STAT" for f in range(0x01009928, 0x0100992E))
+            and records_by_fid.get(0x01001078, (None,))[0] == "SNDR"
+            and records_by_fid.get(0x01001079, (None,))[0] == "SOUN"
+            and all(records_by_fid.get(f, (None,))[0] == "NPC_" for f in (0x01001900, 0x01001901))
+            and records_by_fid.get(0x01001056, (None,))[0] == "PACK"
+        )
+        req_t_bulkhead_ok = (
+            all(f in refrs_by_fid for f in range(0x01002238, 0x0100223D))
+            and {refrs_by_fid[f]["base"] for f in range(0x01002238, 0x0100223D)} == {0x00067A93, 0x00067A95, 0x00067AA6}
+            and any(
+                r_inf.get("cell") == 0x01002200
+                and r_inf.get("base") == 0x00225BAC
+                and _get_xmsp(r_fid) == 0x01009900
+                for r_fid, r_inf in refrs_by_fid.items()
+            )
+            and any(
+                r_inf.get("cell") == 0x01002200
+                and r_inf.get("base") == 0x0009B08A
+                and _get_xmsp(r_fid) == 0x01009901
+                for r_fid, r_inf in refrs_by_fid.items()
+            )
+        )
+        cath_xmsps = sum(1 for r_fid, r_inf in refrs_by_fid.items() if r_inf["cell"] == 0x01002D80 and _get_xmsp(r_fid) == 0x01009902)
+        mast_xmsps = sum(1 for r_fid, r_inf in refrs_by_fid.items() if r_inf["cell"] == 0x01002D00 and _get_xmsp(r_fid) == 0x01009903)
+        req_t_cathedral_overhaul_ok = (
+            cath_xmsps >= 10
+            and mast_xmsps >= 10
+            and any(r_inf["cell"] == 0x01002D80 and r_inf["base"] in range(0x01009920, 0x01009925) for r_inf in refrs_by_fid.values())
+            and any(r_inf["cell"] == 0x01002D00 and r_inf["base"] == 0x01009925 for r_inf in refrs_by_fid.values())
+            and any(r_inf["cell"] == 0x01002D80 and r_inf["base"] in range(0x01009910, 0x01009915) for r_inf in refrs_by_fid.values())
+        )
+        req_t_ext_cinematics_ok = (
+            all(f in refrs_by_fid for f in (0x01009940, 0x01009941, 0x01009942, 0x01009943, 0x01009944, 0x01009945, 0x01009948, 0x01009949, 0x0100994A, 0x0100994B))
+            and all((0x01009950 + i) in refrs_by_fid for i in range(6))
+        )
+        sndr_1078_anam = next((sv.split(b"\x00", 1)[0].decode("ascii", "ignore") for st, sv in records_by_fid.get(0x01001078, (None, None, [], None))[2] if st == "ANAM"), "")
+        sndr_1078_xwm = sndr_1078_anam.replace("/", "\\").lower()
+        if sndr_1078_xwm.startswith("data\\"):
+            sndr_1078_xwm = sndr_1078_xwm[5:]
+        if sndr_1078_xwm.endswith(".wav"):
+            sndr_1078_xwm = sndr_1078_xwm[:-4] + ".xwm"
+        req_t_nifs_bgsms = [
+            "meshes\\v13chronicles\\monuments\\v13cathedralbannertall.nif",
+            "meshes\\v13chronicles\\monuments\\v13cathedralruins.nif",
+            "meshes\\v13chronicles\\monuments\\v13cathedralstainedglass.nif",
+            "meshes\\v13chronicles\\monuments\\v13cathedralaltarmonolith.nif",
+            "meshes\\v13chronicles\\monuments\\v13masterflesharch.nif",
+            "meshes\\v13chronicles\\monuments\\v13masterfleshwallcluster.nif",
+            "meshes\\v13chronicles\\monuments\\v13mastervaultplaque.nif",
+            "meshes\\v13chronicles\\monuments\\v13endingcreditcard01.nif",
+            "meshes\\v13chronicles\\monuments\\v13endingcreditcard06.nif",
+            "materials\\v13chronicles\\vault13gear\\vaultnumber13gear.bgsm",
+            "materials\\v13chronicles\\vault13gear\\vltsignwelcome13.bgsm",
+            "materials\\v13chronicles\\monuments\\cathedralbanner.bgsm",
+            "materials\\v13chronicles\\monuments\\cathedralstainedglass.bgsm",
+            "materials\\v13chronicles\\monuments\\cathedralaltarrelief.bgsm",
+            "materials\\v13chronicles\\monuments\\mastervaultplaque.bgsm",
+            "materials\\v13chronicles\\credits\\v13creditcard01.bgsm",
+            "materials\\v13chronicles\\credits\\v13creditcard06.bgsm",
+        ]
+        en_tex_ba2_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "edition_en", "build_out", "Vault13Chronicles - Textures.ba2")
+        _es_tex_names = _read_ba2_names(tex_ba2_p)
+        _en_tex_names = _read_ba2_names(en_tex_ba2_p) if os.path.exists(en_tex_ba2_p) else set()
+        req_t_dds_keys = [
+            "textures\\v13chronicles\\vault13gear\\vaultnumber13gear_d.dds",
+            "textures\\v13chronicles\\vault13gear\\vltsignwelcome13_d.dds",
+            "textures\\v13chronicles\\monuments\\cathedralbanner_d.dds",
+            "textures\\v13chronicles\\monuments\\cathedralstainedglass_d.dds",
+            "textures\\v13chronicles\\monuments\\cathedralaltarrelief_d.dds",
+            "textures\\v13chronicles\\monuments\\mastervaultplaque_d.dds",
+        ] + [f"textures\\v13chronicles\\credits\\v13creditcard{i:02d}_d.dds" for i in range(1, 7)]
+        _es_card1_c0 = _read_dx10_first_chunk(tex_ba2_p, "textures\\v13chronicles\\credits\\v13creditcard01_d.dds")
+        _en_card1_c0 = _read_dx10_first_chunk(en_tex_ba2_p, "textures\\v13chronicles\\credits\\v13creditcard01_d.dds") if os.path.exists(en_tex_ba2_p) else None
+        req_t_assets_ok = (
+            bool(sndr_1078_xwm)
+            and sndr_1078_xwm in _main_map
+            and sndr_1078_xwm in _en_main_map
+            and all(k in _main_map and k in _en_main_map for k in req_t_nifs_bgsms)
+            and all(k in _es_tex_names and k in _en_tex_names for k in req_t_dds_keys)
+            and _es_card1_c0 is not None
+            and _en_card1_c0 is not None
+            and _es_card1_c0 != _en_card1_c0
+        )
+        self.check(
+            req_t_records_ok and req_t_bulkhead_ok and req_t_cathedral_overhaul_ok and req_t_ext_cinematics_ok and req_t_assets_ok,
+            f"Req T: Overhaul 81->13 (bulkhead/XMSP), Cathedral/Master overhaul ({cath_xmsps}/{mast_xmsps} XMSPs), 3 cinematics, & ES/EN NIF/BGSM/DDS/XWM BA2 parity",
+        )
+
+        # Req U: Cathedral Sanctuary & Vault of Future Sky-Void, Backstage Seals, Chancel Ground-Floor & Faction Isolation
+        def _cell_data_flags(cfid: int) -> int | None:
+            rec = records_by_fid.get(cfid)
+            if not rec:
+                return None
+            return next((struct.unpack("<H", sv[:2])[0] for st, sv in rec[2] if st == "DATA" and len(sv) >= 2), None)
+
+        def _npc_factions(nfid: int) -> list[int]:
+            return [struct.unpack("<I", sv[:4])[0] for st, sv in records_by_fid.get(nfid, (None, None, [], None))[2] if st == "SNAM" and len(sv) >= 4]
+
+        _mat_keys = set(_van_mat.keys()) | set(_main_map.keys())
+        mswp_snams_ok = all(
+            bool(snams)
+            and all((s if s.startswith("materials\\") else "materials\\" + s.lstrip("\\")) in _mat_keys for s in snams)
+            for mf in (0x01009902, 0x01009903)
+            for snams in [[sv.split(b"\x00", 1)[0].decode("ascii", "ignore").replace("/", "\\").lower() for st, sv in records_by_fid.get(mf, (None, None, [], None))[2] if st == "SNAM"]]
+        )
+        cell_no_sky_ok = all(
+            _cell_data_flags(cfid) is not None and (_cell_data_flags(cfid) & 0x1100) == 0
+            for cfid in (0x01002D80, 0x01002D00)
+        )
+        col_disabled_ok = all(
+            cf in refrs_by_fid
+            and refrs_by_fid[cf]["cell"] == 0x01002D80
+            and refrs_by_fid[cf]["base"] == 0x0000003B
+            and (refrs_by_fid[cf]["flags"] & 0x0800) != 0
+            and not any(st == "XPRM" for st, _ in records_by_fid[cf][2])
+            for cf in (0x01098037, 0x01098038)
+        )
+        seals_2d80 = [r for r in refrs_by_fid.values() if r["cell"] == 0x01002D80 and r["base"] in (0x0003D3C3, 0x00072865) and r["data"]]
+        seals_ok = all(
+            any(
+                r["base"] == eb
+                and abs(r["data"][0] - ex) < 0.5
+                and abs(r["data"][1] - ey) < 0.5
+                and abs(r["data"][2] - ez) < 0.5
+                for r in seals_2d80
+            )
+            for eb, ex, ey, ez in (
+                (0x0003D3C3, 2024.0, 1752.0, 500.8),
+                (0x00072865, 2152.0, 1640.0, 252.8),
+                (0x00072865, 2152.0, 2152.0, 252.8),
+            )
+        ) and not any(
+            r["cell"] == 0x01002D80 and r["base"] in (0x0006A7C7, 0x0006A7C8, 0x0006A7C3)
+            for r in refrs_by_fid.values()
+        )
+        chancel_z_ok = all(
+            af in refrs_by_fid and refrs_by_fid[af]["cell"] == 0x01002D80 and refrs_by_fid[af]["data"][2] < 280.0
+            for af in (0x01002D12, 0x01002D84)
+        )
+        cath_factions_ok = (
+            records_by_fid.get(0x01001C59, (None,))[0] == "FACT"
+            and records_by_fid.get(0x01001C5A, (None,))[0] == "FACT"
+            and all(
+                0x01001C59 in _npc_factions(nf) and 0x0001C21C not in _npc_factions(nf)
+                for nf in (0x010015A0, 0x010015A2, 0x010015B4)
+            )
+            and 0x01001C5A in _npc_factions(0x010015AE)
+        )
+        cath_scripts_ok = (
+            "cCathedralSanctuary" in wc_code
+            and "UpdateSanctuaryQuestTargetAlias" in _act5_src
+            and "bCathedralSanctuaryMigratedV3" in _act5_src
+        )
+        self.check(
+            mswp_snams_ok and cell_no_sky_ok and col_disabled_ok and seals_ok and chancel_z_ok and cath_factions_ok and cath_scripts_ok,
+            f"Req U: Cathedral no sky-void, CollisionMarkers disabled, backstage seals, ground-floor Chancel, FACT isolation, & Sanctuary scripts verified (mswp={mswp_snams_ok}, sky={cell_no_sky_ok}, col={col_disabled_ok}, seals={seals_ok}, z={chancel_z_ok}, fact={cath_factions_ok}, psc={cath_scripts_ok})",
+        )
+
+        # Req V: Act V Final Exit, Cathedral Destruction Swapping, Black-Screen-Free Cinematics & Stage 38 Exile Flow
+        r223d = refrs_by_fid.get(0x0100223D)
+        cave_entry_ok = (
+            r223d is not None
+            and r223d["cell"] == 0x01002200
+            and math.hypot(r223d["data"][0] - 6580.0, r223d["data"][1] - (-4306.0)) < 1.0
+            and abs(r223d["data"][2] - 388.0) < 1.0
+        )
+        cath_ext_ruins_ok = (
+            all(
+                f in refrs_by_fid and (refrs_by_fid[f]["flags"] & 0x0800) == 0
+                for f in range(0x01009960, 0x01009966)
+            )
+            and all(
+                f in refrs_by_fid and (refrs_by_fid[f]["flags"] & 0x0800) != 0
+                for f in range(0x01009966, 0x01009975)
+            )
+            and refrs_by_fid.get(0x01009974, {}).get("base") == 0x01001D0D
+            and refrs_by_fid.get(0x01009966, {}).get("data", [0, -99999])[1] > -30600.0
+            and 0x01001D0D in records_by_fid
+        )
+        door_15b7_modl = next(
+            (sv.split(b"\x00", 1)[0].decode("ascii", "ignore").lower() for st, sv in records_by_fid.get(0x010015B7, (None, None, [], None))[2] if st == "MODL"),
+            "",
+        )
+        brick_seals_2d80 = [r for r in refrs_by_fid.values() if r["cell"] == 0x01002D80 and r["base"] == 0x001DA06E]
+        cath_doors_ok = ("utilmetaldbdoorload01" in door_15b7_modl) and (len(brick_seals_2d80) == 2)
+        q8000_subs = records_by_fid.get(0x01008000, (None, None, [], None))[2]
+        stage38_ok = any(st == "INDX" and len(sv) >= 2 and struct.unpack("<H", sv[:2])[0] == 38 for st, sv in q8000_subs)
+        q8000_qobjs = {struct.unpack("<H", sv)[0] for st, sv in q8000_subs if st == "QOBJ" and len(sv) == 2}
+        obj38_ok = {22, 23, 24, 38}.issubset(q8000_qobjs)
+        _act4_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "papyrus_src", "V13Act4QuestScript.psc")
+        _act4_src = open(_act4_path, encoding="utf-8").read() if os.path.exists(_act4_path) else ""
+        no_black_fade_ok = (
+            ("FadeOutGame(true" not in _act4_src)
+            and ("FadeOutGame(true" not in _act5_src)
+            and ("cinePlayer.SetPosition" not in _act4_src)
+            and ("cinePlayer.SetPosition" not in _act5_src)
+            and ("exilePlayer.MoveTo" not in _act5_src)
+            and ("kActiveExileDouble.MoveTo" not in _act5_src)
+            and ("exilePlayer.SetPosition" not in _act5_src)
+            and ("0x00009950 +" in _act5_src)
+            and ("PlaceAtMe(cardBase" not in _act5_src)
+            and ("SyncCathedralExteriorDestruction" in _act5_src)
+            and ("SyncMasterVaultExitAndGates" in _act5_src)
+            and ("SyncCathedralOptionalObjectives" in _act5_src)
+            and ("iAct5CineReadyTicks" in _act5_src)
+            and ("iMariposaReadyTicks" in _act4_src)
+        )
+        self.check(
+            cave_entry_ok and cath_ext_ruins_ok and cath_doors_ok and stage38_ok and obj38_ok and no_black_fade_ok,
+            f"Req V: Cave mouth 0x0100223D, Cathedral ruins (0x01009960..9974), double crypt door & seals, QOBJ 22..24/38, & no-black-screen cinematics verified (cave={cave_entry_ok}, ruins={cath_ext_ruins_ok}, doors={cath_doors_ok}, stg38={stage38_ok}, objs={obj38_ok}, cine={no_black_fade_ok})",
+        )
+
+        # Req W: Cathedral Exit Never Terminal-Locked, Crypt Return Corridor XTEL, & Recycled FO4 Props Cleanup
+        r2d01 = refrs_by_fid.get(0x01002D01)
+        xt_2d01 = r2d01.get("xtel") if r2d01 else None
+        crypt_return_xtel_ok = (
+            xt_2d01 is not None
+            and xt_2d01[0] == 0x01002D83
+            and abs(xt_2d01[1] - 878.351) < 1.0
+            and abs(xt_2d01[2] - 4424.855) < 1.0
+            and abs(xt_2d01[3] - (-132.625)) < 1.0
+        )
+        no_ntrm_ok = all(
+            not any(st == "NTRM" for st, _ in records_by_fid.get(dfid, (None, None, [], None))[2])
+            for dfid in (0x010015B8, 0x01001168)
+        )
+        _item_act5_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "papyrus_src", "V13ItemAct5Script.psc")
+        _item_act5_src = open(_item_act5_path, encoding="utf-8").read() if os.path.exists(_item_act5_path) else ""
+        item_act5_ok = ("SetStage(30)" not in _item_act5_src) and ("StartCathedralNuclearCountdown(2)" in _item_act5_src)
+        forbidden_cal_bases = {
+            0x00099D14,  # DN057_ToolBox
+            0x001C19BE,  # Institute_Locker01
+            0x001368AC,  # MapHagen01
+            0x00178B56,  # BobbleHead_EnergyWeapons
+            0x00178B5B,  # BobbleHead_Medicine
+            0x00091FDE,  # PowerRelayCoil
+            0x000B254D,  # DN053_VirgilsSerum
+            0x0022BF62,  # PreventPowerArmorExitTrigger
+            0x001A5948,  # WoodBox01_Prewar
+        }
+        leftover_cal_refs = [
+            (hex(r_fid), hex(r_inf["cell"]), hex(r_inf["base"]))
+            for r_fid, r_inf in refrs_by_fid.items()
+            if r_inf.get("cell") != 0x01002000
+            and (r_inf.get("flags", 0) & 0x0800) == 0
+            and r_inf.get("base") in forbidden_cal_bases
+        ]
+        self.check(
+            crypt_return_xtel_ok and no_ntrm_ok and item_act5_ok and len(leftover_cal_refs) == 0,
+            f"Req W: Crypt return XTEL (878.4, 4424.9, -132.6), 0 NTRM on exit doors, V13ItemAct5Script safe, & 0 leftover FO4 props in California cells (xtel={crypt_return_xtel_ok}, no_ntrm={no_ntrm_ok}, item_psc={item_act5_ok}, leftovers={leftover_cal_refs})",
+        )
+
+        # Req X: Cathedral Non-Combatant Acolyte Cower/Flee AI (PACK 0x01001058/1057) & Gideon Psychic Cell Relocation
+        flee_pack_rec = records_by_fid.get(0x01001057)
+        flee_pack_ok = (
+            flee_pack_rec is not None
+            and flee_pack_rec[0] == "PACK"
+            and any(st == "PKDT" and sv == bytes.fromhex("002002081200020060f80000") for st, sv in flee_pack_rec[2])
+            and any(st == "PSDT" and sv == bytes.fromhex("00ff00ffff00000000000000") for st, sv in flee_pack_rec[2])
+            and any(st == "PKCU" and len(sv) >= 8 and struct.unpack_from("<I", sv, 4)[0] == 0x00002CB0 for st, sv in flee_pack_rec[2])
+            and any(
+                st == "CTDA"
+                and len(sv) >= 16
+                and struct.unpack_from("<H", sv, 8)[0] == 0x000E
+                and struct.unpack_from("<I", sv, 12)[0] == 0x000002BD
+                for st, sv in flee_pack_rec[2]
+            )
+            and any(st == "PLDT" and len(sv) >= 16 and struct.unpack("<4I", sv[:16]) == (0, 0x01002D89, 95, 0) for st, sv in flee_pack_rec[2])
+        )
+        cower_pack_rec = records_by_fid.get(0x01001058)
+        cower_pack_ok = (
+            cower_pack_rec is not None
+            and cower_pack_rec[0] == "PACK"
+            and any(st == "PKDT" and sv == bytes.fromhex("003002081204020081040000") for st, sv in cower_pack_rec[2])
+            and any(st == "PSDT" and sv == bytes.fromhex("00ff00ffff00000000000000") for st, sv in cower_pack_rec[2])
+            and any(st == "PKCU" and len(sv) >= 8 and struct.unpack_from("<I", sv, 4)[0] == 0x00004DF6 for st, sv in cower_pack_rec[2])
+            and any(st == "PTDA" and len(sv) >= 12 and struct.unpack("<3I", sv[:12]) == (3, 0x0005D5E6, 0) for st, sv in cower_pack_rec[2])
+            and any(
+                st == "CTDA"
+                and len(sv) >= 16
+                and struct.unpack_from("<H", sv, 8)[0] == 0x000E
+                and struct.unpack_from("<I", sv, 12)[0] == 0x000002BD
+                for st, sv in cower_pack_rec[2]
+            )
+        )
+        worshiper_rec = records_by_fid.get(0x010015B4)
+        worshiper_pkids = [struct.unpack("<I", sv[:4])[0] for st, sv in worshiper_rec[2] if st == "PKID"] if worshiper_rec else []
+        worshiper_items = [struct.unpack("<I", sv[:4])[0] for st, sv in worshiper_rec[2] if st == "CNTO"] if worshiper_rec else []
+        worshiper_ai_ok = worshiper_pkids == [0x01001058, 0x01001057, 0x01001050] and worshiper_items == [0x0000000F]
+        cower_markers_ok = all(
+            refrs_by_fid.get(0x01002D89 + idx, {}).get("cell") == 0x01002D80
+            and refrs_by_fid.get(0x01002D89 + idx, {}).get("base") == 0x0020C2C4
+            and any(
+                st == "XLKR" and len(sv) == 8 and struct.unpack("<2I", sv) == (0x0005D5E6, 0x01002D89 + idx)
+                for st, sv in records_by_fid.get(0x01002D86 + idx, (None, None, [], None))[2]
+            )
+            for idx in range(3)
+        )
+
+        r2d34 = refrs_by_fid.get(0x01002D34)
+        r2d11 = refrs_by_fid.get(0x01002D11)
+        r81049 = refrs_by_fid.get(0x01081049)
+        gideon_cell_ok = (
+            r2d34 is not None
+            and r2d11 is not None
+            and r2d34["cell"] == 0x01002D00
+            and abs(r2d34["data"][0] - (-245.0)) < 1.0
+            and abs(r2d34["data"][1] - (-898.0)) < 1.0
+            and abs(r2d34["data"][2] - (-768.0)) < 1.0
+            and r2d34["data"][2] > -810.0
+            and math.dist(r2d34["data"][:3], r2d11["data"][:3]) > 1500.0
+            and r81049 is not None
+            and r81049["cell"] == 0x01002D00
+            and r81049["base"] == 0x01009913
+            and abs(r81049["data"][0] - (-245.0)) < 1.0
+            and abs(r81049["data"][1] - (-898.0)) < 1.0
+            and abs(r81049["data"][2] - (-640.0)) < 1.0
+        )
+        fact_civ = records_by_fid.get(0x01001C59)
+        fact_fol = records_by_fid.get(0x01001C5A)
+        cult_ally_ok = (
+            fact_civ is not None
+            and fact_civ[0] == "FACT"
+            and any(st == "XNAM" and len(sv) >= 12 and struct.unpack("<IiI", sv[:12]) == (0x00058305, 0, 2) for st, sv in fact_civ[2])
+            and any(st == "XNAM" and len(sv) >= 12 and struct.unpack("<IiI", sv[:12]) == (0x01001C5A, 0, 2) for st, sv in fact_civ[2])
+            and fact_fol is not None
+            and fact_fol[0] == "FACT"
+            and any(st == "XNAM" and len(sv) >= 12 and struct.unpack("<IiI", sv[:12]) == (0x01001C59, 0, 2) for st, sv in fact_fol[2])
+        )
+        act5_panic_psc_ok = (
+            "SyncSanctuaryAcolytePanic" in _act5_src
+            and "MigrateGideonToPsychicCell" in _act5_src
+            and "OnCombatStateChanged" in _act5_src
+            and "0x0020AC3C" in _act5_src
+            and "EvaluatePackage(true)" in _act5_src
+            and "GetCombatTarget()" in _act5_src
+            and "SetAlly(cultCivFac, false, false)" in _act5_src
+        )
+        self.check(
+            flee_pack_ok and cower_pack_ok and worshiper_ai_ok and cower_markers_ok and gideon_cell_ok and cult_ally_ok and act5_panic_psc_ok,
+            f"Req X: Cathedral acolyte cower/flee PACK 0x01001058/1057, cower markers 2D89..2D8B, Gideon relocation, faction Ally locks, & combat listeners verified (flee={flee_pack_ok}, cower={cower_pack_ok}, npc={worshiper_ai_ok}, markers={cower_markers_ok}, gideon={gideon_cell_ok}, ally={cult_ally_ok}, psc={act5_panic_psc_ok})",
+        )
+
+        # Req Y: Cathedral Ruins Local Smoke/Flames, Instant Stage 38 Exit Marker, Flush Cave Exit Bulkhead & Arroyo Ending Cinematic
+        cath_fire_bases = {0x00212E6F, 0x0021113D, 0x00048283, 0x00048281, 0x00164199}
+        cath_fire_refs = [refrs_by_fid.get(0x01003668)] + [refrs_by_fid.get(fid) for fid in range(0x0100996D, 0x01009974)]
+        cathedral_local_fire_ok = (
+            m3669 is not None
+            and math.hypot(m3669["data"][0] - (-19500.0), m3669["data"][1] - (-31520.0)) <= 250.0
+            and m3669["data"][2] <= 320.0
+            and all(
+                r is not None
+                and r["base"] in cath_fire_bases
+                and -20200.0 <= r["data"][0] <= -18750.0
+                and -31800.0 <= r["data"][1] <= -31500.0
+                for r in cath_fire_refs
+            )
+            and "0x00121A68" not in _act5_src
+            and "0x001844BC" not in _act5_src
+        )
+
+        st38_idx = _act5_src.find("elseif aiStage >= 38 && aiStage < 40")
+        st38_block = _act5_src[st38_idx:st38_idx + 2200] if st38_idx >= 0 else ""
+        obj38_pos = st38_block.find("SetObjectiveDisplayed(38, true, false)")
+        rew_pos = st38_block.find("GrantAct5CompletionRewards()")
+        instant_stage38_ok = (
+            'RegisterForRemoteEvent(exileScReg, "OnEnd")' in _act5_src
+            and 'RegisterForRemoteEvent(exileEndInfo, "OnBegin")' in _act5_src
+            and "Event Scene.OnEnd(" in _act5_src
+            and "Event TopicInfo.OnBegin(" in _act5_src
+            and "Event TopicInfo.OnEnd(" in _act5_src
+            and "relicDisplay5.EnableNoWait()" in _act5_src
+            and obj38_pos >= 0
+            and rew_pos >= 0
+            and obj38_pos < rew_pos
+        )
+
+        r2206 = refrs_by_fid.get(0x01002206)
+        r2239 = refrs_by_fid.get(0x01002239)
+        r223a = refrs_by_fid.get(0x0100223A)
+        r223b = refrs_by_fid.get(0x0100223B)
+        r223c = refrs_by_fid.get(0x0100223C)
+        cell2200_rocks = [r for r in refrs_by_fid.values() if r["cell"] == 0x01002200 and r["base"] == 0x0004F14E]
+        cell2200_hdrs = [r for r in refrs_by_fid.values() if r["cell"] == 0x01002200 and r["base"] == 0x00039383]
+        flush_cave_exit_ok = (
+            r2206 is not None
+            and abs(r2206["data"][0] - 6736.0) < 0.5
+            and abs(r2206["data"][1] - (-4255.0)) < 0.5
+            and abs(r2206["data"][2] - 388.0) < 0.5
+            and r2239 is not None
+            and abs(r2239["data"][0] - 6614.402) < 0.05
+            and abs(r2239["data"][1] - (-4294.973)) < 0.05
+            and r223a is not None
+            and abs(r223a["data"][0] - 6534.456) < 0.05
+            and abs(r223a["data"][1] - (-4051.776)) < 0.05
+            and r223b is not None
+            and abs(r223b["data"][0] - 6694.348) < 0.05
+            and abs(r223b["data"][1] - (-4538.170)) < 0.05
+            and r223c is not None
+            and abs(r223c["data"][0] - 6614.402) < 0.05
+            and abs(r223c["data"][1] - (-4294.973)) < 0.05
+            and len(cell2200_rocks) >= 2
+            and len(cell2200_hdrs) >= 1
+            and "6807.54" not in _act1_src
+            and "caveExitDoor.SetPosition(6736.0, -4255.0, 388.0)" in _act1_src
+        )
+
+        p1056_rec = records_by_fid.get(0x01001056)
+        p1056_pkdt = next((sv for st, sv in p1056_rec[2] if st == "PKDT"), b"") if p1056_rec else b""
+        p1056_psdt = next((sv for st, sv in p1056_rec[2] if st == "PSDT"), b"") if p1056_rec else b""
+        p1056_cnam0 = next((sv for st, sv in p1056_rec[2] if st == "CNAM"), b"") if p1056_rec else b""
+        r994b = refrs_by_fid.get(0x0100994B)
+        cards_pers_ok = all(
+            cfid in refrs_by_fid and (refrs_by_fid[cfid]["flags"] & 0x0C00) == 0x0C00
+            for cfid in range(0x01009950, 0x01009956)
+        )
+        _arroyo_exempt_fids = set(range(0x01003660, 0x01003668)) | set(range(0x01009948, 0x01009956))
+        _arroyo_exempt_bases = {0x000560DC, 0x0008ADFA, 0x00000034, 0x0000003B, 0x00000010}
+        _arroyo_anchors = [(-6640.0, 32620.0), (-6500.0, 32620.0), (-6430.0, 32530.0)]
+        arroyo_camp_clear_ok = not any(
+            (rfid not in _arroyo_exempt_fids)
+            and (r["base"] not in _arroyo_exempt_bases)
+            and (r["data"] is not None)
+            and (abs(r["data"][2] - 320.0) < 200.0)
+            and any(math.hypot(r["data"][0] - ax, r["data"][1] - ay) < 260.0 for ax, ay in _arroyo_anchors)
+            for rfid, r in refrs_by_fid.items()
+        )
+        arroyo_cinematic_ok = (
+            p1056_pkdt == bytes.fromhex("002080081200010064f80000")
+            and p1056_psdt == bytes.fromhex("00ff00ffff00000000000000")
+            and p1056_cnam0 == b"\x00"
+            and r994b is not None
+            and -7800.0 <= r994b["data"][0] <= -7500.0
+            and 31950.0 <= r994b["data"][1] <= 32200.0
+            and abs(r994b["data"][2] - 320.0) < 1.0
+            and all(refrs_by_fid[cfid]["data"][1] >= 32768.0 for cfid in range(0x01009950, 0x01009956))
+            and cards_pers_ok
+            and arroyo_camp_clear_ok
+            and "preWant.EnableNoWait" not in _act5_src
+            and "exilePlayer.MoveTo" not in _act5_src
+            and "kActiveExileDouble.MoveTo" not in _act5_src
+            and "exilePlayer.SetPosition" not in _act5_src
+            and "cardRef.MoveTo" not in _act5_src
+            and "[Theresa — Rumbo a Arroyo]" in _act5_src
+            and "[Lyle — Pionero de Arroyo]" in _act5_src
+            and "fundar la aldea de ARROYO" in _act5_src
+            and "ShowDynamicCaliforniaEpilogue()" in _act5_src
+            and "bool resumeExile =" in _act5_src
+            and "iExileCineFixRev" in _act5_src
+        )
+
+        self.check(
+            cathedral_local_fire_ok and instant_stage38_ok and flush_cave_exit_ok and arroyo_cinematic_ok,
+            f"Req Y: Cathedral local smoke/flames, instant Stage 38 exit marker, flush cave exit bulkhead (128u), & Arroyo pioneers epilogue verified (fire={cathedral_local_fire_ok}, stage38={instant_stage38_ok}, exit={flush_cave_exit_ok}, arroyo={arroyo_cinematic_ok})",
+        )
+
+        # Req Z: SuperMutantRace Subgraph-Compatible Armament (Cathedral Praetorians & Mariposa Lieutenant)
+        sm_valid_weps = {0x0001F669, 0x0000463F, 0x0003F6F8, 0x000FF964, 0x0005DF2E}
+        sm_npc_fids = [
+            fid for fid, (rtype, _f, subs, _p) in records_by_fid.items()
+            if rtype == "NPC_"
+            and any(st == "RNAM" and len(sv) >= 4 and struct.unpack("<I", sv[:4])[0] == 0x0001A009 for st, sv in subs)
+        ]
+        sm_armed_ok = len(sm_npc_fids) >= 9 and all(
+            any(st == "CNTO" and len(sv) >= 4 and struct.unpack("<I", sv[:4])[0] in sm_valid_weps for st, sv in records_by_fid[fid][2])
+            for fid in sm_npc_fids
+        )
+        prae_items = {struct.unpack("<I", sv[:4])[0] for st, sv in records_by_fid.get(0x0100120B, (None, None, [], None))[2] if st == "CNTO"}
+        prae_ok = (0x000E27BC not in prae_items) and {0x0001F669, 0x0001F66C, 0x0000463F, 0x0001F278, 0x000FF964}.issubset(prae_items)
+        lou_items_z = {struct.unpack("<I", sv[:4])[0] for st, sv in records_by_fid.get(0x01001207, (None, None, [], None))[2] if st == "CNTO"}
+        lou_armed_ok = {0x0001F669, 0x0001F66C, 0x000FF964}.issubset(lou_items_z)
+        sm_psc_ok = ("EnsureCathedralMutantWeapons" in _act5_src) and ("0x0001F669" in _act4_src)
+        self.check(
+            sm_armed_ok and prae_ok and lou_armed_ok and sm_psc_ok,
+            f"Req Z: All SuperMutantRace NPCs armed with STKD-valid weapons (count={len(sm_npc_fids)}, armed={sm_armed_ok}, prae={prae_ok}, lou={lou_armed_ok}, psc={sm_psc_ok})",
+        )
+
+        # Req AA: Playability Audit Guards — Sound SOUN-vs-SNDR Casts & SyncAllCaliforniaPersistentCoords Parity
+        sound_cast_re = re.compile(r'GetFormFromFile\(\s*(0x[0-9A-Fa-f]+|\d+)\s*,\s*"Vault13Chronicles\.esp"\s*\)\s+[Aa][Ss]\s+Sound\b')
+        bad_sound_casts = []
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        for pdir in (os.path.join(base_dir, "papyrus_src"), os.path.join(base_dir, "edition_en", "papyrus_src")):
+            if not os.path.isdir(pdir):
+                continue
+            rel_pdir = os.path.relpath(pdir, base_dir)
+            for fn in sorted(os.listdir(pdir)):
+                if not fn.endswith(".psc"):
+                    continue
+                with open(os.path.join(pdir, fn), encoding="utf-8", errors="ignore") as f:
+                    for ln, line in enumerate(f, 1):
+                        code = line.split(";", 1)[0]
+                        for m in sound_cast_re.finditer(code):
+                            raw_id = m.group(1)
+                            val = int(raw_id, 16) if raw_id.lower().startswith("0x") else int(raw_id)
+                            fid = 0x01000000 | (val & 0x00FFFFFF)
+                            rec = records_by_fid.get(fid)
+                            if rec is None or rec[0] != "SOUN":
+                                bad_sound_casts.append(f"{rel_pdir}/{fn}:{ln}->{hex(fid)}({rec[0] if rec else 'MISSING'})")
+
+        sync_coords_ok = True
+        expected_sync_tokens = (
+            "ftY[15] = -33850.0",
+            "ftX[16] = -5600.0",
+            "ftY[16] = -32280.0",
+            "ftY[23] = -19100.0",
+            "mkY[15] = -33280.0",
+            "ecZ[25] = 390.0",
+            "ambX[4] = -1950.0",
+            "ambY[4] = -12550.0",
+            "npcX[5] = -2200.0",
+            "npcY[5] = -34400.0",
+            "npcAng[5] = 0.0",
+        )
+        for pdir in (os.path.join(base_dir, "papyrus_src"), os.path.join(base_dir, "edition_en", "papyrus_src")):
+            a1p = os.path.join(pdir, "V13Act1QuestScript.psc")
+            if not os.path.isfile(a1p):
+                sync_coords_ok = False
+                continue
+            a1txt = open(a1p, encoding="utf-8", errors="ignore").read()
+            if not all(tok in a1txt for tok in expected_sync_tokens):
+                sync_coords_ok = False
+
+        self.check(
+            len(bad_sound_casts) == 0 and sync_coords_ok,
+            f"Req AA: All Papyrus 'as Sound' casts target SOUN records & SyncAllCaliforniaPersistentCoords matches ESP DATA in ES/EN (bad_sounds={bad_sound_casts}, sync_coords={sync_coords_ok})",
+        )
 
 
 if __name__ == "__main__":

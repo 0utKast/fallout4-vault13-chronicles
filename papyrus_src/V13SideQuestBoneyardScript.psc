@@ -22,6 +22,9 @@ Function ForceQuestAlias(int aiAliasID, int aiFormID)
 EndFunction
 
 Function ForceAllBoneyardAliases()
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        return
+    endif
     ForceQuestAlias(0, 0x000035D4)
     ForceQuestAlias(1, 0x000035D7)
     ForceQuestAlias(2, 0x00003005)
@@ -36,7 +39,11 @@ Function ForceAllBoneyardAliases()
 EndFunction
 
 Function EquipBoneyardActorGear(Actor akAct, int aiOutfitID, int aiBodyArmorID, int aiChestArmorID, int aiHatID, int aiRemoveArmorID)
-    if akAct == None || akAct.IsDead() || !akAct.Is3DLoaded() || akAct.IsTalking()
+    if akAct == None || akAct.IsDead() || !akAct.Is3DLoaded() || akAct.IsTalking() || akAct.IsInDialogueWithPlayer()
+        return
+    endif
+    Actor plDist = Game.GetPlayer()
+    if plDist != None && akAct.GetDistance(plDist) < 2200.0
         return
     endif
     Form bodyArmor = None
@@ -86,15 +93,20 @@ Function EquipBoneyardActorGear(Actor akAct, int aiOutfitID, int aiBodyArmorID, 
 EndFunction
 
 Function RefreshBoneyardSettlementLayout()
+    Actor pBon = Game.GetPlayer()
+    WorldSpace caliBon = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pBon == None || caliBon == None || pBon.GetWorldSpace() != caliBon
+        return
+    endif
     Actor gabrielAct = Game.GetFormFromFile(0x000035D4, "Vault13Chronicles.esp") as Actor
     if gabrielAct != None && !gabrielAct.IsDead() && gabrielAct.Is3DLoaded()
         if !gabrielAct.IsInCombat() && !gabrielAct.IsTalking()
-            if Math.Abs(gabrielAct.GetPositionX() - 380.0) > 45.0 || Math.Abs(gabrielAct.GetPositionY() + 12620.0) > 45.0
-                gabrielAct.SetPosition(380.0, -12620.0, 40.0)
-                gabrielAct.SetAngle(0.0, 0.0, 90.0)
+            if Math.Abs(gabrielAct.GetPositionX() + 2600.0) > 45.0 || Math.Abs(gabrielAct.GetPositionY() + 30350.0) > 45.0
+                gabrielAct.SetPosition(-2600.0, -30350.0, 40.0)
+                gabrielAct.SetAngle(0.0, 0.0, 180.0)
                 gabrielAct.EvaluatePackage()
-            elseif Math.Abs(gabrielAct.GetAngleZ() - 90.0) > 35.0 && Math.Abs(gabrielAct.GetAngleZ() - 90.0) < 325.0
-                gabrielAct.SetAngle(0.0, 0.0, 90.0)
+            elseif Math.Abs(gabrielAct.GetAngleZ() - 180.0) > 35.0 && Math.Abs(gabrielAct.GetAngleZ() - 180.0) < 325.0
+                gabrielAct.SetAngle(0.0, 0.0, 180.0)
             endif
         endif
         EquipBoneyardActorGear(gabrielAct, 0x00001029, 0x0012A332, 0, 0x00001314, 0x0011E2C8)
@@ -102,12 +114,12 @@ Function RefreshBoneyardSettlementLayout()
     Actor smittyAct = Game.GetFormFromFile(0x000035D5, "Vault13Chronicles.esp") as Actor
     if smittyAct != None && !smittyAct.IsDead() && smittyAct.Is3DLoaded()
         if !smittyAct.IsInCombat() && !smittyAct.IsTalking()
-            if smittyAct.GetPositionZ() > 52.0 || Math.Abs(smittyAct.GetPositionX() - 760.0) > 45.0 || Math.Abs(smittyAct.GetPositionY() + 12640.0) > 45.0
-                smittyAct.SetPosition(760.0, -12640.0, 40.0)
-                smittyAct.SetAngle(0.0, 0.0, 270.0)
+            if smittyAct.GetPositionZ() > 52.0 || Math.Abs(smittyAct.GetPositionX() + 5600.0) > 45.0 || Math.Abs(smittyAct.GetPositionY() + 30980.0) > 45.0
+                smittyAct.SetPosition(-5600.0, -30980.0, 40.0)
+                smittyAct.SetAngle(0.0, 0.0, 180.0)
                 smittyAct.EvaluatePackage()
-            elseif Math.Abs(smittyAct.GetAngleZ() - 270.0) > 35.0 && Math.Abs(smittyAct.GetAngleZ() - 270.0) < 325.0
-                smittyAct.SetAngle(0.0, 0.0, 270.0)
+            elseif Math.Abs(smittyAct.GetAngleZ() - 180.0) > 35.0 && Math.Abs(smittyAct.GetAngleZ() - 180.0) < 325.0
+                smittyAct.SetAngle(0.0, 0.0, 180.0)
             endif
         endif
         EquipBoneyardActorGear(smittyAct, 0x0000102A, 0x00039A66, 0, 0x00001315, 0)
@@ -115,12 +127,12 @@ Function RefreshBoneyardSettlementLayout()
     Actor nicoleAct = Game.GetFormFromFile(0x000035D6, "Vault13Chronicles.esp") as Actor
     if nicoleAct != None && !nicoleAct.IsDead() && nicoleAct.Is3DLoaded()
         if !nicoleAct.IsInCombat() && !nicoleAct.IsTalking()
-            if Math.Abs(nicoleAct.GetPositionX() - 1020.0) > 45.0 || Math.Abs(nicoleAct.GetPositionY() + 12780.0) > 45.0
-                nicoleAct.SetPosition(1020.0, -12780.0, 40.0)
-                nicoleAct.SetAngle(0.0, 0.0, 270.0)
+            if Math.Abs(nicoleAct.GetPositionX() + 2200.0) > 45.0 || Math.Abs(nicoleAct.GetPositionY() + 34400.0) > 45.0
+                nicoleAct.SetPosition(-2200.0, -34400.0, 40.0)
+                nicoleAct.SetAngle(0.0, 0.0, 0.0)
                 nicoleAct.EvaluatePackage()
-            elseif Math.Abs(nicoleAct.GetAngleZ() - 270.0) > 35.0 && Math.Abs(nicoleAct.GetAngleZ() - 270.0) < 325.0
-                nicoleAct.SetAngle(0.0, 0.0, 270.0)
+            elseif Math.Abs(nicoleAct.GetAngleZ()) > 35.0 && Math.Abs(nicoleAct.GetAngleZ()) < 325.0
+                nicoleAct.SetAngle(0.0, 0.0, 0.0)
             endif
         endif
         EquipBoneyardActorGear(nicoleAct, 0x0000102B, 0x00178B68, 0, 0, 0x00068CF3)
@@ -128,9 +140,9 @@ Function RefreshBoneyardSettlementLayout()
 
     Form noteBase = Game.GetFormFromFile(0x0000114E, "Vault13Chronicles.esp")
     if noteBase != None
-        ObjectReference noteRef = Game.FindClosestReferenceOfType(noteBase, 420.0, -12540.0, 40.0, 400.0)
+        ObjectReference noteRef = Game.FindClosestReferenceOfType(noteBase, -2500.0, -30170.0, 40.0, 400.0)
         if noteRef != None && noteRef.GetContainer() == None
-            noteRef.SetPosition(450.0, -12544.0, 96.5)
+            noteRef.SetPosition(-2530.0, -30174.0, 96.5)
         endif
     endif
 
@@ -139,14 +151,14 @@ Function RefreshBoneyardSettlementLayout()
         if motherAct.IsDisabled()
             motherAct.EnableNoWait()
         endif
-        if !motherAct.IsDead()
+        if motherAct.Is3DLoaded() && !motherAct.IsDead()
             float mx = motherAct.GetPositionX()
             float my = motherAct.GetPositionY()
             float mz = motherAct.GetPositionZ()
             bool bUndergroundOrSky = (mz < 30.0 || mz > 150.0)
-            bool bFarFromArena = (Math.Abs(mx - 6800.0) > 450.0 || Math.Abs(my + 10400.0) > 450.0)
+            bool bFarFromArena = (Math.Abs(mx - 8500.0) > 450.0 || Math.Abs(my + 28000.0) > 450.0)
             if (bUndergroundOrSky && Self.GetStage() < 25) || (!motherAct.IsInCombat() && bFarFromArena)
-                motherAct.SetPosition(6800.0, -10400.0, 48.0)
+                motherAct.SetPosition(8500.0, -28000.0, 48.0)
                 ForceQuestAlias(1, 0x000035D7)
             endif
         endif
@@ -180,15 +192,28 @@ Function SilenceBoneyardActorsExcept(Actor akSpeaker, int aiKeepScene = 0)
     endif
 EndFunction
 
-Function SetupBoneyardListeners()
-    if !Self.IsRunning() && !Self.IsCompleted()
-        Self.Start()
-    endif
-    if Self.GetStage() < 10
-        Self.SetStage(10)
+Function SetupBoneyardListeners(bool abRefreshLayout = True)
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        bRewardGranted = True
+        bItemDelivered = True
+        bClawRecovered = True
+        bClawSeeded = True
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+    else
+        if !Self.IsRunning()
+            Self.Start()
+        endif
+        if Self.GetStage() < 10
+            Self.SetStage(10)
+        endif
     endif
     ForceAllBoneyardAliases()
-    RefreshBoneyardSettlementLayout()
+    if abRefreshLayout
+        RefreshBoneyardSettlementLayout()
+    endif
 
     Actor player = Game.GetPlayer()
     Form clawBase = Game.GetFormFromFile(0x00001455, "Vault13Chronicles.esp")
@@ -204,15 +229,22 @@ Function SetupBoneyardListeners()
         endif
     endif
 
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    bool inCali = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
+
     ObjectReference gabrielRef = Game.GetFormFromFile(0x000035D4, "Vault13Chronicles.esp") as ObjectReference
     if gabrielRef != None
         RegisterForRemoteEvent(gabrielRef, "OnActivate")
-        EnsureBoneyardVendorReady(gabrielRef as Actor, 0x00001C54, 0x000035E4, True)
+        if abRefreshLayout && inCali
+            EnsureBoneyardVendorReady(gabrielRef as Actor, 0x00001C54, 0x000035E4, True)
+        endif
     endif
     ObjectReference smittyRef = Game.GetFormFromFile(0x000035D5, "Vault13Chronicles.esp") as ObjectReference
     if smittyRef != None
         RegisterForRemoteEvent(smittyRef, "OnActivate")
-        EnsureBoneyardVendorReady(smittyRef as Actor, 0x00001C53, 0x000035E3, False)
+        if abRefreshLayout && inCali
+            EnsureBoneyardVendorReady(smittyRef as Actor, 0x00001C53, 0x000035E3, False)
+        endif
     endif
     ObjectReference nicoleRef = Game.GetFormFromFile(0x000035D6, "Vault13Chronicles.esp") as ObjectReference
     if nicoleRef != None
@@ -226,21 +258,23 @@ Function SetupBoneyardListeners()
             AddInventoryEventFilter(clawBase)
         endif
         RegisterForRemoteEvent(motherRef as ObjectReference, "OnItemRemoved")
-        V13WastelandCreatureAIScript motherAI = (motherRef as ObjectReference) as V13WastelandCreatureAIScript
-        if motherAI != None
-            motherAI.InitCreatureAI()
-        endif
-        float mx = motherRef.GetPositionX()
-        float my = motherRef.GetPositionY()
-        float mz = motherRef.GetPositionZ()
-        if !motherRef.IsDead()
-            if (mz < 30.0 || mz > 150.0) && Self.GetStage() < 25
-                motherRef.SetPosition(6800.0, -10400.0, 48.0)
-                ForceQuestAlias(1, 0x000035D7)
-            elseif !motherRef.IsInCombat()
-                if Math.Abs(mx - 6800.0) > 450.0 || Math.Abs(my + 10400.0) > 450.0
-                    motherRef.SetPosition(6800.0, -10400.0, 48.0)
+        if abRefreshLayout && inCali
+            V13WastelandCreatureAIScript motherAI = (motherRef as ObjectReference) as V13WastelandCreatureAIScript
+            if motherAI != None
+                motherAI.InitCreatureAI()
+            endif
+            if motherRef.Is3DLoaded() && !motherRef.IsDead()
+                float mx = motherRef.GetPositionX()
+                float my = motherRef.GetPositionY()
+                float mz = motherRef.GetPositionZ()
+                if (mz < 30.0 || mz > 150.0) && Self.GetStage() < 25
+                    motherRef.SetPosition(8500.0, -28000.0, 48.0)
                     ForceQuestAlias(1, 0x000035D7)
+                elseif !motherRef.IsInCombat()
+                    if Math.Abs(mx - 8500.0) > 450.0 || Math.Abs(my + 28000.0) > 450.0
+                        motherRef.SetPosition(8500.0, -28000.0, 48.0)
+                        ForceQuestAlias(1, 0x000035D7)
+                    endif
                 endif
             endif
         endif
@@ -264,8 +298,29 @@ Function SetupBoneyardListeners()
             endif
         endif
     endif
-    if Self.GetStage() < 25 && player != None && player.GetWorldSpace() == (Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace)
+    if abRefreshLayout && Self.GetStage() < 25 && inCali
         StartTimer(3.0, 97)
+    endif
+    Quest warQ = Game.GetFormFromFile(0x000D2000, "Vault13Chronicles.esp") as Quest
+    if warQ != None && warQ.IsRunning()
+        V13SideQuestAdytumWarScript warS = warQ as V13SideQuestAdytumWarScript
+        if warS != None
+            warS.BindAdytumWarListeners(abRefreshLayout)
+        endif
+    endif
+    Quest forgeQ = Game.GetFormFromFile(0x000D3000, "Vault13Chronicles.esp") as Quest
+    if forgeQ != None && forgeQ.IsRunning()
+        V13SideQuestAdytumForgeScript forgeS = forgeQ as V13SideQuestAdytumForgeScript
+        if forgeS != None
+            forgeS.BindAdytumForgeListeners(abRefreshLayout)
+        endif
+    endif
+    Quest spyQ = Game.GetFormFromFile(0x000D4000, "Vault13Chronicles.esp") as Quest
+    if spyQ != None && spyQ.IsRunning()
+        V13SideQuestFollowersSpyScript spyS = spyQ as V13SideQuestFollowersSpyScript
+        if spyS != None
+            spyS.BindFollowersSpyListeners(abRefreshLayout)
+        endif
     endif
 EndFunction
 
@@ -355,15 +410,30 @@ Function OpenBoneyardBarter(Actor akVendor, int aiFactID, int aiChestID, bool ab
 EndFunction
 
 Event OnInit()
-    SetupBoneyardListeners()
+    SetupBoneyardListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 98)
+    endif
 EndEvent
 
 Event OnQuestInit()
-    SetupBoneyardListeners()
+    SetupBoneyardListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 98)
+    endif
 EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
-    SetupBoneyardListeners()
+    SetupBoneyardListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 98)
+    endif
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
@@ -381,6 +451,19 @@ Function NotifyBoneyardClawRecovered()
     Form clawBase = Game.GetFormFromFile(0x00001455, "Vault13Chronicles.esp")
     if motherRef != None && clawBase != None && motherRef.GetItemCount(clawBase) > 0
         motherRef.RemoveItem(clawBase, motherRef.GetItemCount(clawBase), True)
+    endif
+    if Self.GetStage() < 20
+        if Self.GetStage() < 12
+            Self.SetStage(12)
+        endif
+        ForceQuestAlias(0, 0x000035D4)
+        if !IsObjectiveDisplayed(12)
+            SetObjectiveDisplayed(12, True, False)
+            Self.SetActive(True)
+        endif
+        Debug.Notification("Has recuperado la Garra de la Madre Sanguinario. Informa a Gabriel de los Gun Runners en El Osario.")
+        SetupBoneyardListeners()
+        return
     endif
     if Self.GetStage() < 25
         Self.SetStage(25)
@@ -435,6 +518,18 @@ Event Actor.OnDeath(Actor akSender, Actor akKiller)
             bClawSeeded = True
         endif
         ForceQuestAlias(1, 0x000035D7)
+        if Self.GetStage() < 20
+            if Self.GetStage() < 12
+                Self.SetStage(12)
+            endif
+            ForceQuestAlias(0, 0x000035D4)
+            if !IsObjectiveDisplayed(12)
+                SetObjectiveDisplayed(12, True, False)
+                Self.SetActive(True)
+            endif
+            Debug.Notification("Has abatido a la Madre Sanguinario. Informa a Gabriel de los Gun Runners en El Osario.")
+            return
+        endif
         if bClawRecovered || (clawBase != None && player != None && player.GetItemCount(clawBase) > 0)
             if Self.GetStage() < 25
                 Self.SetStage(25)
@@ -473,14 +568,14 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
 
     ForceAllBoneyardAliases()
     int curStage = Self.GetStage()
+    if Self.IsCompleted() || Self.IsStageDone(40) || bRewardGranted
+        bRewardGranted = True
+        curStage = 40
+    endif
     if akSender == smittyRef && (curStage == 22 || curStage == 25 || (clawBase != None && player.GetItemCount(clawBase) > 0 && curStage < 30))
         SilenceBoneyardActorsExcept(smittyRef as Actor, 0)
         NotifyBoneyardClawRecovered()
         DeliverClawToSmitty()
-        Topic helloTop = Game.GetFormFromFile(0x00014001, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (smittyRef as Actor) != None && !(smittyRef as Actor).IsTalking()
-            (smittyRef as Actor).Say(helloTop, None, false, None)
-        endif
     elseif akSender == gabrielRef && (curStage == 25 || curStage == 30 || (bItemDelivered && curStage < 40) || (clawBase != None && player.GetItemCount(clawBase) > 0 && curStage < 40))
         SilenceBoneyardActorsExcept(gabrielRef as Actor, 0)
         if !bItemDelivered
@@ -489,52 +584,62 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         if Self.GetStage() < 40
             Self.SetStage(40)
         endif
-        Topic helloTop = Game.GetFormFromFile(0x00014001, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (gabrielRef as Actor) != None && !(gabrielRef as Actor).IsTalking()
-            (gabrielRef as Actor).Say(helloTop, None, false, None)
-        endif
     elseif akSender == smittyRef
-        Message barterMsg = Game.GetFormFromFile(0x00001C73, "Vault13Chronicles.esp") as Message
-        if barterMsg != None
-            int choice = barterMsg.Show()
-            if choice == 0
-                OpenBoneyardBarter(smittyRef as Actor, 0x00001C53, 0x000035E3, False)
-                return
-            elseif choice == 2
-                return
+        if curStage >= 25 || player.IsSneaking()
+            Message barterMsg = Game.GetFormFromFile(0x00001C73, "Vault13Chronicles.esp") as Message
+            if barterMsg != None
+                int choice = barterMsg.Show()
+                if choice == 0
+                    OpenBoneyardBarter(smittyRef as Actor, 0x00001C53, 0x000035E3, False)
+                    return
+                elseif choice == 2
+                    Quest forgeQ = Game.GetFormFromFile(0x000D3000, "Vault13Chronicles.esp") as Quest
+                    if forgeQ != None
+                        V13SideQuestAdytumForgeScript forgeS = forgeQ as V13SideQuestAdytumForgeScript
+                        if forgeS != None
+                            forgeS.HandleSmittyForgeUpgrade()
+                        endif
+                    endif
+                    return
+                elseif choice == 3
+                    return
+                endif
             endif
         endif
         SilenceBoneyardActorsExcept(smittyRef as Actor, 2)
-        Topic helloTop = Game.GetFormFromFile(0x00014001, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (smittyRef as Actor) != None && !(smittyRef as Actor).IsTalking()
-            (smittyRef as Actor).Say(helloTop, None, false, None)
-        endif
         if curStage < 25
             CancelTimer(91)
             sceneWaitTicks = 0
-            StartTimer(0.5, 92)
+            StartTimer(1.2, 92)
             StartTimer(2.0, 94)
         endif
     elseif akSender == gabrielRef
-        Message barterMsg = Game.GetFormFromFile(0x00001C74, "Vault13Chronicles.esp") as Message
-        if barterMsg != None
-            int choice = barterMsg.Show()
-            if choice == 0
-                OpenBoneyardBarter(gabrielRef as Actor, 0x00001C54, 0x000035E4, True)
-                return
-            elseif choice == 2
-                return
+        if curStage >= 25 || player.IsSneaking()
+            Message barterMsg = Game.GetFormFromFile(0x00001C74, "Vault13Chronicles.esp") as Message
+            if barterMsg != None
+                int choice = barterMsg.Show()
+                if choice == 0
+                    OpenBoneyardBarter(gabrielRef as Actor, 0x00001C54, 0x000035E4, True)
+                    return
+                elseif choice == 2
+                    Quest warQ = Game.GetFormFromFile(0x000D2000, "Vault13Chronicles.esp") as Quest
+                    if warQ != None
+                        V13SideQuestAdytumWarScript warS = warQ as V13SideQuestAdytumWarScript
+                        if warS != None
+                            warS.HandleGabrielBladesSupply()
+                        endif
+                    endif
+                    return
+                elseif choice == 3
+                    return
+                endif
             endif
         endif
         SilenceBoneyardActorsExcept(gabrielRef as Actor, 1)
-        Topic helloTop = Game.GetFormFromFile(0x00014001, "Vault13Chronicles.esp") as Topic
-        if helloTop != None && (gabrielRef as Actor) != None && !(gabrielRef as Actor).IsTalking()
-            (gabrielRef as Actor).Say(helloTop, None, false, None)
-        endif
         if curStage < 25
             CancelTimer(92)
             sceneWaitTicks = 0
-            StartTimer(0.5, 91)
+            StartTimer(1.2, 91)
             StartTimer(2.0, 94)
         endif
     elseif akSender == nicoleRef && curStage < 20
@@ -557,12 +662,7 @@ Event OnTimer(int aiTimerID)
         Scene introScene = Game.GetFormFromFile(0x00014100, "Vault13Chronicles.esp") as Scene
         Actor gabrielActor = Game.GetFormFromFile(0x000035D4, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && introScene != None && Self.GetStage() < 25
-            if introScene.IsPlaying()
-                return
-            elseif gabrielActor != None && gabrielActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.35, 91)
-            else
+            if !introScene.IsPlaying() && !Utility.IsInMenuMode() && (gabrielActor == None || (!gabrielActor.IsInDialogueWithPlayer() && !gabrielActor.IsTalking()))
                 ForceAllBoneyardAliases()
                 SilenceBoneyardActorsExcept(gabrielActor, 1)
                 if Self.IsRunning()
@@ -574,12 +674,7 @@ Event OnTimer(int aiTimerID)
         Scene smittyScene = Game.GetFormFromFile(0x00014101, "Vault13Chronicles.esp") as Scene
         Actor smittyActor = Game.GetFormFromFile(0x000035D5, "Vault13Chronicles.esp") as Actor
         if Self.IsRunning() && smittyScene != None && Self.GetStage() < 25
-            if smittyScene.IsPlaying()
-                return
-            elseif smittyActor != None && smittyActor.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.35, 92)
-            else
+            if !smittyScene.IsPlaying() && !Utility.IsInMenuMode() && (smittyActor == None || (!smittyActor.IsInDialogueWithPlayer() && !smittyActor.IsTalking()))
                 ForceAllBoneyardAliases()
                 SilenceBoneyardActorsExcept(smittyActor, 2)
                 if Self.IsRunning()
@@ -651,6 +746,8 @@ Event OnTimer(int aiTimerID)
         if Self.GetStage() < 25 && pl97 != None && pl97.GetWorldSpace() == (Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace)
             StartTimer(3.0, 97)
         endif
+    elseif aiTimerID == 98
+        SetupBoneyardListeners(True)
     endif
 EndEvent
 
@@ -687,11 +784,37 @@ Event OnStageSet(int auiStageID, int auiItemID)
         endif
     endif
 
-    SetupBoneyardListeners()
+    SetupBoneyardListeners(False)
     Actor player = Game.GetPlayer()
     Form clawBase = Game.GetFormFromFile(0x00001455, "Vault13Chronicles.esp")
 
-    if auiStageID == 20
+    if auiStageID == 11
+        if Self.GetStage() < 12 && !Self.IsCompleted()
+            ForceQuestAlias(0, 0x000035D4)
+            if !IsObjectiveDisplayed(11)
+                SetObjectiveDisplayed(11, True, False)
+                Self.SetActive(True)
+            endif
+        endif
+    elseif auiStageID == 12
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        ForceQuestAlias(0, 0x000035D4)
+        if !IsObjectiveDisplayed(12)
+            SetObjectiveDisplayed(12, True, False)
+            Self.SetActive(True)
+        endif
+    elseif auiStageID == 20
+        if IsObjectiveDisplayed(11)
+            SetObjectiveCompleted(11, True)
+            SetObjectiveDisplayed(11, False, False)
+        endif
+        if IsObjectiveDisplayed(12)
+            SetObjectiveCompleted(12, True)
+            SetObjectiveDisplayed(12, False, False)
+        endif
         ObjectReference mapMarker = Game.GetFormFromFile(0x00003420, "Vault13Chronicles.esp") as ObjectReference
         if mapMarker != None
             mapMarker.EnableNoWait()
@@ -709,8 +832,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         ForceQuestAlias(1, 0x000035D7)
         if !IsObjectiveDisplayed(20)
             SetObjectiveDisplayed(20, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg20
             Debug.Notification("Misión Secundaria: El Nido de la Madre Sanguinario — Elimina a la Madre Sanguinario al norte de Adytum.")
         endif
@@ -723,8 +846,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(20, True)
         if !IsObjectiveDisplayed(22)
             SetObjectiveDisplayed(22, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg22
             Debug.Notification("¡Madre Sanguinario abatida! Extrae la Garra Acorazada y el Huevo de su cadáver.")
         endif
@@ -733,8 +856,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(22, True)
         if !IsObjectiveDisplayed(25)
             SetObjectiveDisplayed(25, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg25
             Debug.Notification("Trofeo de la Madre Sanguinario obtenido. Entrégaselo al armero Smitty en Adytum.")
         endif
@@ -747,8 +870,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(25, True)
         if !IsObjectiveDisplayed(30)
             SetObjectiveDisplayed(30, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStg30
             Debug.Notification("¡Smitty ha calibrado el rifle de plasma! Habla con Gabriel (Gun Runners) en Adytum.")
         endif
@@ -777,6 +900,7 @@ Event OnStageSet(int auiStageID, int auiItemID)
             Game.RewardPlayerXP(400)
             Debug.Notification("¡Misión Secundaria completada: El Nido de la Madre Sanguinario! (+Rifle de Plasma Turbo P94, +600 Chapas y +400 XP)")
         endif
+        Self.CompleteAllObjectives()
         Self.CompleteQuest()
     endif
 EndEvent

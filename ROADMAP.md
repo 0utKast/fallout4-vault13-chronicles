@@ -1,6 +1,6 @@
-# Engineering Status & Roadmap / Estado del Proyecto y Hoja de Ruta (`v0.9.0` → `v1.0`)
+# Engineering Status & Roadmap / Estado del Proyecto y Hoja de Ruta (`v1.0.0` Complete Edition)
 
-> **Transparency First / Transparencia Total:** This document details **everything already implemented, voiced, localized (EN + ES), and verified in `v0.9.0 Public Beta (Chapter 1: The Water Chip)`**, alongside **everything already scaffolded in the codebase and what remains to be expanded for `v1.0 (Chapter 2: The Mutant Army & The Master)`**.
+> **Transparency First / Transparencia Total:** This document details **everything implemented, voiced, localized (EN + ES), and QA-verified across both Phase 1 (`Chapter 1: The Water Chip`) and Phase 2 (`Chapter 2: The Mutant Army & The Master`) in `v1.0.0 Complete Edition`**.
 
 ---
 
@@ -13,13 +13,13 @@
    - [x] **Vault 13 Operations & Overseer Command (`CELL 0x01002100`) + Entrance Cavern (`CELL 0x01002200`)**: Overseer Jacoren's canonical Water Chip briefing (150-day reserve), Security Officer Lyle, Systems Engineer Calvin, Supervisor Cindy, Technician Theresa, Medical Officer (vendor), Guard Ed, the skeleton of Scout Ed in the rat-infested entrance cave (*"Ed's dead"*), Theresa's *"Leave the Vault"* rebel faction subplot, and the water-rationing theft investigation.
 
 2. **Custom Southern California Worldspace (`WRLD 0x01003400`) & 1:1 Pip-Boy Map**
-   - [x] **64 Custom Exterior `LAND` Cells (`8×8` grid, `32,768 × 32,768` units)**: Pacific coastline (Monterey/Big Sur down to Santa Monica/San Pedro), Sierra Nevada mountain passes, Central Valley highways, Mojave wasteland, and `36` mathematically leveled settlement plateaus (`VHGT` multiples of `8.0` units so zero buildings float or clip).
-   - [x] **Custom `2048×2048` BC1 Pip-Boy Tactical Map (`V13CaliforniaWorldMap_d.dds`)**: Separate localized **English** and **Spanish** world maps calibrated 1:1 with `MNAM` bounds, `23` discoverable `MapMarkers`, live player Pip-Boy cursor, quest objective markers, and fast travel.
+   - [x] **400 Custom Exterior `LAND` Cells (`20×20` grid, `81,920 × 81,920` units)**: Pacific coastline, Sierra Nevada mountain passes, Central Valley highways, Mojave wasteland, leveled settlement plateaus, and `11` custom 3D monuments & structures (`MasterThrone`, Cathedral, Lost Hills, Mariposa, Shady Sands walls, etc.).
+   - [x] **Custom `2048×2048` BC1 Pip-Boy Tactical Map (`V13CaliforniaWorldMap_d.dds`)**: Separate localized **English** and **Spanish** world maps calibrated 1:1 with `MNAM` bounds, `32` discoverable `MapMarkers`, live player Pip-Boy cursor, quest objective markers, and fast travel.
 
 3. **Dedicated 2161 Radio Station — *The Hub Radio (84.5 kHz)* (`V13RadioQuestScript.psc`)**
-   - [x] **24 Original Atomic-Age Songs + 24 Voiced DJ News Broadcasts**: Automatically activates upon entering 2161 Southern California, suppresses anachronistic 2287 Commonwealth radio stations while in 2161, and restores your exact 2287 radio configuration upon returning to the Commonwealth.
+   - [x] **24 Original Atomic-Age Songs + Voiced DJ News Broadcasts**: Automatically activates upon entering 2161 Southern California, suppresses anachronistic 2287 Commonwealth radio stations while in 2161, and restores your exact 2287 radio configuration upon returning to the Commonwealth.
 
-4. **Classic Simultaneous Party Companions (3 of 4 Complete)**
+4. **Classic Simultaneous Party Companions (4 of 4 Complete)**
    - [x] **Ian (Shady Sands)**: Hired for 100 caps or Speech check; armed with his classic **Colt 6520 10mm Pistol** and leather jacket; full tactical command menu (follow distance, commando mode, ammo/supply sharing, inventory, wait, dismiss).
    - [x] **Desert Ranger Tycho (Junktown)**: Recruited with his **Combat Shotgun** and **Desert Ranger Armor**; full tactical command menu.
    - [x] **Dogmeat 2161 / Albóndiga**: Distinct **Raider Dog** breed with reinforced leather harness and collar (never confused with Fallout 4's German Shepherd); travels simultaneously alongside Ian and Tycho across exterior and interior cells.
@@ -40,30 +40,25 @@
    - [x] **5. Bob's Pre-Owned Car Mart** → Desert Corvega lot & legendary **Red Ryder LE BB Gun**.
    - [x] **6. Patrick the Celt** → Voiced campfire dialogue wheel, traditional Gaelic ballad *Ballad of Na Fianna*, Gaelic Medallion & **+1 Permanent Charisma**.
 
-7. **Dual Standalone Localization (EN + ES) & 21-Check Automated Binary QA**
-   - [x] `36,249` custom `.esp` records (`HEDR v1.00`), `50` compiled Papyrus scripts, `1,020+` Spanish & `1,061` English `.xwm` voice files, `43` 4-option dialogue wheels (`SCEN`), `5` merchant factions, custom 3D `.nif`/`.dds` assets, and **`20/20` (ES) + `21/21` (EN) QA checks passed with `0` warnings and `0` errors**.
+7. **Dual Standalone Localization (EN + ES) & 25-Check Automated Binary QA**
+   - [x] `46,659` custom `.esp` records (`HEDR v1.00`), `26` quests, `57` compiled Papyrus scripts, `1,372` Lip-Sync `.fuz` clips (`1,421` `.fuz` in `Main.ba2`), `64` 4-option dialogue wheels (`SCEN`), `5` merchant factions, custom 3D `.nif`/`.dds` assets, and **`24/24` (ES) + `25/25` (EN) QA checks passed with `0` warnings and `0` errors**.
 
 ---
 
-### 🚧 Phase 2 — PENDING FOR `v1.0` (*Chapter 2: The Mutant Army & The Master*)
+### ✅ Phase 2 — COMPLETED IN `v1.0.0` (*Chapter 2: The Mutant Army, The Master & Exile*)
 
-> **Technical Note:** The exterior locations, base interior cells (`Lost Hills 0x01002B00`, `Mariposa Military Base 0x01002C00`, `The Cathedral 0x01002D00`), boss actors (`Commander Kragor`, `The Lieutenant`, `Morpheus`, `The Master`), classic endgame weapons (`Winchester P94`, `Vindicator Minigun`, `Hardened T-51f Power Armor`), and core state scripts (`V13Act3QuestScript`, `V13Act4QuestScript`, `V13Act5QuestScript`) are **already built in the plugin and intentionally locked (`LockLevel 253` / gated in `WakeUpAct3..5`)** while we expand them to the same deep multi-path RPG standard as Chapter 1:
-
-- [ ] **1. Act III Expansion — Multi-Level Lost Hills Bunker & ZAX 1.2 Inside The Glow**:
-  - Unlocking Lost Hills interior levels with full voiced dialogue wheels for **High Elder John Maxson**, **Head Paladin Rhombus**, **Head Scribe Vree** (delivering the canonical **Super Mutant Autopsy Holotape** proving 100% FEV gamete sterility), and **Kyle/Michael** (T-51b Power Armor restoration).
-  - Adding the subterranean West Tek research interior at **The Glow** featuring interactive philosophical/scientific dialogue and chess challenge with supercomputer **ZAX 1.2**.
-- [ ] **2. Classic Companion #4 — *Katja* (Followers of the Apocalypse)**:
-  - Full recruitment, voiced dialogue, throwing/SMG loadout, and tactical squad integration for **Katja** at the L.A. Boneyard Library alongside **Nicole**, completing the 4-companion roster (*Ian, Tycho, Katja, Dogmeat*).
-- [ ] **3. Act IV Expansion — Adytum Civil War & Mariposa Military Base Infiltration**:
-  - Multi-faction questline in **Adytum**: **Jon Zimmerman**, **Caleb's Regulators** vs. **Razor's Blades**, **Smitty**'s *Winchester P94 Turbo Plasma Rifle* upgrade, and **Miles**'s *Hardened Power Armor* chemical treatment.
-  - Unlocking & expanding **Mariposa Military Base (`CELL 0x01002C00`)**: Children of the Cathedral robe disguise, forcefield emitter hacking/disablement, Nightkin patrols, voiced confrontation with **The Lieutenant ("Lou")**, and interactive **FEV Control Computer self-destruct escape sequence**.
-- [ ] **4. Act V Expansion — The Cathedral, Demonstration Vault, The Master's 3 Canonical Endings & Exile Epilogue**:
-  - Expanding **The Cathedral & Demonstration Vault (`CELL 0x01002D00`)**: **High Priest Morpheus**, **Lasher**, and the psychic prisoners (**Gideon, Moore, Lucy, Wiggum**) granting the **Psychic Nullifier** to survive the Neural Corridor.
-  - Full implementation of **all 3 canonical 1997 victory paths against The Master (Richard Grey)** (with alternating male/female/electronic multi-voice synthesis):
-    1. **Diplomatic / Scientific Proof**: Presenting **Vree's Autopsy Holotape** to prove Super Mutant sterility so The Master triggers self-destruction in despair.
-    2. **Military Showdown**: Direct boss combat against The Master and Nightkin Praetorians.
-    3. **Nuclear Sabotage**: Infiltrating Level 4 to manually arm the nuclear warhead (Lockpick/Science or Cathedral key) with a 4-minute escape countdown.
-  - **Playable May 10, 2162 Exile Epilogue**: Returning outside Vault 13's blast door for Overseer Jacoren's canonical farewell (*"You're a hero... and you have to leave"*) as the Vault Dweller walks out into the wasteland toward Arroyo.
+- [x] **1. Act III Expansion — Multi-Level Lost Hills Bunker & ZAX 1.2 Inside The Glow**:
+  - Multi-level Brotherhood of Steel bunker (`0x01002B00`) with full voiced dialogue wheels for **High Elder John Maxson**, **Head Paladin Rhombus**, **Head Scribe Vree** (delivering the canonical **Super Mutant Autopsy Holodisk** proving 100% FEV gamete sterility), **Mathia**, and **Honor of Steel** (**Knight Kyle**, **Quartermaster Michael**, **Initiate Lorenzo** for T-51b Power Armor).
+  - Subterranean West Tek Research Facility at **The Glow** featuring interactive philosophical/scientific dialogue, chess challenge, and security overrides with supercomputer **ZAX 1.2** (`V13ZAX12Voice`).
+- [x] **2. Classic Companion #4 — *Katja* (Followers of the Apocalypse)**:
+  - Full recruitment, voiced dialogue, `.45` SMG / stealth / lockpicking loadout, and simultaneous 4-companion squad integration for **Katja** at the L.A. Boneyard Library alongside **Nicole** and **Talius** (*Followers' Spy* questline).
+- [x] **3. Act IV Expansion — Adytum Civil War, Forge of Adytum & Mariposa Military Base**:
+  - Multi-faction questlines in **Adytum**: **Jon Zimmerman**, **Caleb's Regulators** vs. **Razor's Blades** & **Gabriel's Gun Runners**, **Smitty**'s *Winchester P94 Turbo Plasma Rifle* calibration, and **Miles**'s *Hardened T-51b Power Armor* chemical treatment.
+  - Full multi-path **Mariposa Military Base (`CELL 0x01002C00`)**: Children of the Cathedral purple robe disguise, forcefield emitter hacking/disablement (Repair / Science / Explosives / Unity Radio), Nightkin patrols, voiced confrontation with **The Lieutenant ("Lou")**, and interactive **180-second FEV Control Computer self-destruct escape sequence**.
+- [x] **4. Act V Expansion (1997 Free Order) — The Cathedral, The Master's 3 Canonical Endings, Mutant Invasions & Exile Epilogue**:
+  - Complete **Cathedral & Vault of the Future (`CELL 0x01002D00`)**: **Sister Laura** ("Red Rose"), **Father Lasher**, **High Priest Morpheus**, and psychic prisoner **Gideon** granting the **Psychic Nullifier** to survive the Corridor of Revulsion.
+  - Full implementation of **all 3 canonical 1997 victory paths against The Master (Richard Grey)** with alternating Tri-Voice synthesis (`V13TheMasterTriVoice`): **Vree's Autopsy proof**, **Military Showdown**, or **Sublevel IV 240s Nuclear Sabotage**.
+  - **Dynamic 1997 Mutant Invasion Calendar & 5 Wasteland Encounters**, plus the **Playable May 10, 2162 Exile Epilogue** outside Vault 13 with **Overseer Jacoren** (*"You're a hero... and you have to leave."*) and **Theresa & Lyle**'s Arroyo Camp.
 
 ---
 ---
@@ -77,13 +72,13 @@
    - [x] **Refugio 13 (`CELL 0x01002100`) y Cueva de Salida (`CELL 0x01002200`)**: Despacho del Supervisor **Jacoren** (encargo secreto con 150 días de agua), Oficial **Lyle**, Ingeniero **Calvin**, Supervisora **Cindy**, Técnica **Theresa**, Oficial Médico (comerciante), esqueleto del explorador **Ed** en la caverna (*«Ed está muerto»*), subtrama rebelde de **Theresa** y robo de raciones de agua.
 
 2. **Mundo Exterior Propio «Sur de California (2161)» (`WRLD 0x01003400`) Seguible 1:1 en el Pip-Boy**
-   - [x] **64 Celdas Exteriores `LAND` (`8×8`, `32.768 × 32.768` unidades)**: Costa del Pacífico (de Monterey/Big Sur a Santa Mónica/San Pedro), pasos de Sierra Nevada, Valle Central, desierto del Mojave y `36` mesetas niveladas al milímetro (`VHGT`) para que ningún edificio flote ni quede enterrado.
-   - [x] **Mapa Táctico `2048×2048` BC1 en el Pip-Boy (`V13CaliforniaWorldMap_d.dds`)**: Versiones independientes en **español** e **inglés** calibradas 1:1 con el terreno real, `23` `MapMarkers` descubribles, cursor del jugador en vivo, marcadores de misión y viaje rápido.
+   - [x] **400 Celdas Exteriores `LAND` (`20×20`, `81.920 × 81.920` unidades)**: Costa del Pacífico, pasos de Sierra Nevada, Valle Central, desierto del Mojave, mesetas niveladas y `11` monumentos y estructuras 3D propias (*Trono del Maestro*, Catedral, Lost Hills, Mariposa, Shady Sands, etc.).
+   - [x] **Mapa Táctico `2048×2048` BC1 en el Pip-Boy (`V13CaliforniaWorldMap_d.dds`)**: Versiones independientes en **español** e **inglés** calibradas 1:1 con el terreno real, `32` `MapMarkers` descubribles, cursor del jugador en vivo, marcadores de misión y viaje rápido.
 
 3. **Emisora Propia de 2161 — *Radio El Eje (84.5 kHz)* (`V13RadioQuestScript.psc`)**
-   - [x] **24 Canciones de la Era Atómica + 24 Boletines Doblados**: Sintonización automática al entrar en 2161, silenciamiento limpio de las emisoras de 2287 mientras estás en Nueva California y restauración exacta al regresar a la Commonwealth.
+   - [x] **24 Canciones de la Era Atómica + Boletines Doblados**: Sintonización automática al entrar en 2161, silenciamiento limpio de las emisoras de 2287 mientras estás en Nueva California y restauración exacta al regresar a la Commonwealth.
 
-4. **Compañeros Clásicos Reclutables en Escuadrón Simultáneo (3 de 4 Completados)**
+4. **Compañeros Clásicos Reclutables en Escuadrón Simultáneo (4 de 4 Completados)**
    - [x] **Ian (Shady Sands)**: Contratable por 100 chapas o persuasión, con su **Pistola Colt 6520 de 10 mm** y menú táctico completo.
    - [x] **Ranger Tycho (Junktown)**: Equipado con **Escopeta de Combate** y uniforme de **Ranger del Desierto**, con menú táctico completo.
    - [x] **Albóndiga 2161 (Dogmeat)**: Raza de **Perro de Presa** con arnés de cuero y collar reforzado (diferenciado del Pastor Alemán de Fallout 4), pudiendo viajar con **Ian, Tycho y Albóndiga a la vez** por exteriores e interiores.
@@ -104,26 +99,21 @@
    - [x] **5. El Concesionario de Coches Usados de Bob** → Lote de Corvegas y la legendaria **Red Ryder LE BB Gun**.
    - [x] **6. Patrick el Celta** → Conversación doblada junto a la hoguera, balada gaélica *Na Fianna*, Medallón Gaélico y **+1 Carisma permanente**.
 
-7. **Doble Edición Autónoma (ES + EN) y Auditoría Automatizada de 21 Checks**
-   - [x] `36.249` registros propios (`HEDR v1.00`), `50` scripts Papyrus compilados, `1.020+` voces en español y `1.061` en inglés (`.xwm`), `43` ruedas de diálogo (`SCEN`), `5` facciones de comerciantes y **`20/20` (ES) + `21/21` (EN) comprobaciones QA superadas (`0` advertencias, `0` errores)**.
+7. **Doble Edición Autónoma (ES + EN) y Auditoría Automatizada de 25 Checks**
+   - [x] `46.659` registros propios (`HEDR v1.00`), `26` misiones, `57` scripts Papyrus compilados, `1.372` clips Lip-Sync `.fuz` (`1.421` `.fuz` en `Main.ba2`), `64` ruedas de diálogo (`SCEN`), `5` facciones de comerciantes y **`24/24` (ES) + `25/25` (EN) comprobaciones QA superadas (`0` advertencias, `0` errores)**.
 
 ---
 
-### 🚧 Fase 2 — PENDIENTE PARA `v1.0` (*Capítulo 2: El Ejército Mutante y El Maestro*)
+### ✅ Fase 2 — COMPLETADO EN `v1.0.0` (*Capítulo 2: El Ejército Mutante, El Maestro y el Exilio*)
 
-> **Nota Técnica:** Los exteriores, celdas interiores base (`Lost Hills 0x01002B00`, `Base Militar Mariposa 0x01002C00`, `La Catedral 0x01002D00`), jefes (`Comandante Kragor`, `El Teniente`, `Morpheus`, `El Maestro`), armas legendarias finales (`Winchester P94`, `Ametralladora Vindicator`, `Servoarmadura T-51f Endurecida`) y scripts base (`V13Act3..5QuestScript`) **ya existen en el código y están cerrados deliberadamente (`LockLevel 253` / congelados en `WakeUpAct3..5`)** mientras los expandimos con la misma riqueza RPG multi-vía del Capítulo 1:
-
-- [ ] **1. Expansión del Acto III — Interior Multinivel de Lost Hills e Interior de El Resplandor (`ZAX 1.2`)**:
-  - Apertura del búnker de la Hermandad del Acero con diálogos completos para **John Maxson**, **Rhombus**, la **Escriba Jefe Vree** (entrega e inspección de la **Holocinta de Autopsia de Supermutantes** sobre la esterilidad por VEF) y reparación de la Servoarmadura T-51b, además del interior de West Tek con la supercomputadora **ZAX 1.2**.
-- [ ] **2. Cuarta Compañera Clásica — *Katja* (Seguidores del Apocalipsis)**:
-  - Reclutamiento completo, diálogos doblados y menú táctico para **Katja** en la Biblioteca de El Boneyard junto a **Nicole**, completando el cuarteto clásico (*Ian, Tycho, Katja y Albóndiga*).
-- [ ] **3. Expansión del Acto IV — Conflicto Civil de Adytum e Infiltración en la Base Militar Mariposa**:
-  - Trama de **Jon Zimmerman**, los **Reguladores de Caleb** frente a **las Cuchillas de Razor**, mejora a **Rifle de Plasma Turbo Winchester P94** con **Smitty** y endurecimiento químico de Servoarmadura con **Miles**.
-  - Infiltración multi-vía en **Mariposa** (túnicas de la Catedral, desactivación de campos de fuerza, patrullas de Nocturnos, enfrentamiento doblado con **El Teniente «Lou»** y secuencia de autodestrucción de las Cubas de VEF).
-- [ ] **4. Expansión del Acto V — La Catedral, el Refugio de Demostración, las 3 Vías Canónicas frente al Maestro y Epílogo del Exilio**:
-  - Infiltración ante **Morpheus** y **Lasher**, obtención del **Anulador Psíquico** con los prisioneros psíquicos (**Gideon, Moore, Lucy, Wiggum**) para cruzar el Corredor Neural.
-  - Las **3 vías canónicas de victoria de 1997 frente al Maestro (Richard Grey)** con síntesis multivoz alternante:
-    1. **Victoria Diplomática / Científica** (mostrar la **Holocinta de Autopsia de Vree** demostrando la esterilidad supermutante).
-    2. **Victoria Militar** (combate directo contra El Maestro y sus pretorianos Nocturnos).
-    3. **Sabotaje Nuclear** (armar manualmente la ojiva nuclear del Nivel 4 con cuenta atrás de 4 minutos).
-  - **Epílogo Jugable del Exilio (10 de mayo de 2162)**: Escena final en el exterior de la compuerta del Refugio 13 con el Supervisor Jacoren (*«Eres un héroe... y tienes que marcharte»*).
+- [x] **1. Expansión del Acto III — Interior Multinivel de Lost Hills e Interior de El Resplandor (`ZAX 1.2`)**:
+  - Búnker multinivel de la Hermandad del Acero con diálogos completos para **John Maxson**, **Rhombus**, **Mathia**, la **Escriba Jefe Vree** (**Holocinta de Autopsia de Supermutantes**) y **Honor de Acero** (**Caballero Kyle**, **Intendente Michael**, **Iniciado Lorenzo** y Servoarmadura T-51b), además del interior subterráneo de West Tek con la supercomputadora **ZAX 1.2**.
+- [x] **2. Cuarta Compañera Clásica — *Katja* (Seguidores del Apocalipsis)**:
+  - Reclutamiento completo, diálogos doblados y menú táctico para **Katja** en la Biblioteca de El Boneyard junto a **Nicole** y **Talius** (*El Espía de los Seguidores*), completando el cuarteto clásico (*Ian, Tycho, Katja y Albóndiga*).
+- [x] **3. Expansión del Acto IV — Conflicto Civil de Adytum, Forja de Adytum e Infiltración en Mariposa**:
+  - Trama de **Jon Zimmerman**, los **Reguladores de Caleb** frente a **Los Espadas de Razor** y **Gabriel**, mejora a **Rifle de Plasma Turbo Winchester P94** con **Smitty** y endurecimiento químico de T-51b con **Miles**.
+  - Infiltración multi-vía en **Mariposa** (túnica púrpura de la Catedral, desactivación de campos de fuerza, patrullas de Nocturnos, enfrentamiento doblado con **El Teniente «Lou»** y secuencia de autodestrucción en 180 s).
+- [x] **4. Expansión del Acto V (Orden Libre 1997) — La Catedral, El Maestro, Invasiones y Epílogo del Exilio**:
+  - Infiltración ante **Hermana Laura** («Rosa Roja»), **Padre Lasher** y **Morpheus**, obtención del **Anulador Psíquico** con **Gideon** para cruzar el Pasillo de la Revulsión.
+  - Las **3 vías canónicas frente al Maestro** con síntesis multivoz (`V13TheMasterTriVoice`): **Holocinta de Vree**, **Combate Militar** u **Ojiva Nuclear de 240 s**.
+  - **Calendario cronológico de Invasiones Mutantes (1997) y 5 Encuentros del Yermo**, más el **Epílogo Jugable del Exilio (10 de mayo de 2162)** con **Jacoren** (*«Eres un héroe... y tienes que marcharte»*) y el campamento de Arroyo (**Theresa** y **Lyle**).

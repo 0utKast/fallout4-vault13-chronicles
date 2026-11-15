@@ -39,6 +39,8 @@ bool visitedV12Watershed = false
 bool visitedLostHills = false
 bool visitedMariposa = false
 bool visitedCathedral = false
+bool visitedWestTek = false
+bool lostHillsMasterLockInitialized = false
 bool bApplyingAct1Stage = false
 int lastAppliedAct1Stage = 0
 bool lastAppliedPortalClicked = false
@@ -48,6 +50,10 @@ bool bAnalyzingHydroCore = false
 bool bMenuReturnBusy = false
 bool v15ArmoryUnlocked = false
 bool v15CmdUnlocked = false
+bool bVault15KhansHostile = true
+bool bVault15KhansTruce = false
+bool bGarlMenuBusy = false
+bool californiaCoordsSyncedOnce = false
 
 Function SilenceResidentActor(Actor akRes)
     if akRes == None
@@ -65,7 +71,7 @@ Function PlayResidentFullMonologue(Actor akRes, int aiResIdx)
         return
     endif
     Quest q2 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-    Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     int q2Stg = 0
     if q2 != None
         q2Stg = q2.GetStage()
@@ -124,7 +130,7 @@ Function UpdateVault13ResidentMonologues()
     endif
 
     Quest q2 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-    Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     int q2Stg = 0
     if q2 != None
         q2Stg = q2.GetStage()
@@ -284,6 +290,20 @@ Function RegisterPlayerEvents()
         endif
         rIdx += 1
     endwhile
+    int kRegIdx = 0
+    while kRegIdx < 12
+        int kRegFid = 0x0000254E + kRegIdx
+        if kRegFid != 0x00002551
+            Actor kRegAct = Game.GetFormFromFile(kRegFid, "Vault13Chronicles.esp") as Actor
+            if kRegAct != None
+                RegisterForRemoteEvent(kRegAct as ObjectReference, "OnActivate")
+                if !kRegAct.IsDead()
+                    RegisterForHitEvent(kRegAct)
+                endif
+            endif
+        endif
+        kRegIdx += 1
+    endwhile
 EndFunction
 
 Function UnlockVault15Armory()
@@ -359,6 +379,7 @@ Function ForceAllAct1Aliases()
     else
         ForceQuestAlias(9, 0x00002130)
     endif
+    ForceQuestAlias(10, 0x00002559)
 EndFunction
 
 Function SetOverseerTelemetryState(int aiMode)
@@ -609,8 +630,8 @@ Function ActivateTemporalPortal()
     Self.SetObjectiveDisplayed(15, false, false)
     if !Self.IsObjectiveDisplayed(16)
         Self.SetObjectiveDisplayed(16, true, false)
+        Self.SetActive(true)
     endif
-    Self.SetActive(true)
     Debug.Notification("[Archivo Mnemosyne] ¡Puerta Dimensional/Temporal activada! Cruza la esclusa hacia el Refugio 13 (5 Dic 2161).")
     if Self.GetStage() < 16
         Self.SetStage(16)
@@ -618,10 +639,38 @@ Function ActivateTemporalPortal()
     ApplyV13Act1Stage(16)
 EndFunction
 
+int Function GetEnabledVault13ExitDoorFid(int aiPreferredFid)
+    if aiPreferredFid != 0
+        ObjectReference prefDoor = Game.GetFormFromFile(aiPreferredFid, "Vault13Chronicles.esp") as ObjectReference
+        if prefDoor != None && !prefDoor.IsDisabled()
+            return aiPreferredFid
+        endif
+    endif
+    int[] doorFids = new int[5]
+    doorFids[0] = 0x00002143
+    doorFids[1] = 0x00002144
+    doorFids[2] = 0x00002145
+    doorFids[3] = 0x00002142
+    doorFids[4] = 0x00002101
+    int idx = 0
+    while idx < 5
+        ObjectReference candDoor = Game.GetFormFromFile(doorFids[idx], "Vault13Chronicles.esp") as ObjectReference
+        if candDoor != None && !candDoor.IsDisabled()
+            return doorFids[idx]
+        endif
+        idx += 1
+    endwhile
+    ObjectReference baseDoor = Game.GetFormFromFile(0x00002101, "Vault13Chronicles.esp") as ObjectReference
+    if baseDoor != None && baseDoor.IsDisabled()
+        baseDoor.Enable(false)
+    endif
+    return 0x00002101
+EndFunction
+
 Function SyncVault13ExpeditionDoors()
     Quest q1 = Game.GetFormFromFile(0x00004000, "Vault13Chronicles.esp") as Quest
     Quest q2 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-    Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     Quest q4 = Game.GetFormFromFile(0x00007000, "Vault13Chronicles.esp") as Quest
     Quest q5 = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
 
@@ -638,13 +687,15 @@ Function SyncVault13ExpeditionDoors()
         activeAct = 3
         activeStage = q3.GetStage()
     endif
-    if q4 != None && q4.GetStage() >= 15
+    if q4 != None && q4.GetStage() >= 15 && !q4.IsCompleted()
         activeAct = 4
         activeStage = q4.GetStage()
-    endif
-    if q5 != None && q5.GetStage() >= 15
+    elseif q5 != None && q5.GetStage() >= 15
         activeAct = 5
         activeStage = q5.GetStage()
+    elseif q4 != None && q4.GetStage() >= 15
+        activeAct = 4
+        activeStage = q4.GetStage()
     endif
 
     int[] expDoors = new int[5]
@@ -660,23 +711,29 @@ Function SyncVault13ExpeditionDoors()
         if dRef != None
             if (dIdx + 1) == activeAct
                 if dRef.IsDisabled()
-                    dRef.Enable(false)
+                    dRef.EnableNoWait()
                 endif
-                if activeAct == 2 && activeStage < 20
-                    if !dRef.IsLocked()
-                        dRef.SetLockLevel(253)
-                        dRef.Lock(true, false)
-                    endif
-                else
-                    if dRef.IsLocked()
-                        dRef.Lock(false, false)
+                if dRef.Is3DLoaded() || IsPlayerInAny2161Cell()
+                    if activeAct == 2 && activeStage < 20
+                        if !dRef.IsLocked()
+                            dRef.SetLockLevel(253)
+                            dRef.Lock(true, false)
+                        endif
+                    else
+                        if dRef.IsLocked()
+                            dRef.Lock(false, false)
+                        endif
                     endif
                 endif
-                dRef.SetPosition(-176.0, -4368.0, -272.0)
-                dRef.SetAngle(0.0, 0.0, 270.0)
+                if dRef.Is3DLoaded()
+                    if Math.Abs(dRef.GetPositionX() - (-176.0)) > 2.0 || Math.Abs(dRef.GetPositionY() - (-4368.0)) > 2.0 || Math.Abs(dRef.GetPositionZ() - (-272.0)) > 2.0
+                        dRef.SetPosition(-176.0, -4368.0, -272.0)
+                        dRef.SetAngle(0.0, 0.0, 270.0)
+                    endif
+                endif
             else
                 if !dRef.IsDisabled()
-                    dRef.Disable(false)
+                    dRef.DisableNoWait()
                 endif
             endif
         endif
@@ -686,13 +743,15 @@ Function SyncVault13ExpeditionDoors()
     ObjectReference extDoorSync = Game.GetFormFromFile(0x00003005, "Vault13Chronicles.esp") as ObjectReference
     if extDoorSync != None
         if extDoorSync.IsDisabled()
-            extDoorSync.Enable(false)
+            extDoorSync.EnableNoWait()
         endif
-        if extDoorSync.IsLocked()
-            extDoorSync.Lock(false, false)
+        if extDoorSync.Is3DLoaded()
+            if extDoorSync.IsLocked()
+                extDoorSync.Lock(false, false)
+            endif
+            extDoorSync.SetPosition(-88742.0, 80494.0, 7280.0)
+            extDoorSync.SetAngle(0.0, 0.0, 90.0)
         endif
-        extDoorSync.SetPosition(-88742.0, 80494.0, 7280.0)
-        extDoorSync.SetAngle(0.0, 0.0, 90.0)
     endif
 
     if Self.GetStage() >= 20
@@ -705,84 +764,151 @@ Function SyncVault13ExpeditionDoors()
     ObjectReference mnemoV13Door = Game.GetFormFromFile(0x00002003, "Vault13Chronicles.esp") as ObjectReference
     if mnemoV13Door != None
         if mnemoV13Door.IsDisabled()
-            mnemoV13Door.Enable(false)
+            mnemoV13Door.EnableNoWait()
         endif
-        mnemoV13Door.SetPosition(-107.43, -752.59, 0.0)
-        mnemoV13Door.SetAngle(0.0, 0.0, 351.4065)
-        if portalActivated
-            if mnemoV13Door.IsLocked()
-                mnemoV13Door.Lock(false, false)
-            endif
-        else
-            if !mnemoV13Door.IsLocked()
-                mnemoV13Door.SetLockLevel(255)
-                mnemoV13Door.Lock(true, false)
+        if mnemoV13Door.Is3DLoaded()
+            mnemoV13Door.SetPosition(-107.43, -752.59, 0.0)
+            mnemoV13Door.SetAngle(0.0, 0.0, 351.4065)
+            if portalActivated
+                if mnemoV13Door.IsLocked()
+                    mnemoV13Door.Lock(false, false)
+                endif
+            else
+                if !mnemoV13Door.IsLocked()
+                    mnemoV13Door.SetLockLevel(255)
+                    mnemoV13Door.Lock(true, false)
+                endif
             endif
         endif
     endif
     ObjectReference mnemoDoorFrame = Game.GetFormFromFile(0x00002004, "Vault13Chronicles.esp") as ObjectReference
     if mnemoDoorFrame != None && mnemoDoorFrame.IsDisabled()
-        mnemoDoorFrame.Enable(false)
+        mnemoDoorFrame.EnableNoWait()
     endif
     ObjectReference mnemoDoorShaft = Game.GetFormFromFile(0x00002005, "Vault13Chronicles.esp") as ObjectReference
     if mnemoDoorShaft != None && mnemoDoorShaft.IsDisabled()
-        mnemoDoorShaft.Enable(false)
+        mnemoDoorShaft.EnableNoWait()
     endif
     ObjectReference mnemoLounger = Game.GetFormFromFile(0x00002036, "Vault13Chronicles.esp") as ObjectReference
-    if mnemoLounger != None && mnemoLounger.IsDisabled()
-        mnemoLounger.Enable(false)
+    if mnemoLounger != None
+        if mnemoLounger.IsDisabled()
+            mnemoLounger.EnableNoWait()
+        endif
+    endif
+    ObjectReference mnemoRadarScr = Game.GetFormFromFile(0x000901EE, "Vault13Chronicles.esp") as ObjectReference
+    if mnemoRadarScr != None && !mnemoRadarScr.IsDisabled()
+        mnemoRadarScr.DisableNoWait(false)
+    endif
+    ObjectReference legacyMnemoDesk = Game.GetFormFromFile(0x00090097, "Vault13Chronicles.esp") as ObjectReference
+    if legacyMnemoDesk != None && !legacyMnemoDesk.IsDisabled()
+        legacyMnemoDesk.DisableNoWait(false)
+    endif
+    ObjectReference mnemoDeskSync = Game.GetFormFromFile(0x00002037, "Vault13Chronicles.esp") as ObjectReference
+    if mnemoDeskSync != None
+        if mnemoDeskSync.IsDisabled()
+            mnemoDeskSync.EnableNoWait()
+        endif
+        if mnemoDeskSync.Is3DLoaded()
+            mnemoDeskSync.SetMotionType(mnemoDeskSync.Motion_Keyframed, false)
+            mnemoDeskSync.SetPosition(-305.2216, -1013.4984, 0.0)
+            mnemoDeskSync.SetAngle(0.0, 0.0, 171.41)
+        endif
+    endif
+    ObjectReference mnemoTermSync = Game.GetFormFromFile(0x00002035, "Vault13Chronicles.esp") as ObjectReference
+    if mnemoTermSync != None && !mnemoTermSync.IsDisabled() && mnemoTermSync.Is3DLoaded()
+        V13TermMnemosyneScript mnemoTS = mnemoTermSync as V13TermMnemosyneScript
+        if mnemoTS != None
+            mnemoTS.HealDisplacedMnemosyneClutter()
+        endif
     endif
 
     ObjectReference v13MnemoDoor = Game.GetFormFromFile(0x00002104, "Vault13Chronicles.esp") as ObjectReference
     if v13MnemoDoor != None
         if v13MnemoDoor.IsDisabled()
-            v13MnemoDoor.Enable(false)
+            v13MnemoDoor.EnableNoWait()
         endif
-        if v13MnemoDoor.IsLocked()
-            v13MnemoDoor.Lock(false, false)
+        if v13MnemoDoor.Is3DLoaded()
+            if v13MnemoDoor.IsLocked()
+                v13MnemoDoor.Lock(false, false)
+            endif
+            v13MnemoDoor.SetPosition(-2885.0, -4020.0, -16.0)
+            v13MnemoDoor.SetAngle(0.0, 0.0, 180.0)
         endif
-        v13MnemoDoor.SetPosition(-2885.0, -4020.0, -16.0)
-        v13MnemoDoor.SetAngle(0.0, 0.0, 180.0)
     endif
     ObjectReference v13MnemoMat = Game.GetFormFromFile(0x00002187, "Vault13Chronicles.esp") as ObjectReference
     if v13MnemoMat != None && v13MnemoMat.IsDisabled()
-        v13MnemoMat.Enable(false)
+        v13MnemoMat.EnableNoWait()
     endif
 
     ObjectReference oldSyncRoom = Game.GetFormFromFile(0x00003406, "Vault13Chronicles.esp") as ObjectReference
     if oldSyncRoom != None && !oldSyncRoom.IsDisabled()
-        oldSyncRoom.SetPosition(0.0, 0.0, -3000.0)
-        oldSyncRoom.Disable(false)
+        if oldSyncRoom.Is3DLoaded()
+            oldSyncRoom.SetPosition(0.0, 0.0, -3000.0)
+        endif
+        oldSyncRoom.DisableNoWait()
     endif
 
-    SyncAllCaliforniaPersistentCoords()
+    if !californiaCoordsSyncedOnce && IsPlayerInAny2161Cell()
+        SyncAllCaliforniaPersistentCoords()
+    endif
 
-    Quest q3Gate = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3Gate = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     Quest q4Gate = Game.GetFormFromFile(0x00007000, "Vault13Chronicles.esp") as Quest
     Quest q5Gate = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
-    bool act3Unlocked = (q3Gate != None && q3Gate.GetStage() >= 15)
+    Quest qGlowGate = Game.GetFormFromFile(0x00013000, "Vault13Chronicles.esp") as Quest
+    V13Act3QuestScript act3GateS = q3Gate as V13Act3QuestScript
+    V13Act5QuestScript act5GateS = q5Gate as V13Act5QuestScript
+    bool inCathNow = (act5GateS != None && act5GateS.IsPlayerInCathedral(Game.GetPlayer()))
+    bool lostHillsAdmitted = (qGlowGate != None && qGlowGate.GetStage() >= 30) || (act3GateS != None && act3GateS.IsLostHillsAdmitted())
     bool act4Unlocked = (q4Gate != None && q4Gate.GetStage() >= 15)
-    bool act5Unlocked = (q5Gate != None && q5Gate.GetStage() >= 15)
+    bool act5Destroyed = (q5Gate != None && q5Gate.GetStage() >= 30 && !inCathNow && (act5GateS == None || !act5GateS.IsNuclearCountdownActive()))
+    bool act5Unlocked = (q5Gate != None && q5Gate.GetStage() >= 15) || inCathNow || (q3Gate != None && (q3Gate.IsCompleted() || q3Gate.GetStage() >= 40))
+
+    ObjectReference westTekHatch = Game.GetFormFromFile(0x00003601, "Vault13Chronicles.esp") as ObjectReference
+    if westTekHatch != None
+        if westTekHatch.IsDisabled()
+            westTekHatch.EnableNoWait()
+        endif
+        if (westTekHatch.Is3DLoaded() || IsPlayerInAny2161Cell()) && westTekHatch.IsLocked()
+            westTekHatch.Lock(false, false)
+        endif
+    endif
 
     int sdIdx = 0
     while sdIdx < 10
         ObjectReference sdRef = Game.GetFormFromFile(0x00003500 + sdIdx, "Vault13Chronicles.esp") as ObjectReference
         if sdRef != None
-            if sdRef.IsDisabled()
-                sdRef.Enable(false)
-            endif
-            if sdIdx == 7 && !act3Unlocked
-                sdRef.SetLockLevel(253)
-                sdRef.Lock(true, false)
-            elseif sdIdx == 8 && !act4Unlocked
-                sdRef.SetLockLevel(253)
-                sdRef.Lock(true, false)
-            elseif sdIdx == 9 && !act5Unlocked
-                sdRef.SetLockLevel(253)
-                sdRef.Lock(true, false)
-            else
-                if sdRef.IsLocked()
+            if !(sdIdx == 9 && act5Destroyed)
+                if sdRef.IsDisabled()
+                    sdRef.EnableNoWait()
+                endif
+                if sdIdx == 9 && act5Unlocked
+                    sdRef.SetLockLevel(0)
                     sdRef.Lock(false, false)
+                elseif sdRef.Is3DLoaded() || IsPlayerInAny2161Cell()
+                    if sdIdx == 7
+                        if lostHillsAdmitted
+                            if sdRef.IsLocked()
+                                sdRef.Lock(false, false)
+                            endif
+                        else
+                            if !lostHillsMasterLockInitialized || !sdRef.IsLocked()
+                                sdRef.SetLockLevel(253)
+                                sdRef.Lock(true, false)
+                                lostHillsMasterLockInitialized = true
+                            endif
+                        endif
+                    elseif sdIdx == 8 && !act4Unlocked
+                        sdRef.SetLockLevel(253)
+                        sdRef.Lock(true, false)
+                    elseif sdIdx == 9 && !act5Unlocked
+                        sdRef.SetLockLevel(253)
+                        sdRef.Lock(true, false)
+                    else
+                        if sdRef.IsLocked()
+                            sdRef.Lock(false, false)
+                        endif
+                    endif
                 endif
             endif
         endif
@@ -790,107 +916,119 @@ Function SyncVault13ExpeditionDoors()
     endwhile
     ObjectReference oldDupDoor = Game.GetFormFromFile(0x0000350A, "Vault13Chronicles.esp") as ObjectReference
     if oldDupDoor != None && !oldDupDoor.IsDisabled()
-        oldDupDoor.SetPosition(-2600.0, 13160.0, -3000.0)
-        oldDupDoor.Disable(false)
+        if oldDupDoor.Is3DLoaded()
+            oldDupDoor.SetPosition(-6400.0, 32940.0, -3000.0)
+        endif
+        oldDupDoor.DisableNoWait()
     endif
 
-    if !act3Unlocked
-        ObjectReference kragRef = Game.GetFormFromFile(0x00002B11, "Vault13Chronicles.esp") as ObjectReference
-        if kragRef != None && !kragRef.IsDisabled()
-            kragRef.Disable(false)
-        endif
-        ObjectReference kragG1 = Game.GetFormFromFile(0x00002B12, "Vault13Chronicles.esp") as ObjectReference
-        if kragG1 != None && !kragG1.IsDisabled()
-            kragG1.Disable(false)
-        endif
-        int act3GIdx = 0
-        while act3GIdx < 7
-            ObjectReference bGuard = Game.GetFormFromFile(0x00002B20 + act3GIdx, "Vault13Chronicles.esp") as ObjectReference
-            if bGuard != None && !bGuard.IsDisabled()
-                bGuard.Disable(false)
-            endif
-            act3GIdx += 1
-        endwhile
+    ; Always keep old greybox hostile raid actors in Lost Hills disabled
+    ObjectReference kragRef = Game.GetFormFromFile(0x00002B11, "Vault13Chronicles.esp") as ObjectReference
+    if kragRef != None && !kragRef.IsDisabled()
+        kragRef.DisableNoWait()
     endif
+    ObjectReference kragG1 = Game.GetFormFromFile(0x00002B12, "Vault13Chronicles.esp") as ObjectReference
+    if kragG1 != None && !kragG1.IsDisabled()
+        kragG1.DisableNoWait()
+    endif
+    int act3GIdx = 0
+    while act3GIdx < 7
+        ObjectReference bGuard = Game.GetFormFromFile(0x00002B20 + act3GIdx, "Vault13Chronicles.esp") as ObjectReference
+        if bGuard != None && !bGuard.IsDisabled()
+            bGuard.DisableNoWait()
+        endif
+        act3GIdx += 1
+    endwhile
 
     if !act4Unlocked
         ObjectReference ltRef = Game.GetFormFromFile(0x00002C11, "Vault13Chronicles.esp") as ObjectReference
         if ltRef != None && !ltRef.IsDisabled()
-            ltRef.Disable(false)
+            ltRef.DisableNoWait()
         endif
         ObjectReference ltG1 = Game.GetFormFromFile(0x00002C12, "Vault13Chronicles.esp") as ObjectReference
         if ltG1 != None && !ltG1.IsDisabled()
-            ltG1.Disable(false)
+            ltG1.DisableNoWait()
         endif
         int act4GIdx = 0
         while act4GIdx < 7
             ObjectReference cGuard = Game.GetFormFromFile(0x00002C20 + act4GIdx, "Vault13Chronicles.esp") as ObjectReference
             if cGuard != None && !cGuard.IsDisabled()
-                cGuard.Disable(false)
+                cGuard.DisableNoWait()
             endif
             act4GIdx += 1
         endwhile
         ObjectReference extMariposaSentry = Game.GetFormFromFile(0x0000358D, "Vault13Chronicles.esp") as ObjectReference
         if extMariposaSentry != None && !extMariposaSentry.IsDisabled()
-            extMariposaSentry.Disable(false)
+            extMariposaSentry.DisableNoWait()
         endif
     endif
 
     if !act5Unlocked
         ObjectReference masterRef = Game.GetFormFromFile(0x00002D11, "Vault13Chronicles.esp") as ObjectReference
         if masterRef != None && !masterRef.IsDisabled()
-            masterRef.Disable(false)
+            masterRef.DisableNoWait()
         endif
         ObjectReference morphRef = Game.GetFormFromFile(0x00002D12, "Vault13Chronicles.esp") as ObjectReference
         if morphRef != None && !morphRef.IsDisabled()
-            morphRef.Disable(false)
+            morphRef.DisableNoWait()
         endif
         int act5GIdx = 0
         while act5GIdx < 7
             ObjectReference dGuard = Game.GetFormFromFile(0x00002D20 + act5GIdx, "Vault13Chronicles.esp") as ObjectReference
             if dGuard != None && !dGuard.IsDisabled()
-                dGuard.Disable(false)
+                dGuard.DisableNoWait()
             endif
             act5GIdx += 1
         endwhile
     endif
 
-    int ftIdx = 0
-    while ftIdx < 31
-        ObjectReference ftRef = Game.GetFormFromFile(0x00003510 + ftIdx, "Vault13Chronicles.esp") as ObjectReference
-        if ftRef != None && ftRef.IsDisabled()
-            ftRef.Enable(false)
-        endif
-        ftIdx += 1
-    endwhile
-
     if IsPlayerInAny2161Cell()
+        int ftIdx = 0
+        while ftIdx < 31
+            ObjectReference ftRef = Game.GetFormFromFile(0x00003510 + ftIdx, "Vault13Chronicles.esp") as ObjectReference
+            if ftRef != None && ftRef.IsDisabled()
+                ftRef.EnableNoWait()
+            endif
+            ftIdx += 1
+        endwhile
+
         int ecIdx = 0
         while ecIdx < 28
             if ecIdx != 13 || act4Unlocked
                 Actor ecAct = Game.GetFormFromFile(0x00003580 + ecIdx, "Vault13Chronicles.esp") as Actor
                 if ecAct != None && ecAct.IsDisabled()
-                    ecAct.Enable(false)
+                    ecAct.EnableNoWait()
                 endif
             endif
             ecIdx += 1
         endwhile
     endif
 
+    Cell c2200 = Game.GetFormFromFile(0x00002200, "Vault13Chronicles.esp") as Cell
     ObjectReference caveExitDoor = Game.GetFormFromFile(0x00002206, "Vault13Chronicles.esp") as ObjectReference
     if caveExitDoor != None
         if caveExitDoor.IsDisabled()
-            caveExitDoor.Enable(false)
+            caveExitDoor.EnableNoWait()
         endif
-        if caveExitDoor.IsLocked()
-            caveExitDoor.Lock(false, false)
+        if caveExitDoor.Is3DLoaded() || (Game.GetPlayer() != None && c2200 != None && Game.GetPlayer().GetParentCell() == c2200)
+            float dxCaveExit = caveExitDoor.GetPositionX() - 6736.0
+            float dyCaveExit = caveExitDoor.GetPositionY() + 4255.0
+            float dzCaveExit = caveExitDoor.GetPositionZ() - 388.0
+            float daCaveExit = caveExitDoor.GetAngleZ() - 71.811373
+            if dxCaveExit < -2.0 || dxCaveExit > 2.0 || dyCaveExit < -2.0 || dyCaveExit > 2.0 || dzCaveExit < -2.0 || dzCaveExit > 2.0 || daCaveExit < -1.0 || daCaveExit > 1.0
+                caveExitDoor.SetPosition(6736.0, -4255.0, 388.0)
+                caveExitDoor.SetAngle(0.0, 0.0, 71.811373)
+            endif
+            if caveExitDoor.IsLocked()
+                caveExitDoor.Lock(false, false)
+            endif
         endif
     endif
     int cdIdx = 0
     while cdIdx < 5
         ObjectReference oldCaveDoor = Game.GetFormFromFile(0x00002211 + cdIdx, "Vault13Chronicles.esp") as ObjectReference
         if oldCaveDoor != None && !oldCaveDoor.IsDisabled()
-            oldCaveDoor.Disable(false)
+            oldCaveDoor.DisableNoWait()
         endif
         cdIdx += 1
     endwhile
@@ -1040,8 +1178,10 @@ Function EnableMnemosyneAndVault13()
     while sIdx < 8
         ObjectReference stRef = Game.GetFormFromFile(0x00003021 + sIdx, "Vault13Chronicles.esp") as ObjectReference
         if stRef != None && !stRef.IsDisabled()
-            stRef.Disable(false)
-            stRef.SetPosition(-88050.0, 81300.0, 4000.0)
+            stRef.DisableNoWait()
+            if stRef.Is3DLoaded()
+                stRef.SetPosition(-88050.0, 81300.0, 4000.0)
+            endif
         endif
         sIdx += 1
     endwhile
@@ -1050,8 +1190,10 @@ Function EnableMnemosyneAndVault13()
     while oIdx < 12
         ObjectReference ouRef = Game.GetFormFromFile(0x00003050 + oIdx, "Vault13Chronicles.esp") as ObjectReference
         if ouRef != None && !ouRef.IsDisabled()
-            ouRef.Disable(false)
-            ouRef.SetPosition(-88050.0, 81300.0, 4000.0)
+            ouRef.DisableNoWait()
+            if ouRef.Is3DLoaded()
+                ouRef.SetPosition(-88050.0, 81300.0, 4000.0)
+            endif
         endif
         oIdx += 1
     endwhile
@@ -1060,52 +1202,66 @@ Function EnableMnemosyneAndVault13()
     while oldVIdx <= 30
         ObjectReference oldVRef = Game.GetFormFromFile(0x00003100 + oldVIdx, "Vault13Chronicles.esp") as ObjectReference
         if oldVRef != None && !oldVRef.IsDisabled()
-            oldVRef.Disable(false)
-            oldVRef.SetPosition(-88050.0, 81300.0, 4000.0)
+            oldVRef.DisableNoWait()
+            if oldVRef.Is3DLoaded()
+                oldVRef.SetPosition(-88050.0, 81300.0, 4000.0)
+            endif
         endif
         oldVIdx += 1
     endwhile
 
     if extHatch != None && !extHatch.IsDisabled()
-        extHatch.Disable(false)
-        extHatch.SetPosition(-88050.0, 81300.0, 4000.0)
+        extHatch.DisableNoWait()
+        if extHatch.Is3DLoaded()
+            extHatch.SetPosition(-88050.0, 81300.0, 4000.0)
+        endif
     endif
     if extPad != None && !extPad.IsDisabled()
-        extPad.Disable(false)
-        extPad.SetPosition(-88050.0, 81300.0, 4000.0)
+        extPad.DisableNoWait()
+        if extPad.Is3DLoaded()
+            extPad.SetPosition(-88050.0, 81300.0, 4000.0)
+        endif
     endif
     if extRadar != None && !extRadar.IsDisabled()
-        extRadar.Disable(false)
-        extRadar.SetPosition(-88050.0, 81300.0, 4000.0)
+        extRadar.DisableNoWait()
+        if extRadar.Is3DLoaded()
+            extRadar.SetPosition(-88050.0, 81300.0, 4000.0)
+        endif
     endif
     if extLight != None && !extLight.IsDisabled()
-        extLight.Disable(false)
-        extLight.SetPosition(-88050.0, 81300.0, 4000.0)
+        extLight.DisableNoWait()
+        if extLight.Is3DLoaded()
+            extLight.SetPosition(-88050.0, 81300.0, 4000.0)
+        endif
     endif
     if oldMapMarker != None && !oldMapMarker.IsDisabled()
-        oldMapMarker.Disable(false)
-        oldMapMarker.SetPosition(-88050.0, 81300.0, 4000.0)
+        oldMapMarker.DisableNoWait()
+        if oldMapMarker.Is3DLoaded()
+            oldMapMarker.SetPosition(-88050.0, 81300.0, 4000.0)
+        endif
     endif
     if oldMapMarker2 != None && !oldMapMarker2.IsDisabled()
-        oldMapMarker2.Disable(false)
-        oldMapMarker2.SetPosition(-88050.0, 81300.0, 4000.0)
+        oldMapMarker2.DisableNoWait()
+        if oldMapMarker2.Is3DLoaded()
+            oldMapMarker2.SetPosition(-88050.0, 81300.0, 4000.0)
+        endif
     endif
 
     int vIdx = 0
     while vIdx <= 28
         ObjectReference vRef = Game.GetFormFromFile(0x00003200 + vIdx, "Vault13Chronicles.esp") as ObjectReference
         if vRef != None && vRef.IsDisabled()
-            vRef.Enable(false)
+            vRef.EnableNoWait()
         endif
         vIdx += 1
     endwhile
     ObjectReference badSpot1 = Game.GetFormFromFile(0x0000321D, "Vault13Chronicles.esp") as ObjectReference
     if badSpot1 != None && !badSpot1.IsDisabled()
-        badSpot1.Disable(false)
+        badSpot1.DisableNoWait()
     endif
     ObjectReference badSpot2 = Game.GetFormFromFile(0x0000321E, "Vault13Chronicles.esp") as ObjectReference
     if badSpot2 != None && !badSpot2.IsDisabled()
-        badSpot2.Disable(false)
+        badSpot2.DisableNoWait()
     endif
     int[] badV13Triggers = new int[4]
     badV13Triggers[0] = 0x0002009A
@@ -1116,34 +1272,40 @@ Function EnableMnemosyneAndVault13()
     while btIdx < 4
         ObjectReference btRef = Game.GetFormFromFile(badV13Triggers[btIdx], "Vault13Chronicles.esp") as ObjectReference
         if btRef != None && !btRef.IsDisabled()
-            btRef.Disable(false)
+            btRef.DisableNoWait()
         endif
         btIdx += 1
     endwhile
 
     if extDoor != None
         if extDoor.IsDisabled()
-            extDoor.Enable(false)
+            extDoor.EnableNoWait()
         endif
-        if extDoor.IsLocked()
-            extDoor.Lock(false, false)
+        if extDoor.Is3DLoaded()
+            if extDoor.IsLocked()
+                extDoor.Lock(false, false)
+            endif
+            extDoor.SetPosition(-88742.0, 80494.0, 7280.0)
+            extDoor.SetAngle(0.0, 0.0, 90.0)
         endif
-        extDoor.SetPosition(-88742.0, 80494.0, 7280.0)
-        extDoor.SetAngle(0.0, 0.0, 90.0)
     endif
     if extFT != None
         if extFT.IsDisabled()
-            extFT.Enable(false)
+            extFT.EnableNoWait()
         endif
-        extFT.SetPosition(-87000.0, 80750.0, 7240.0)
-        extFT.SetAngle(0.0, 0.0, 90.0)
+        if extFT.Is3DLoaded()
+            extFT.SetPosition(-87000.0, 80750.0, 7240.0)
+            extFT.SetAngle(0.0, 0.0, 90.0)
+        endif
     endif
     if newMapMarker != None
-        newMapMarker.SetPosition(-87350.0, 80750.0, 7303.0)
-        newMapMarker.SetAngle(0.0, 0.0, 0.0)
+        if newMapMarker.Is3DLoaded()
+            newMapMarker.SetPosition(-87350.0, 80750.0, 7303.0)
+            newMapMarker.SetAngle(0.0, 0.0, 0.0)
+        endif
         if Self.GetStage() >= 15
             if newMapMarker.IsDisabled()
-                newMapMarker.Enable(false)
+                newMapMarker.EnableNoWait()
             endif
             if bunkerVisited
                 if !mapMarkerFastTravelEnabled
@@ -1164,39 +1326,41 @@ Function EnableMnemosyneAndVault13()
         endif
     endif
     if jacoren != None
-        if jacoren.IsDead()
-            jacoren.Resurrect()
-        endif
         if jacoren.IsDisabled()
-            jacoren.Enable(false)
+            jacoren.EnableNoWait()
         endif
-        Quest q2Check = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-        Quest q3Check = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
-        Scene act2RetSceneCheck = Game.GetFormFromFile(0x00005101, "Vault13Chronicles.esp") as Scene
-        bool inWaterPlantEvent = false
-        int q3CheckStg = 0
-        if q3Check != None
-            q3CheckStg = q3Check.GetStage()
-        endif
-        if q2Check != None
-            int q2Stg = q2Check.GetStage()
-            if q2Stg == 35 || q2Stg == 38 || (q2Stg >= 40 && q3CheckStg < 15 && player != None && player.GetPositionZ() < -250.0)
+        if jacoren.Is3DLoaded()
+            if jacoren.IsDead()
+                jacoren.Resurrect()
+            endif
+            Quest q2Check = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
+            Quest q3Check = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
+            Scene act2RetSceneCheck = Game.GetFormFromFile(0x00005101, "Vault13Chronicles.esp") as Scene
+            bool inWaterPlantEvent = false
+            int q3CheckStg = 0
+            if q3Check != None
+                q3CheckStg = q3Check.GetStage()
+            endif
+            if q2Check != None
+                int q2Stg = q2Check.GetStage()
+                if q2Stg == 35 || q2Stg == 38 || (q2Stg >= 40 && q3CheckStg < 15 && player != None && player.GetPositionZ() < -250.0)
+                    inWaterPlantEvent = true
+                endif
+            endif
+            if act2RetSceneCheck != None && act2RetSceneCheck.IsPlaying()
                 inWaterPlantEvent = true
             endif
-        endif
-        if act2RetSceneCheck != None && act2RetSceneCheck.IsPlaying()
-            inWaterPlantEvent = true
-        endif
-        int q1StgCheck = Self.GetStage()
-        if q1StgCheck == 35 || q1StgCheck == 38 || hydroCoreWalkActive
-            inWaterPlantEvent = true
-        endif
-        if !inWaterPlantEvent
-            float jdx = jacoren.GetPositionX() - (-3090.0)
-            float jdy = jacoren.GetPositionY() - (-4540.0)
-            if (jdx * jdx + jdy * jdy) > 250000.0
-                jacoren.SetPosition(-3090.0, -4540.0, -16.0)
-                jacoren.SetAngle(0.0, 0.0, 180.0)
+            int q1StgCheck = Self.GetStage()
+            if q1StgCheck == 35 || q1StgCheck == 38 || hydroCoreWalkActive
+                inWaterPlantEvent = true
+            endif
+            if !inWaterPlantEvent
+                float jdx = jacoren.GetPositionX() - (-3090.0)
+                float jdy = jacoren.GetPositionY() - (-4540.0)
+                if (jdx * jdx + jdy * jdy) > 250000.0
+                    jacoren.SetPosition(-3090.0, -4540.0, -16.0)
+                    jacoren.SetAngle(0.0, 0.0, 180.0)
+                endif
             endif
         endif
     endif
@@ -1204,18 +1368,18 @@ Function EnableMnemosyneAndVault13()
     ObjectReference newBp = Game.GetFormFromFile(0x00002135, "Vault13Chronicles.esp") as ObjectReference
     if newBp != None
         if oldBp != None && !oldBp.IsDisabled()
-            oldBp.Disable(false)
+            oldBp.DisableNoWait()
         endif
         if newBp.IsDisabled()
-            newBp.Enable(false)
+            newBp.EnableNoWait()
         endif
     endif
     ObjectReference winGlass = Game.GetFormFromFile(0x00002136, "Vault13Chronicles.esp") as ObjectReference
     if winGlass != None && winGlass.IsDisabled()
-        winGlass.Enable(false)
+        winGlass.EnableNoWait()
     endif
     Quest q2ResCheck = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-    Quest q3ResCheck = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3ResCheck = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     int q2ResStg = 0
     if q2ResCheck != None
         q2ResStg = q2ResCheck.GetStage()
@@ -1268,24 +1432,26 @@ Function EnableMnemosyneAndVault13()
     while npcIdx < 8
         Actor v13Npc = Game.GetFormFromFile(0x00002150 + npcIdx, "Vault13Chronicles.esp") as Actor
         if v13Npc != None
-            if v13Npc.IsDead()
-                v13Npc.Resurrect()
-            endif
             if v13Npc.IsDisabled()
-                v13Npc.Enable(false)
+                v13Npc.EnableNoWait()
             endif
-            bool skipPosSync = false
-            if act2MovesTrio && (npcIdx == 0 || npcIdx == 2 || npcIdx == 3)
-                skipPosSync = true
-            elseif act2MovesCalvin && (npcIdx == 1 || npcIdx == 7)
-                skipPosSync = true
-            endif
-            if !skipPosSync
-                float rdx = v13Npc.GetPositionX() - resX[npcIdx]
-                float rdy = v13Npc.GetPositionY() - resY[npcIdx]
-                if (rdx * rdx + rdy * rdy) > 250000.0
-                    v13Npc.SetPosition(resX[npcIdx], resY[npcIdx], resZ[npcIdx])
-                    v13Npc.SetAngle(0.0, 0.0, resAng[npcIdx])
+            if v13Npc.Is3DLoaded()
+                if v13Npc.IsDead()
+                    v13Npc.Resurrect()
+                endif
+                bool skipPosSync = false
+                if act2MovesTrio && (npcIdx == 0 || npcIdx == 2 || npcIdx == 3)
+                    skipPosSync = true
+                elseif act2MovesCalvin && (npcIdx == 1 || npcIdx == 7)
+                    skipPosSync = true
+                endif
+                if !skipPosSync
+                    float rdx = v13Npc.GetPositionX() - resX[npcIdx]
+                    float rdy = v13Npc.GetPositionY() - resY[npcIdx]
+                    if (rdx * rdx + rdy * rdy) > 250000.0
+                        v13Npc.SetPosition(resX[npcIdx], resY[npcIdx], resZ[npcIdx])
+                        v13Npc.SetAngle(0.0, 0.0, resAng[npcIdx])
+                    endif
                 endif
             endif
         endif
@@ -1294,36 +1460,33 @@ Function EnableMnemosyneAndVault13()
     v13CorridorPopulated = true
     exteriorInitialized = true
     if mnemoTerm != None && mnemoTerm.IsDisabled()
-        mnemoTerm.Enable(false)
+        mnemoTerm.EnableNoWait()
     endif
     if v13Term != None && v13Term.IsDisabled()
-        v13Term.Enable(false)
+        v13Term.EnableNoWait()
     endif
     if mapTerm1 != None && !mapTerm1.IsDisabled()
-        mapTerm1.SetPosition(850.0, -4220.0, -3000.0)
-        mapTerm1.Disable(false)
+        if mapTerm1.Is3DLoaded()
+            mapTerm1.SetPosition(850.0, -4220.0, -3000.0)
+        endif
+        mapTerm1.DisableNoWait()
     endif
     ObjectReference oldCaveDesk = Game.GetFormFromFile(0x00030405, "Vault13Chronicles.esp") as ObjectReference
     if oldCaveDesk != None && !oldCaveDesk.IsDisabled()
-        oldCaveDesk.SetPosition(850.0, -4220.0, -3000.0)
-        oldCaveDesk.Disable(false)
+        if oldCaveDesk.Is3DLoaded()
+            oldCaveDesk.SetPosition(850.0, -4220.0, -3000.0)
+        endif
+        oldCaveDesk.DisableNoWait()
     endif
     ObjectReference dupDoor350A = Game.GetFormFromFile(0x0000350A, "Vault13Chronicles.esp") as ObjectReference
     if dupDoor350A != None && !dupDoor350A.IsDisabled()
-        dupDoor350A.SetPosition(-2600.0, 13160.0, -3000.0)
-        dupDoor350A.Disable(false)
-    endif
-    int dupBunkerIdx = 0
-    while dupBunkerIdx < 50
-        ObjectReference dupBunkerPiece = Game.GetFormFromFile(0x000B0064 + dupBunkerIdx, "Vault13Chronicles.esp") as ObjectReference
-        if dupBunkerPiece != None && !dupBunkerPiece.IsDisabled()
-            dupBunkerPiece.SetPosition(-2600.0, 13160.0, -3000.0)
-            dupBunkerPiece.Disable(false)
+        if dupDoor350A.Is3DLoaded()
+            dupDoor350A.SetPosition(-6400.0, 32940.0, -3000.0)
         endif
-        dupBunkerIdx += 1
-    endwhile
+        dupDoor350A.DisableNoWait()
+    endif
     if mapTerm2 != None && mapTerm2.IsDisabled()
-        mapTerm2.Enable(false)
+        mapTerm2.EnableNoWait()
     endif
     SyncVault13ExpeditionDoors()
 EndFunction
@@ -1608,6 +1771,74 @@ Function SetVault15State(bool abEnabled)
     endif
 EndFunction
 
+Function EnsureVault15KhansHostile()
+    bVault15KhansHostile = true
+    bVault15KhansTruce = false
+    Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
+    Faction playerFact = Game.GetFormFromFile(0x0001C21C, "Fallout4.esm") as Faction
+    ActorValue aggrAV = Game.GetAggressionAV()
+    ActorValue confAV = Game.GetConfidenceAV()
+    int kIdx = 0
+    while kIdx < 12
+        int kFid = 0x0000254E + kIdx
+        if kFid != 0x00002551
+            Actor kAct = Game.GetFormFromFile(kFid, "Vault13Chronicles.esp") as Actor
+            if kAct != None && !kAct.IsDead() && !kAct.IsDisabled()
+                if playerFact != None && kAct.IsInFaction(playerFact)
+                    kAct.RemoveFromFaction(playerFact)
+                endif
+                if raiderFact != None && !kAct.IsInFaction(raiderFact)
+                    kAct.AddToFaction(raiderFact)
+                endif
+                if aggrAV != None && kAct.GetValue(aggrAV) < 2.0
+                    kAct.SetValue(aggrAV, 2.0)
+                endif
+                if confAV != None && kAct.GetValue(confAV) < 4.0
+                    kAct.SetValue(confAV, 4.0)
+                endif
+                kAct.EvaluatePackage()
+            endif
+        endif
+        kIdx += 1
+    endwhile
+EndFunction
+
+Function TriggerVault15KhansHostile()
+    bVault15KhansHostile = true
+    bVault15KhansTruce = false
+    Scene garlStopSc = Game.GetFormFromFile(0x000D7100, "Vault13Chronicles.esp") as Scene
+    if garlStopSc != None && garlStopSc.IsPlaying()
+        garlStopSc.Stop()
+    endif
+    Actor player = Game.GetPlayer()
+    Faction raiderFact = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
+    ActorValue aggrAV = Game.GetAggressionAV()
+    ActorValue confAV = Game.GetConfidenceAV()
+    int kIdx = 0
+    while kIdx < 12
+        int kFid = 0x0000254E + kIdx
+        if kFid != 0x00002551
+            Actor kAct = Game.GetFormFromFile(kFid, "Vault13Chronicles.esp") as Actor
+            if kAct != None && !kAct.IsDead()
+                if raiderFact != None && !kAct.IsInFaction(raiderFact)
+                    kAct.AddToFaction(raiderFact)
+                endif
+                if aggrAV != None
+                    kAct.SetValue(aggrAV, 2.0)
+                endif
+                if confAV != None
+                    kAct.SetValue(confAV, 4.0)
+                endif
+                kAct.EvaluatePackage()
+                if player != None && !player.IsDead() && !kAct.IsDisabled() && !kAct.IsInCombat()
+                    kAct.StartCombat(player)
+                endif
+            endif
+        endif
+        kIdx += 1
+    endwhile
+EndFunction
+
 Function UpdateVault15RouteAndCombat()
     Actor player = Game.GetPlayer()
     if player == None
@@ -1621,6 +1852,7 @@ Function UpdateVault15RouteAndCombat()
     if !v15StateInitialized
         SetVault15State(true)
     endif
+    EnsureVault15KhansHostile()
 
     ObjectReference edBagLive = Game.GetFormFromFile(0x00002570, "Vault13Chronicles.esp") as ObjectReference
     if edBagLive != None && edBagLive.GetPositionX() < 5625.0
@@ -1804,11 +2036,9 @@ Function UpdateVault15RouteAndCombat()
         int cCleanFid = 0x000025D0 + cCleanIdx
         Actor cLive = Game.GetFormFromFile(cCleanFid, "Vault13Chronicles.esp") as Actor
         if cLive != None && !cLive.IsDead() && !cLive.IsDisabled()
-            if cCleanFid >= 0x000025DD && cCleanFid <= 0x000025E1
-                if cLive.GetPositionY() < -9600.0 || (cCleanFid >= 0x000025DF && cLive.GetPositionZ() > -560.0)
-                    cLive.StopCombat()
-                    cLive.Disable(false)
-                endif
+            if cCleanFid >= 0x000025DD && cCleanFid <= 0x000025E3
+                cLive.StopCombat()
+                cLive.Disable(false)
             endif
         endif
         cCleanIdx += 1
@@ -1882,7 +2112,7 @@ Function UpdateVault15RouteAndCombat()
     if !player.IsSneaking() && !nearExitDoor && Self.GetStage() < 30
         float pz = player.GetPositionZ()
         int kIdx = 0
-        while kIdx < 12
+        while kIdx < 12 && bVault15KhansHostile && !bVault15KhansTruce
             int kFid = 0x0000254E + kIdx
             bool allowKhanCombat = true
             if kFid == 0x00002551
@@ -1961,7 +2191,7 @@ Function DeduplicateV13Items()
     int[] qIDs = new int[5]
     qIDs[0] = 0x00004000
     qIDs[1] = 0x00005000
-    qIDs[2] = 0x00006000
+    qIDs[2] = 0x00006002
     qIDs[3] = 0x00007000
     qIDs[4] = 0x00008000
     int[] chestIDs = new int[5]
@@ -1974,9 +2204,15 @@ Function DeduplicateV13Items()
     while j < 5
         Form c = Game.GetFormFromFile(itemIDs[j], "Vault13Chronicles.esp")
         Quest q = Game.GetFormFromFile(qIDs[j], "Vault13Chronicles.esp") as Quest
+        Quest qAct5Check = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
         ObjectReference ch = Game.GetFormFromFile(chestIDs[j], "Vault13Chronicles.esp") as ObjectReference
         if c != None
-            if q != None && q.GetStage() >= 40
+            bool shouldRemoveRelic = (q != None && q.GetStage() >= 40)
+            if j == 2
+                ; Keep Vree's Sterility Autopsy Holodisk (0x00001113) in player inventory until Act V (The Cathedral) is completed!
+                shouldRemoveRelic = (qAct5Check != None && qAct5Check.GetStage() >= 40)
+            endif
+            if shouldRemoveRelic
                 if player.GetItemCount(c) > 0
                     player.RemoveItem(c, player.GetItemCount(c), true, None)
                 endif
@@ -2253,11 +2489,13 @@ Function ApplyV13Act1Stage(int auiStage)
         endif
         Quest act2Quest40 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
         if act2Quest40 != None
-            if !act2Quest40.IsRunning()
-                act2Quest40.Start()
-            endif
-            if act2Quest40.GetStage() < 15
-                act2Quest40.SetStage(15)
+            if !act2Quest40.IsCompleted() && !act2Quest40.IsStageDone(40)
+                if !act2Quest40.IsRunning()
+                    act2Quest40.Start()
+                endif
+                if act2Quest40.GetStage() < 15
+                    act2Quest40.SetStage(15)
+                endif
             endif
         endif
         V13Act2QuestScript act2S = act2Quest40 as V13Act2QuestScript
@@ -2266,7 +2504,7 @@ Function ApplyV13Act1Stage(int auiStage)
         endif
         if auiStage >= 45
             Quest act2Quest = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-            if act2Quest != None
+            if act2Quest != None && !act2Quest.IsCompleted() && !act2Quest.IsStageDone(40)
                 if !act2Quest.IsRunning()
                     act2Quest.Start()
                 endif
@@ -2288,6 +2526,9 @@ Function CheckProgressionAndLevelGate()
     endif
 
     int curStage = Self.GetStage()
+    if Self.IsCompleted() || Self.IsStageDone(40) || hydroCoreAnalyzedInTerm || rewardsGiven
+        curStage = 40
+    endif
 
     if curStage < 15
         if player.GetLevel() >= 1
@@ -2362,7 +2603,7 @@ Function CheckProgressionAndLevelGate()
     Cell v15C = Game.GetFormFromFile(0x00002500, "Vault13Chronicles.esp") as Cell
     bool inExtOrV15 = ((v13W != None && player.GetWorldSpace() == v13W) || (v15C != None && player.GetParentCell() == v15C))
 
-    if ((curStage == 15 || curStage == 16) && !portalMenuClicked && !Self.IsObjectiveDisplayed(15)) || ((curStage == 15 || curStage == 16) && portalMenuClicked && !Self.IsObjectiveDisplayed(16)) || (curStage == 20 && ((!inExtOrV15 && !Self.IsObjectiveDisplayed(20) && !Self.IsObjectiveCompleted(20)) || (inExtOrV15 && !Self.IsObjectiveDisplayed(21)))) || (curStage == 30 && !Self.IsObjectiveDisplayed(30)) || (curStage == 35 && !Self.IsObjectiveDisplayed(35)) || (curStage == 38 && !Self.IsObjectiveDisplayed(38)) || (curStage >= 40 && (!rewardsGiven || !Self.IsCompleted()))
+    if ((curStage == 15 || curStage == 16) && !portalMenuClicked && !Self.IsObjectiveDisplayed(15)) || ((curStage == 15 || curStage == 16) && portalMenuClicked && !Self.IsObjectiveDisplayed(16)) || ((curStage >= 20 && curStage < 30) && ((!inExtOrV15 && !Self.IsObjectiveDisplayed(20) && !Self.IsObjectiveCompleted(20)) || (inExtOrV15 && !Self.IsObjectiveDisplayed(21)))) || (curStage == 30 && !Self.IsObjectiveDisplayed(30)) || (curStage == 35 && !Self.IsObjectiveDisplayed(35)) || (curStage == 38 && !Self.IsObjectiveDisplayed(38)) || (curStage >= 40 && (!rewardsGiven || !Self.IsCompleted()))
         ApplyV13Act1Stage(curStage)
     endif
 EndFunction
@@ -2398,7 +2639,12 @@ EndFunction
 Event OnInit()
     RegisterPlayerEvents()
     BindRadioQuestActive()
-    SyncAllCaliforniaPersistentCoords()
+    californiaCoordsSyncedOnce = false
+    if IsPlayerInAny2161Cell()
+        StartTimer(1.8, 7)
+    elseif IsPlayerInMnemosyneCell()
+        StartTimer(0.4, 7)
+    endif
     StartTimer(2.0, 1)
 EndEvent
 
@@ -2406,6 +2652,7 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
     RegisterPlayerEvents()
     BindRadioQuestActive()
     bMenuReturnBusy = false
+    bGarlMenuBusy = false
     bApplyingAct1Stage = false
     bAnalyzingHydroCore = false
     introCheckBusy = false
@@ -2417,16 +2664,18 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
     isPlayingShortHelo = false
     pendingActivateResidentIdx = -1
     silencedResidentIdx = -1
+    californiaCoordsSyncedOnce = false
     int stg = Self.GetStage()
+    if Self.IsCompleted() || Self.IsStageDone(40) || hydroCoreAnalyzedInTerm || rewardsGiven
+        stg = 40
+    endif
     if !IsJacorenInDialogueOrScene()
         DeduplicateV13Items()
         ForceAllAct1Aliases()
-        SyncAllCaliforniaPersistentCoords()
-        EnableMnemosyneAndVault13()
-        Actor p = Game.GetPlayer()
-        Cell v15C = Game.GetFormFromFile(0x00002500, "Vault13Chronicles.esp") as Cell
-        if stg >= 20 && p != None && v15C != None && p.GetParentCell() == v15C
-            SetVault15State(true)
+        if IsPlayerInAny2161Cell()
+            StartTimer(1.8, 7)
+        elseif IsPlayerInMnemosyneCell()
+            StartTimer(0.4, 7)
         endif
     endif
     if (stg == 15 || stg == 16) && !portalMenuClicked
@@ -2438,8 +2687,8 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
         endif
         if !Self.IsObjectiveDisplayed(15)
             Self.SetObjectiveDisplayed(15, true, false)
+            Self.SetActive(true)
         endif
-        Self.SetActive(true)
     elseif (stg == 15 || stg == 16) && portalMenuClicked
         ForceQuestAlias(8, 0x00002003)
         Self.SetObjectiveCompleted(15, true)
@@ -2448,8 +2697,8 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
         endif
         if !Self.IsObjectiveDisplayed(16)
             Self.SetObjectiveDisplayed(16, true, false)
+            Self.SetActive(true)
         endif
-        Self.SetActive(true)
     elseif stg >= 20 && stg < 30
         Actor pLoad = Game.GetPlayer()
         WorldSpace v13WLoad = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
@@ -2459,13 +2708,14 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
             Self.SetObjectiveCompleted(20, true)
             if !Self.IsObjectiveDisplayed(21)
                 Self.SetObjectiveDisplayed(21, true, false)
+                Self.SetActive(true)
             endif
         else
             if !Self.IsObjectiveDisplayed(20)
                 Self.SetObjectiveDisplayed(20, true, false)
+                Self.SetActive(true)
             endif
         endif
-        Self.SetActive(true)
     elseif stg == 30
         Self.SetObjectiveCompleted(20, true)
         if Self.IsObjectiveDisplayed(21)
@@ -2473,8 +2723,8 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
         endif
         if !Self.IsObjectiveDisplayed(30)
             Self.SetObjectiveDisplayed(30, true, false)
+            Self.SetActive(true)
         endif
-        Self.SetActive(true)
     elseif stg == 35 || stg == 38
         Self.SetObjectiveCompleted(20, true)
         if Self.IsObjectiveDisplayed(21)
@@ -2492,17 +2742,24 @@ Event Actor.OnPlayerLoadGame(Actor akSender)
         if act1RetScLoad != None && act1RetScLoad.IsPlaying()
             act1RetScLoad.Stop()
         endif
-        if Self.GetStage() < 40
-            Self.SetStage(40)
+        if !Self.IsCompleted()
+            if Self.IsRunning() && Self.GetStage() < 40
+                Self.SetStage(40)
+            else
+                Self.CompleteAllObjectives()
+                Self.CompleteQuest()
+            endif
         endif
         ApplyV13Act1Stage(40)
         Quest act2QLoad = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
         if act2QLoad != None
-            if !act2QLoad.IsRunning()
-                act2QLoad.Start()
-            endif
-            if act2QLoad.GetStage() < 15
-                act2QLoad.SetStage(15)
+            if !act2QLoad.IsCompleted() && !act2QLoad.IsStageDone(40)
+                if !act2QLoad.IsRunning()
+                    act2QLoad.Start()
+                endif
+                if act2QLoad.GetStage() < 15
+                    act2QLoad.SetStage(15)
+                endif
             endif
         endif
         V13Act2QuestScript act2S = act2QLoad as V13Act2QuestScript
@@ -2567,114 +2824,118 @@ Function SetSingleMapMarkerState(int aiMarkerFid, bool abVisited, bool abShowOnM
 EndFunction
 
 Function SyncAllCaliforniaPersistentCoords()
+    if !IsPlayerInAny2161Cell()
+        return
+    endif
+    californiaCoordsSyncedOnce = true
     Actor player = Game.GetPlayer()
     WorldSpace v13World = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
     bool playerInExt = (player != None && v13World != None && player.GetWorldSpace() == v13World)
 
     ObjectReference sync3405 = Game.GetFormFromFile(0x00003405, "Vault13Chronicles.esp") as ObjectReference
     if sync3405 != None
-        if Math.Abs(sync3405.GetPositionX() - (-3200.0)) > 10.0 || Math.Abs(sync3405.GetPositionY() - 13220.0) > 10.0
-            sync3405.SetPosition(-3200.0, 13220.0, 320.0)
+        if Math.Abs(sync3405.GetPositionX() - (-7000.0)) > 10.0 || Math.Abs(sync3405.GetPositionY() - 33000.0) > 10.0
+            sync3405.SetPosition(-7000.0, 33000.0, 320.0)
             sync3405.SetAngle(0.0, 0.0, 180.0)
         endif
     endif
 
-    ; 1. Synchronize all 31 Fast-Travel Arrival Markers (0x00003510..0x0000352E)
+    ; 1. Synchronize all 31 Fast-Travel Arrival Markers (0x00003510..0x0000352E) in the 20x20 (400-cell) worldspace
     float[] ftX = new float[31]
     float[] ftY = new float[31]
     float[] ftZ = new float[31]
-    ftX[0] = -3200.0
-    ftY[0] = 13220.0
+    ftX[0] = -7000.0
+    ftY[0] = 33000.0
     ftZ[0] = 320.0
-    ftX[1] = -3200.0
-    ftY[1] = 13220.0
+    ftX[1] = -7000.0
+    ftY[1] = 33000.0
     ftZ[1] = 320.0
-    ftX[2] = 2400.0
-    ftY[2] = 9420.0
+    ftX[2] = 6500.0
+    ftY[2] = 23320.0
     ftZ[2] = 160.0
-    ftX[3] = 12600.0
-    ftY[3] = 6740.0
+    ftX[3] = 33500.0
+    ftY[3] = 13440.0
     ftZ[3] = 240.0
-    ftX[4] = 11400.0
-    ftY[4] = -2520.0
+    ftX[4] = 28000.0
+    ftY[4] = -8120.0
     ftZ[4] = 0.0
-    ftX[5] = 13600.0
-    ftY[5] = -2120.0
+    ftX[5] = 33500.0
+    ftY[5] = -7120.0
     ftZ[5] = 0.0
-    ftX[6] = 10400.0
-    ftY[6] = -4320.0
+    ftX[6] = 25500.0
+    ftY[6] = -11620.0
     ftZ[6] = 0.0
-    ftX[7] = 12000.0
-    ftY[7] = 680.0
+    ftX[7] = 29000.0
+    ftY[7] = -2120.0
     ftZ[7] = 0.0
-    ftX[8] = -9800.0
-    ftY[8] = -2720.0
+    ftX[8] = -24500.0
+    ftY[8] = -7680.0
     ftZ[8] = 120.0
-    ftX[9] = -9800.0
-    ftY[9] = 13280.0
+    ftX[9] = -31000.0
+    ftY[9] = 30820.0
     ftZ[9] = 280.0
-    ftX[10] = -4800.0
-    ftY[10] = -13320.0
+    ftX[10] = -19500.0
+    ftY[10] = -31860.0
     ftZ[10] = 40.0
-    ftX[11] = -6200.0
-    ftY[11] = 13460.0
+    ftX[11] = -18000.0
+    ftY[11] = 33360.0
     ftZ[11] = 320.0
-    ftX[12] = 3600.0
-    ftY[12] = 3840.0
+    ftX[12] = 7500.0
+    ftY[12] = 5540.0
     ftZ[12] = 80.0
-    ftX[13] = -800.0
-    ftY[13] = -3760.0
+    ftX[13] = -3500.0
+    ftY[13] = -13460.0
     ftZ[13] = 80.0
-    ftX[14] = 8200.0
-    ftY[14] = 7620.0
+    ftX[14] = 21500.0
+    ftY[14] = 18320.0
     ftZ[14] = 200.0
-    ftX[15] = -8400.0
-    ftY[15] = -8820.0
+    ftX[15] = 31500.0
+    ftY[15] = -33850.0
     ftZ[15] = 120.0
-    ftX[16] = 600.0
-    ftY[16] = -12780.0
+    ftX[16] = -5600.0
+    ftY[16] = -32280.0
     ftZ[16] = 40.0
-    ftX[17] = 6400.0
-    ftY[17] = 13440.0
+    ftX[17] = 16000.0
+    ftY[17] = 34140.0
     ftZ[17] = 160.0
-    ftX[18] = 10400.0
-    ftY[18] = 13040.0
+    ftX[18] = 26500.0
+    ftY[18] = 33140.0
     ftZ[18] = 200.0
-    ftX[19] = 14200.0
-    ftY[19] = 10440.0
+    ftX[19] = 35000.0
+    ftY[19] = 24140.0
     ftZ[19] = 200.0
-    ftX[20] = -9200.0
-    ftY[20] = 1840.0
+    ftX[20] = -18500.0
+    ftY[20] = 6140.0
     ftZ[20] = 80.0
-    ftX[21] = -2760.0
-    ftY[21] = 5240.0
+    ftX[21] = -5460.0
+    ftY[21] = 12640.0
     ftZ[21] = 80.0
-    ftX[22] = -1600.0
-    ftY[22] = 880.0
+    ftX[22] = -4000.0
+    ftY[22] = 1680.0
     ftZ[22] = 80.0
-    ftX[23] = -4800.0
-    ftY[23] = -6480.0
+    ftX[23] = -15000.0
+    ftY[23] = -19100.0
     ftZ[23] = 102.0
-    ftX[24] = -11940.0
-    ftY[24] = 7080.0
+    ftX[24] = -31840.0
+    ftY[24] = 16180.0
     ftZ[24] = 160.0
-    ftX[25] = 4460.0
-    ftY[25] = -5720.0
+    ftX[25] = 10160.0
+    ftY[25] = -15820.0
     ftZ[25] = 48.0
-    ftX[26] = -7780.0
-    ftY[26] = 7260.0
+    ftX[26] = -20380.0
+    ftY[26] = 19160.0
     ftZ[26] = 160.0
-    ftX[27] = 11840.0
-    ftY[27] = -12340.0
+    ftX[27] = 19440.0
+    ftY[27] = -34040.0
     ftZ[27] = 160.0
-    ftX[28] = 8080.0
-    ftY[28] = 2960.0
+    ftX[28] = 20180.0
+    ftY[28] = 4760.0
     ftZ[28] = 80.0
-    ftX[29] = 2360.0
-    ftY[29] = -580.0
+    ftX[29] = 5260.0
+    ftY[29] = -4980.0
     ftZ[29] = 80.0
-    ftX[30] = 6800.0
-    ftY[30] = -10720.0
+    ftX[30] = 8500.0
+    ftY[30] = -28320.0
     ftZ[30] = 40.0
 
     int fIdx = 0
@@ -2691,53 +2952,53 @@ Function SyncAllCaliforniaPersistentCoords()
         fIdx += 1
     endwhile
 
-    ; 2. Synchronize all 11 Surface Load Doors (0x00003500..0x0000350A) to their 3D concrete bunker doorframes
+    ; 2. Synchronize all 11 Surface Load Doors (0x00003500..0x0000350A) to their 3D monument/bunker portals
     float[] sdX = new float[11]
     float[] sdY = new float[11]
     float[] sdZ = new float[11]
     int[] sdFtFid = new int[11]
-    sdX[0] = -6200.0
-    sdY[0] = 13600.0
+    sdX[0] = -18000.0
+    sdY[0] = 33500.0
     sdZ[0] = 320.0
     sdFtFid[0] = 0x0000351B
-    sdX[1] = -3200.0
-    sdY[1] = 13360.0
+    sdX[1] = -7000.0
+    sdY[1] = 33140.0
     sdZ[1] = 320.0
     sdFtFid[1] = 0x00003511
-    sdX[2] = 12600.0
-    sdY[2] = 6880.0
+    sdX[2] = 33500.0
+    sdY[2] = 13580.0
     sdZ[2] = 240.0
     sdFtFid[2] = 0x00003513
-    sdX[3] = 11400.0
-    sdY[3] = -2380.0
+    sdX[3] = 28000.0
+    sdY[3] = -7980.0
     sdZ[3] = 0.0
     sdFtFid[3] = 0x00003514
-    sdX[4] = 13600.0
-    sdY[4] = -1980.0
+    sdX[4] = 33500.0
+    sdY[4] = -6980.0
     sdZ[4] = 0.0
     sdFtFid[4] = 0x00003515
-    sdX[5] = 10400.0
-    sdY[5] = -4180.0
+    sdX[5] = 25500.0
+    sdY[5] = -11480.0
     sdZ[5] = 0.0
     sdFtFid[5] = 0x00003516
-    sdX[6] = 12000.0
-    sdY[6] = 820.0
+    sdX[6] = 29000.0
+    sdY[6] = -1980.0
     sdZ[6] = 0.0
     sdFtFid[6] = 0x00003517
-    sdX[7] = -9800.0
-    sdY[7] = -2580.0
+    sdX[7] = -24500.0
+    sdY[7] = -7480.0
     sdZ[7] = 120.0
     sdFtFid[7] = 0x00003518
-    sdX[8] = -9800.0
-    sdY[8] = 13420.0
+    sdX[8] = -31000.0
+    sdY[8] = 31020.0
     sdZ[8] = 280.0
     sdFtFid[8] = 0x00003519
-    sdX[9] = -4800.0
-    sdY[9] = -13180.0
+    sdX[9] = -19500.0
+    sdY[9] = -31480.0
     sdZ[9] = 40.0
     sdFtFid[9] = 0x0000351A
-    sdX[10] = -2600.0
-    sdY[10] = 13160.0
+    sdX[10] = -6400.0
+    sdY[10] = 32940.0
     sdZ[10] = -3000.0
     sdFtFid[10] = 0x00003511
 
@@ -2752,17 +3013,6 @@ Function SyncAllCaliforniaPersistentCoords()
                 endif
                 if Math.Abs(sdRef.GetPositionZ() - sdZ[sIdx]) > 10.0
                     sdRef.SetPosition(sdX[sIdx], sdY[sIdx], sdZ[sIdx])
-                endif
-                ObjectReference b0064 = Game.GetFormFromFile(0x000B0064, "Vault13Chronicles.esp") as ObjectReference
-                if b0064 != None && !b0064.IsDisabled()
-                    int dbIdx = 0
-                    while dbIdx < 50
-                        ObjectReference dbPiece = Game.GetFormFromFile(0x000B0064 + dbIdx, "Vault13Chronicles.esp") as ObjectReference
-                        if dbPiece != None && !dbPiece.IsDisabled()
-                            dbPiece.Disable(false)
-                        endif
-                        dbIdx += 1
-                    endwhile
                 endif
                 ObjectReference oldCaveTerm = Game.GetFormFromFile(0x00002230, "Vault13Chronicles.esp") as ObjectReference
                 if oldCaveTerm != None && !oldCaveTerm.IsDisabled()
@@ -2792,102 +3042,102 @@ Function SyncAllCaliforniaPersistentCoords()
         endif
     endif
 
-    ; 3. Synchronize all 31 Pip-Boy MapMarkers (0x00003410..0x0000342E) across the full 8x8 worldspace
+    ; 3. Synchronize all 31 Pip-Boy MapMarkers (0x00003410..0x0000342E) across the full 20x20 (400-cell) worldspace
     float[] mkX = new float[31]
     float[] mkY = new float[31]
     float[] mkZ = new float[31]
-    mkX[0] = -3200.0
-    mkY[0] = 13600.0
+    mkX[0] = -7000.0
+    mkY[0] = 33380.0
     mkZ[0] = 320.0
-    mkX[1] = -2600.0
-    mkY[1] = 13200.0
+    mkX[1] = -6400.0
+    mkY[1] = 32980.0
     mkZ[1] = 320.0
-    mkX[2] = 2400.0
-    mkY[2] = 9600.0
+    mkX[2] = 6500.0
+    mkY[2] = 23500.0
     mkZ[2] = 160.0
-    mkX[3] = 12600.0
-    mkY[3] = 6800.0
+    mkX[3] = 33500.0
+    mkY[3] = 13500.0
     mkZ[3] = 240.0
-    mkX[4] = 11400.0
-    mkY[4] = -2400.0
+    mkX[4] = 28000.0
+    mkY[4] = -8000.0
     mkZ[4] = 0.0
-    mkX[5] = 13600.0
-    mkY[5] = -2000.0
+    mkX[5] = 33500.0
+    mkY[5] = -7000.0
     mkZ[5] = 0.0
-    mkX[6] = 10400.0
-    mkY[6] = -4200.0
+    mkX[6] = 25500.0
+    mkY[6] = -11500.0
     mkZ[6] = 0.0
-    mkX[7] = 12000.0
-    mkY[7] = 800.0
+    mkX[7] = 29000.0
+    mkY[7] = -2000.0
     mkZ[7] = 0.0
-    mkX[8] = -9800.0
-    mkY[8] = -2600.0
+    mkX[8] = -24500.0
+    mkY[8] = -7500.0
     mkZ[8] = 120.0
-    mkX[9] = -9800.0
-    mkY[9] = 13400.0
+    mkX[9] = -31000.0
+    mkY[9] = 31000.0
     mkZ[9] = 280.0
-    mkX[10] = -4800.0
-    mkY[10] = -13200.0
+    mkX[10] = -19500.0
+    mkY[10] = -31500.0
     mkZ[10] = 40.0
-    mkX[11] = -6200.0
-    mkY[11] = 13600.0
+    mkX[11] = -18000.0
+    mkY[11] = 33500.0
     mkZ[11] = 320.0
-    mkX[12] = 3600.0
-    mkY[12] = 3800.0
+    mkX[12] = 7500.0
+    mkY[12] = 5500.0
     mkZ[12] = 80.0
-    mkX[13] = -800.0
-    mkY[13] = -3800.0
+    mkX[13] = -3500.0
+    mkY[13] = -13500.0
     mkZ[13] = 80.0
-    mkX[14] = 8200.0
-    mkY[14] = 7800.0
+    mkX[14] = 21500.0
+    mkY[14] = 18500.0
     mkZ[14] = 200.0
-    mkX[15] = -8400.0
-    mkY[15] = -8600.0
+    mkX[15] = 31500.0
+    mkY[15] = -33280.0
     mkZ[15] = 120.0
-    mkX[16] = 600.0
-    mkY[16] = -12800.0
+    mkX[16] = -5600.0
+    mkY[16] = -32200.0
     mkZ[16] = 40.0
-    mkX[17] = -11600.0
-    mkY[17] = 7400.0
+    mkX[17] = -31500.0
+    mkY[17] = 16500.0
     mkZ[17] = 160.0
-    mkX[18] = 4800.0
-    mkY[18] = -5400.0
+    mkX[18] = 10500.0
+    mkY[18] = -15500.0
     mkZ[18] = 48.0
-    mkX[19] = -7400.0
-    mkY[19] = 7600.0
+    mkX[19] = -20000.0
+    mkY[19] = 19500.0
     mkZ[19] = 160.0
-    mkX[20] = 12400.0
-    mkY[20] = -11800.0
+    mkX[20] = 20000.0
+    mkY[20] = -33500.0
     mkZ[20] = 160.0
-    mkX[21] = 8400.0
-    mkY[21] = 3200.0
+    mkX[21] = 20500.0
+    mkY[21] = 5000.0
     mkZ[21] = 80.0
-    mkX[22] = 2600.0
-    mkY[22] = -400.0
+    mkX[22] = 5500.0
+    mkY[22] = -4800.0
     mkZ[22] = 80.0
-    mkX[23] = 6400.0
-    mkY[23] = 13800.0
+    mkX[23] = 16000.0
+    mkY[23] = 34500.0
     mkZ[23] = 160.0
-    mkX[24] = 10400.0
-    mkY[24] = 13400.0
+    mkX[24] = 26500.0
+    mkY[24] = 33500.0
     mkZ[24] = 200.0
-    mkX[25] = 14200.0
-    mkY[25] = 10800.0
+    mkX[25] = 35000.0
+    mkY[25] = 24500.0
     mkZ[25] = 200.0
-    mkX[26] = -9200.0
-    mkY[26] = 2200.0
+    mkX[26] = -18500.0
+    mkY[26] = 6500.0
     mkZ[26] = 80.0
-    mkX[27] = -2800.0
-    mkY[27] = 5600.0
+    mkX[27] = -5500.0
+    mkY[27] = 13000.0
     mkZ[27] = 80.0
-    mkX[28] = -1600.0
-    mkY[28] = 1200.0
+    mkX[28] = -4000.0
+    mkY[28] = 2000.0
     mkZ[28] = 80.0
-    mkX[29] = -4800.0
-    mkY[29] = -6180.0
+    mkX[29] = -15000.0
+    mkY[29] = -18500.0
     mkZ[29] = 102.0
-    mkX[30] = 6800.0
-    mkY[30] = -10400.0
+    mkX[30] = 8500.0
+    mkY[30] = -28000.0
     mkZ[30] = 40.0
 
     int mIdx = 0
@@ -2906,89 +3156,89 @@ Function SyncAllCaliforniaPersistentCoords()
     float[] ecX = new float[28]
     float[] ecY = new float[28]
     float[] ecZ = new float[28]
-    ecX[0] = -1200.0
-    ecY[0] = 12800.0
-    ecZ[0] = 270.0
-    ecX[1] = -400.0
-    ecY[1] = 12200.0
-    ecZ[1] = 254.0
-    ecX[2] = 560.0
-    ecY[2] = 11360.0
-    ecZ[2] = 166.0
-    ecX[3] = 10400.0
-    ecY[3] = 7400.0
-    ecZ[3] = 246.0
-    ecX[4] = 10800.0
-    ecY[4] = 7100.0
-    ecZ[4] = 246.0
-    ecX[5] = 11200.0
-    ecY[5] = 6800.0
-    ecZ[5] = 246.0
-    ecX[6] = 10850.0
-    ecY[6] = -150.0
+    ecX[0] = -2800.0
+    ecY[0] = 30400.0
+    ecZ[0] = 286.0
+    ecX[1] = -800.0
+    ecY[1] = 29000.0
+    ecZ[1] = 246.0
+    ecX[2] = 1400.0
+    ecY[2] = 27600.0
+    ecZ[2] = 214.0
+    ecX[3] = 27200.0
+    ecY[3] = 16200.0
+    ecZ[3] = 174.0
+    ecX[4] = 28600.0
+    ecY[4] = 15600.0
+    ecZ[4] = 182.0
+    ecX[5] = 30200.0
+    ecY[5] = 14800.0
+    ecZ[5] = 190.0
+    ecX[6] = 25600.0
+    ecY[6] = -4600.0
     ecZ[6] = 6.0
-    ecX[7] = 12150.0
-    ecY[7] = -600.0
+    ecX[7] = 31200.0
+    ecY[7] = -4600.0
     ecZ[7] = 6.0
-    ecX[8] = 10950.0
-    ecY[8] = -2750.0
+    ecX[8] = 26200.0
+    ecY[8] = -9600.0
     ecZ[8] = 6.0
-    ecX[9] = 12450.0
-    ecY[9] = -2350.0
+    ecX[9] = 31000.0
+    ecY[9] = -9200.0
     ecZ[9] = 6.0
-    ecX[10] = 10550.0
-    ecY[10] = -3100.0
+    ecX[10] = 29500.0
+    ecY[10] = -12400.0
     ecZ[10] = 6.0
-    ecX[11] = 9100.0
-    ecY[11] = -1800.0
-    ecZ[11] = 6.0
-    ecX[12] = -8200.0
-    ecY[12] = 10800.0
-    ecZ[12] = 310.0
-    ecX[13] = -9450.0
-    ecY[13] = 13160.0
+    ecX[11] = 22200.0
+    ecY[11] = -6400.0
+    ecZ[11] = 22.0
+    ecX[12] = -26500.0
+    ecY[12] = 24500.0
+    ecZ[12] = 254.0
+    ecX[13] = -30550.0
+    ecY[13] = 30520.0
     ecZ[13] = 286.0
-    ecX[14] = -9600.0
-    ecY[14] = -400.0
-    ecZ[14] = 142.0
-    ecX[15] = -6200.0
-    ecY[15] = -11200.0
-    ecZ[15] = 46.0
-    ecX[16] = -1600.0
-    ecY[16] = 12600.0
-    ecZ[16] = 318.0
-    ecX[17] = -800.0
-    ecY[17] = 11800.0
-    ecZ[17] = 254.0
-    ecX[18] = -880.0
-    ecY[18] = 10960.0
-    ecZ[18] = 190.0
-    ecX[19] = 600.0
-    ecY[19] = 11800.0
-    ecZ[19] = 174.0
-    ecX[20] = 4800.0
-    ecY[20] = 11600.0
-    ecZ[20] = 166.0
-    ecX[21] = 10600.0
-    ecY[21] = 7800.0
-    ecZ[21] = 246.0
-    ecX[22] = 10680.0
-    ecY[22] = 7250.0
-    ecZ[22] = 246.0
-    ecX[23] = 11600.0
-    ecY[23] = 9200.0
-    ecZ[23] = 222.0
-    ecX[24] = 12400.0
-    ecY[24] = 9600.0
+    ecX[14] = -25000.0
+    ecY[14] = -800.0
+    ecZ[14] = 166.0
+    ecX[15] = -14200.0
+    ecY[15] = -26800.0
+    ecZ[15] = 166.0
+    ecX[16] = -3400.0
+    ecY[16] = 30000.0
+    ecZ[16] = 302.0
+    ecX[17] = -1600.0
+    ecY[17] = 28400.0
+    ecZ[17] = 246.0
+    ecX[18] = 400.0
+    ecY[18] = 27000.0
+    ecZ[18] = 230.0
+    ecX[19] = 2200.0
+    ecY[19] = 27200.0
+    ecZ[19] = 222.0
+    ecX[20] = 11800.0
+    ecY[20] = 28500.0
+    ecZ[20] = 206.0
+    ecX[21] = 14200.0
+    ecY[21] = 14800.0
+    ecZ[21] = 158.0
+    ecX[22] = 27800.0
+    ecY[22] = 15900.0
+    ecZ[22] = 174.0
+    ecX[23] = 29500.0
+    ecY[23] = 21500.0
+    ecZ[23] = 198.0
+    ecX[24] = 30200.0
+    ecY[24] = 21900.0
     ecZ[24] = 198.0
-    ecX[25] = -6200.0
-    ecY[25] = 3800.0
-    ecZ[25] = 166.0
-    ecX[26] = -6600.0
-    ecY[26] = 3400.0
-    ecZ[26] = 166.0
-    ecX[27] = -5800.0
-    ecY[27] = -4800.0
+    ecX[25] = -14500.0
+    ecY[25] = 14500.0
+    ecZ[25] = 390.0
+    ecX[26] = 17500.0
+    ecY[26] = -21500.0
+    ecZ[26] = 102.0
+    ecX[27] = 25500.0
+    ecY[27] = -25500.0
     ecZ[27] = 102.0
 
     int ecI = 0
@@ -2997,7 +3247,7 @@ Function SyncAllCaliforniaPersistentCoords()
         if ecA != None && !ecA.IsDead()
             float curEcX = ecA.GetPositionX()
             float curEcY = ecA.GetPositionY()
-            bool trappedInBunker = (curEcX >= 10970.0 && curEcX <= 11950.0 && curEcY >= -2440.0 && curEcY <= -1620.0) || (curEcX >= 13170.0 && curEcX <= 14150.0 && curEcY >= -2040.0 && curEcY <= -1220.0) || (curEcX >= 9970.0 && curEcX <= 10950.0 && curEcY >= -4240.0 && curEcY <= -3420.0) || (curEcX >= 11570.0 && curEcX <= 12550.0 && curEcY >= 760.0 && curEcY <= 1580.0)
+            bool trappedInBunker = (curEcX >= 27570.0 && curEcX <= 28550.0 && curEcY >= -8040.0 && curEcY <= -7220.0) || (curEcX >= 33070.0 && curEcX <= 34050.0 && curEcY >= -7040.0 && curEcY <= -6220.0) || (curEcX >= 25070.0 && curEcX <= 26050.0 && curEcY >= -11540.0 && curEcY <= -10720.0) || (curEcX >= 28570.0 && curEcX <= 29550.0 && curEcY >= -2040.0 && curEcY <= -1220.0)
             if trappedInBunker || (!ecA.IsInCombat() && (Math.Abs(curEcX - ecX[ecI]) > 95.0 || Math.Abs(curEcY - ecY[ecI]) > 95.0))
                 ecA.SetPosition(ecX[ecI], ecY[ecI], ecZ[ecI])
             endif
@@ -3010,24 +3260,24 @@ Function SyncAllCaliforniaPersistentCoords()
     float[] ambY = new float[5]
     float[] ambZ = new float[5]
     ambFids[0] = 0x000035B0
-    ambX[0] = 2780.0
-    ambY[0] = 8980.0
+    ambX[0] = 6880.0
+    ambY[0] = 22380.0
     ambZ[0] = 160.0
     ambFids[1] = 0x000035B1
-    ambX[1] = 2960.0
-    ambY[1] = 9040.0
+    ambX[1] = 7060.0
+    ambY[1] = 22440.0
     ambZ[1] = 160.0
     ambFids[2] = 0x000035B2
-    ambX[2] = 2920.0
-    ambY[2] = 8880.0
+    ambX[2] = 7020.0
+    ambY[2] = 22280.0
     ambZ[2] = 160.0
     ambFids[3] = 0x000035C3
-    ambX[3] = 3740.0
-    ambY[3] = 4260.0
+    ambX[3] = 7640.0
+    ambY[3] = 5960.0
     ambZ[3] = 80.0
     ambFids[4] = 0x000035CD
-    ambX[4] = -980.0
-    ambY[4] = -4260.0
+    ambX[4] = -1950.0
+    ambY[4] = -12550.0
     ambZ[4] = 80.0
     int aIdx = 0
     while aIdx < 5
@@ -3044,8 +3294,8 @@ Function SyncAllCaliforniaPersistentCoords()
     Actor dogShady = Game.GetFormFromFile(0x000035B3, "Vault13Chronicles.esp") as Actor
     if dogShady != None && !dogShady.IsDead() && !dogShady.IsInCombat()
         if junktownS == None || !junktownS.IsDogmeatRecruited()
-            if Math.Abs(dogShady.GetPositionX() - 2600.0) > 120.0 || Math.Abs(dogShady.GetPositionY() - 9600.0) > 120.0
-                dogShady.SetPosition(2600.0, 9600.0, 160.0)
+            if Math.Abs(dogShady.GetPositionX() - 6700.0) > 120.0 || Math.Abs(dogShady.GetPositionY() - 23500.0) > 120.0
+                dogShady.SetPosition(6700.0, 23500.0, 160.0)
             endif
         endif
     endif
@@ -3056,61 +3306,85 @@ Function SyncAllCaliforniaPersistentCoords()
     float[] npcZ = new float[10]
     float[] npcAng = new float[10]
     npcFids[0] = 0x000035A0
-    npcX[0] = 2250.0
-    npcY[0] = 9690.0
+    npcX[0] = 6350.0
+    npcY[0] = 23590.0
     npcZ[0] = 160.0
     npcAng[0] = 180.0
     npcFids[1] = 0x000035C0
-    npcX[1] = 3850.0
-    npcY[1] = 3820.0
+    npcX[1] = 7750.0
+    npcY[1] = 5520.0
     npcZ[1] = 80.0
     npcAng[1] = 225.0
     npcFids[2] = 0x000035C1
-    npcX[2] = 3310.0
-    npcY[2] = 3820.0
+    npcX[2] = 7210.0
+    npcY[2] = 5520.0
     npcZ[2] = 80.0
     npcAng[2] = 90.0
     npcFids[3] = 0x000035C7
-    npcX[3] = -660.0
-    npcY[3] = -3820.0
+    npcX[3] = -1650.0
+    npcY[3] = -14500.0
     npcZ[3] = 80.0
     npcAng[3] = 270.0
     npcFids[4] = 0x000035C8
-    npcX[4] = -920.0
-    npcY[4] = -3700.0
+    npcX[4] = -1650.0
+    npcY[4] = -13000.0
     npcZ[4] = 80.0
-    npcAng[4] = 135.0
+    npcAng[4] = 270.0
     npcFids[5] = 0x000035D6
-    npcX[5] = 1020.0
-    npcY[5] = -12780.0
+    npcX[5] = -2200.0
+    npcY[5] = -34400.0
     npcZ[5] = 40.0
-    npcAng[5] = 270.0
+    npcAng[5] = 0.0
     npcFids[6] = 0x000035E6
-    npcX[6] = -760.0
-    npcY[6] = -4250.0
+    npcX[6] = -3500.0
+    npcY[6] = -15750.0
     npcZ[6] = 80.0
     npcAng[6] = 0.0
     npcFids[7] = 0x000035E7
-    npcX[7] = -1040.0
-    npcY[7] = -4020.0
+    npcX[7] = -5400.0
+    npcY[7] = -11800.0
     npcZ[7] = 80.0
-    npcAng[7] = 45.0
-    npcFids[8] = 0x000035E8
-    npcX[8] = -1390.0
-    npcY[8] = -4200.0
-    npcZ[8] = 80.0
-    npcAng[8] = 90.0
-    npcFids[9] = 0x000035E9
-    npcX[9] = -1340.0
-    npcY[9] = -4100.0
-    npcZ[9] = 80.0
-    npcAng[9] = 90.0
+    npcAng[7] = 135.0
+    WorldSpace ws2161 = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    ObjectReference ftLh = Game.GetFormFromFile(0x00003518, "Vault13Chronicles.esp") as ObjectReference
+    if ftLh != None
+        if Math.Abs(ftLh.GetPositionX() - (-24500.0)) > 4.0 || Math.Abs(ftLh.GetPositionY() - (-7680.0)) > 4.0 || Math.Abs(ftLh.GetPositionZ() - 120.0) > 4.0
+            ftLh.SetPosition(-24500.0, -7680.0, 120.0)
+            ftLh.SetAngle(0.0, 0.0, 0.0)
+        endif
+    endif
+    ObjectReference ftGlow = Game.GetFormFromFile(0x0000351F, "Vault13Chronicles.esp") as ObjectReference
+    if ftGlow != None
+        if Math.Abs(ftGlow.GetPositionX() - 31500.0) > 4.0 || Math.Abs(ftGlow.GetPositionY() - (-33850.0)) > 4.0 || Math.Abs(ftGlow.GetPositionZ() - 120.0) > 4.0
+            ftGlow.SetPosition(31500.0, -33850.0, 120.0)
+            ftGlow.SetAngle(0.0, 0.0, 0.0)
+        endif
+    endif
+    npcFids[8] = 0x000035D0
+    npcX[8] = -24660.0
+    npcY[8] = -7840.0
+    npcZ[8] = 124.0
+    npcAng[8] = 150.0
+    npcFids[9] = 0x000035D1
+    npcX[9] = -24340.0
+    npcY[9] = -7840.0
+    npcZ[9] = 124.0
+    npcAng[9] = 210.0
     int nIdx = 0
     while nIdx < 10
         Actor sNpc = Game.GetFormFromFile(npcFids[nIdx], "Vault13Chronicles.esp") as Actor
         if sNpc != None && !sNpc.IsDead() && !sNpc.IsDisabled() && !sNpc.IsInCombat() && !sNpc.IsTalking()
-            if Math.Abs(sNpc.GetPositionX() - npcX[nIdx]) > 45.0 || Math.Abs(sNpc.GetPositionY() - npcY[nIdx]) > 45.0
-                sNpc.SetPosition(npcX[nIdx], npcY[nIdx], npcZ[nIdx])
+            float npcPosZ = sNpc.GetPositionZ()
+            float minAllowedZ = npcZ[nIdx] - 8.0
+            if nIdx == 8 || nIdx == 9
+                minAllowedZ = 96.0
+            endif
+            if Math.Abs(sNpc.GetPositionX() - npcX[nIdx]) > 40.0 || Math.Abs(sNpc.GetPositionY() - npcY[nIdx]) > 40.0 || npcPosZ < minAllowedZ || npcPosZ > (npcZ[nIdx] + 18.0)
+                if (nIdx == 8 || nIdx == 9) && ftLh != None
+                    sNpc.MoveTo(ftLh, npcX[nIdx] - (-24500.0), npcY[nIdx] - (-7680.0), 2.0, false)
+                else
+                    sNpc.SetPosition(npcX[nIdx], npcY[nIdx], npcZ[nIdx])
+                endif
                 sNpc.SetAngle(0.0, 0.0, npcAng[nIdx])
                 sNpc.EvaluatePackage()
             elseif sNpc.Is3DLoaded()
@@ -3122,6 +3396,14 @@ Function SyncAllCaliforniaPersistentCoords()
         endif
         nIdx += 1
     endwhile
+    Actor legacyDecker = Game.GetFormFromFile(0x000035E8, "Vault13Chronicles.esp") as Actor
+    if legacyDecker != None && !legacyDecker.IsDisabled()
+        legacyDecker.DisableNoWait()
+    endif
+    Actor legacyKane = Game.GetFormFromFile(0x000035E9, "Vault13Chronicles.esp") as Actor
+    if legacyKane != None && !legacyKane.IsDisabled()
+        legacyKane.DisableNoWait()
+    endif
 EndFunction
 
 Function UpdateSouthernCaliforniaMapMarkers()
@@ -3130,20 +3412,22 @@ Function UpdateSouthernCaliforniaMapMarkers()
         return
     endif
 
-    int[] allModCells = new int[11]
+    int[] allModCells = new int[13]
     allModCells[0] = 0x00002000
     allModCells[1] = 0x00002100
     allModCells[2] = 0x00002200
     allModCells[3] = 0x00002500
-    allModCells[4] = 0x00002900
-    allModCells[5] = 0x00002A00
-    allModCells[6] = 0x00002B00
-    allModCells[7] = 0x00002C00
-    allModCells[8] = 0x00002D00
-    allModCells[9] = 0x00002E00
-    allModCells[10] = 0x00002F00
+    allModCells[4] = 0x00002700
+    allModCells[5] = 0x00002800
+    allModCells[6] = 0x00002900
+    allModCells[7] = 0x00002A00
+    allModCells[8] = 0x00002B00
+    allModCells[9] = 0x00002C00
+    allModCells[10] = 0x00002D00
+    allModCells[11] = 0x00002E00
+    allModCells[12] = 0x00002F00
     int cIdx = 0
-    while cIdx < 11
+    while cIdx < 13
         Cell modC = Game.GetFormFromFile(allModCells[cIdx], "Vault13Chronicles.esp") as Cell
         if modC != None
             modC.EnableFastTravel(true)
@@ -3155,6 +3439,7 @@ Function UpdateSouthernCaliforniaMapMarkers()
     Cell c2100 = Game.GetFormFromFile(0x00002100, "Vault13Chronicles.esp") as Cell
     Cell c2200 = Game.GetFormFromFile(0x00002200, "Vault13Chronicles.esp") as Cell
     Cell c2500 = Game.GetFormFromFile(0x00002500, "Vault13Chronicles.esp") as Cell
+    Cell c2800 = Game.GetFormFromFile(0x00002800, "Vault13Chronicles.esp") as Cell
     Cell c2900 = Game.GetFormFromFile(0x00002900, "Vault13Chronicles.esp") as Cell
     Cell c2A00 = Game.GetFormFromFile(0x00002A00, "Vault13Chronicles.esp") as Cell
     Cell c2B00 = Game.GetFormFromFile(0x00002B00, "Vault13Chronicles.esp") as Cell
@@ -3164,7 +3449,7 @@ Function UpdateSouthernCaliforniaMapMarkers()
     Cell c2F00 = Game.GetFormFromFile(0x00002F00, "Vault13Chronicles.esp") as Cell
 
     Quest q2 = Game.GetFormFromFile(0x00005000, "Vault13Chronicles.esp") as Quest
-    Quest q3 = Game.GetFormFromFile(0x00006000, "Vault13Chronicles.esp") as Quest
+    Quest q3 = Game.GetFormFromFile(0x00006002, "Vault13Chronicles.esp") as Quest
     Quest q4 = Game.GetFormFromFile(0x00007000, "Vault13Chronicles.esp") as Quest
     Quest q5 = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
 
@@ -3267,6 +3552,12 @@ Function UpdateSouthernCaliforniaMapMarkers()
         endif
         visitedCathedral = true
     endif
+    if (c2800 != None && pCell == c2800) || (mk341F != None && mk341F.CanFastTravelToMarker()) || (inExtWorld && mk341F != None && player.GetDistance(mk341F) < 850.0)
+        if !visitedWestTek && mk341F != None && !mk341F.CanFastTravelToMarker() && ((c2800 != None && pCell == c2800) || inExtWorld)
+            Game.RewardPlayerXP(25, false)
+        endif
+        visitedWestTek = true
+    endif
 
     if IsPlayerInAny2161Cell() || worldMap2161Synced
         SetSingleMapMarkerState(0x00003410, visitedV13, true)
@@ -3284,7 +3575,7 @@ Function UpdateSouthernCaliforniaMapMarkers()
         SetSingleMapMarkerState(0x0000341C, (mk341C != None && mk341C.CanFastTravelToMarker()), true)
         SetSingleMapMarkerState(0x0000341D, (mk341D != None && mk341D.CanFastTravelToMarker()), true)
         SetSingleMapMarkerState(0x0000341E, (mk341E != None && mk341E.CanFastTravelToMarker()), true)
-        SetSingleMapMarkerState(0x0000341F, (mk341F != None && mk341F.CanFastTravelToMarker()), true)
+        SetSingleMapMarkerState(0x0000341F, (visitedWestTek || (mk341F != None && mk341F.CanFastTravelToMarker())), true)
         SetSingleMapMarkerState(0x00003420, (mk3420 != None && mk3420.CanFastTravelToMarker()), true)
         SetSingleMapMarkerState(0x00003421, (mk3421 != None && mk3421.CanFastTravelToMarker()), true)
         SetSingleMapMarkerState(0x00003422, (mk3422 != None && mk3422.CanFastTravelToMarker()), true)
@@ -3316,19 +3607,22 @@ bool Function IsPlayerInAny2161Cell()
     if pCell == None
         return false
     endif
-    int[] cells2161 = new int[10]
+    int[] cells2161 = new int[13]
     cells2161[0] = 0x00002100
     cells2161[1] = 0x00002200
     cells2161[2] = 0x00002500
-    cells2161[3] = 0x00002900
-    cells2161[4] = 0x00002A00
-    cells2161[5] = 0x00002B00
-    cells2161[6] = 0x00002C00
-    cells2161[7] = 0x00002D00
-    cells2161[8] = 0x00002E00
-    cells2161[9] = 0x00002F00
+    cells2161[3] = 0x00002700
+    cells2161[4] = 0x00002800
+    cells2161[5] = 0x00002900
+    cells2161[6] = 0x00002A00
+    cells2161[7] = 0x00002B00
+    cells2161[8] = 0x00002C00
+    cells2161[9] = 0x00002D00
+    cells2161[10] = 0x00002E00
+    cells2161[11] = 0x00002F00
+    cells2161[12] = 0x00002D80
     int idx = 0
-    while idx < 10
+    while idx < 13
         Cell c = Game.GetFormFromFile(cells2161[idx], "Vault13Chronicles.esp") as Cell
         if c != None && pCell == c
             return true
@@ -3336,6 +3630,15 @@ bool Function IsPlayerInAny2161Cell()
         idx += 1
     endwhile
     return false
+EndFunction
+
+bool Function IsPlayerInMnemosyneCell()
+    Actor player = Game.GetPlayer()
+    if player == None
+        return false
+    endif
+    Cell mnemoCell = Game.GetFormFromFile(0x00002000, "Vault13Chronicles.esp") as Cell
+    return (mnemoCell != None && player.GetParentCell() == mnemoCell)
 EndFunction
 
 Function BindRadioQuestActive()
@@ -3358,11 +3661,18 @@ Function BindRadioQuestActive()
     endif
     Quest shadyQ = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
     if shadyQ != None
-        if !shadyQ.IsRunning() && !shadyQ.IsCompleted()
-            shadyQ.Start()
-        endif
-        if shadyQ.GetStage() < 10
-            shadyQ.SetStage(10)
+        if shadyQ.IsCompleted() || shadyQ.GetStage() >= 40 || shadyQ.IsStageDone(40)
+            if !shadyQ.IsCompleted()
+                shadyQ.CompleteAllObjectives()
+                shadyQ.CompleteQuest()
+            endif
+        else
+            if !shadyQ.IsRunning()
+                shadyQ.Start()
+            endif
+            if shadyQ.GetStage() < 10
+                shadyQ.SetStage(10)
+            endif
         endif
         V13SideQuestShadySandsScript shadyS = shadyQ as V13SideQuestShadySandsScript
         if shadyS != None
@@ -3379,11 +3689,18 @@ Function BindRadioQuestActive()
     endif
     Quest tardisQ = Game.GetFormFromFile(0x00015000, "Vault13Chronicles.esp") as Quest
     if tardisQ != None
-        if !tardisQ.IsRunning() && !tardisQ.IsCompleted()
-            tardisQ.Start()
-        endif
-        if tardisQ.GetStage() < 10
-            tardisQ.SetStage(10)
+        if tardisQ.IsCompleted() || tardisQ.GetStage() >= 30 || tardisQ.IsStageDone(30)
+            if !tardisQ.IsCompleted()
+                tardisQ.CompleteAllObjectives()
+                tardisQ.CompleteQuest()
+            endif
+        else
+            if !tardisQ.IsRunning()
+                tardisQ.Start()
+            endif
+            if tardisQ.GetStage() < 10
+                tardisQ.SetStage(10)
+            endif
         endif
         V13SideQuestTardisScript tardisS = tardisQ as V13SideQuestTardisScript
         if tardisS != None
@@ -3392,83 +3709,155 @@ Function BindRadioQuestActive()
     endif
     Quest nukaQ = Game.GetFormFromFile(0x00016000, "Vault13Chronicles.esp") as Quest
     if nukaQ != None
-        if !nukaQ.IsRunning() && !nukaQ.IsCompleted()
-            nukaQ.Start()
-        endif
-        if nukaQ.GetStage() < 10
-            nukaQ.SetStage(10)
-        endif
-        V13SideQuestTardisScript nukaS = nukaQ as V13SideQuestTardisScript
-        if nukaS != None
-            nukaS.SetupTardisListeners()
+        if nukaQ.IsCompleted() || nukaQ.GetStage() >= 30 || nukaQ.IsStageDone(30)
+            if !nukaQ.IsCompleted()
+                nukaQ.CompleteAllObjectives()
+                nukaQ.CompleteQuest()
+            endif
+        else
+            if !nukaQ.IsRunning()
+                nukaQ.Start()
+            endif
+            if nukaQ.GetStage() < 10
+                nukaQ.SetStage(10)
+            endif
+            V13SideQuestTardisScript nukaS = nukaQ as V13SideQuestTardisScript
+            if nukaS != None
+                nukaS.SetupTardisListeners()
+            endif
         endif
     endif
     Quest alienQ = Game.GetFormFromFile(0x00017000, "Vault13Chronicles.esp") as Quest
     if alienQ != None
-        if !alienQ.IsRunning() && !alienQ.IsCompleted()
-            alienQ.Start()
-        endif
-        if alienQ.GetStage() < 10
-            alienQ.SetStage(10)
-        endif
-        V13SideQuestTardisScript alienS = alienQ as V13SideQuestTardisScript
-        if alienS != None
-            alienS.SetupTardisListeners()
+        if alienQ.IsCompleted() || alienQ.GetStage() >= 30 || alienQ.IsStageDone(30)
+            if !alienQ.IsCompleted()
+                alienQ.CompleteAllObjectives()
+                alienQ.CompleteQuest()
+            endif
+        else
+            if !alienQ.IsRunning()
+                alienQ.Start()
+            endif
+            if alienQ.GetStage() < 10
+                alienQ.SetStage(10)
+            endif
+            V13SideQuestTardisScript alienS = alienQ as V13SideQuestTardisScript
+            if alienS != None
+                alienS.SetupTardisListeners()
+            endif
         endif
     endif
     Quest gfQ = Game.GetFormFromFile(0x0001B000, "Vault13Chronicles.esp") as Quest
     if gfQ != None
-        if !gfQ.IsRunning() && !gfQ.IsCompleted()
-            gfQ.Start()
-        endif
-        if gfQ.GetStage() < 10
-            gfQ.SetStage(10)
-        endif
-        V13SideQuestTardisScript gfS = gfQ as V13SideQuestTardisScript
-        if gfS != None
-            gfS.SetupTardisListeners()
+        if gfQ.IsCompleted() || gfQ.GetStage() >= 30 || gfQ.IsStageDone(30)
+            if !gfQ.IsCompleted()
+                gfQ.CompleteAllObjectives()
+                gfQ.CompleteQuest()
+            endif
+        else
+            if !gfQ.IsRunning()
+                gfQ.Start()
+            endif
+            if gfQ.GetStage() < 10
+                gfQ.SetStage(10)
+            endif
+            V13SideQuestTardisScript gfS = gfQ as V13SideQuestTardisScript
+            if gfS != None
+                gfS.SetupTardisListeners()
+            endif
         endif
     endif
     Quest bmQ = Game.GetFormFromFile(0x0001C000, "Vault13Chronicles.esp") as Quest
     if bmQ != None
-        if !bmQ.IsRunning() && !bmQ.IsCompleted()
-            bmQ.Start()
-        endif
-        if bmQ.GetStage() < 10
-            bmQ.SetStage(10)
-        endif
-        V13SideQuestTardisScript bmS = bmQ as V13SideQuestTardisScript
-        if bmS != None
-            bmS.SetupTardisListeners()
+        if bmQ.IsCompleted() || bmQ.GetStage() >= 30 || bmQ.IsStageDone(30)
+            if !bmQ.IsCompleted()
+                bmQ.CompleteAllObjectives()
+                bmQ.CompleteQuest()
+            endif
+        else
+            if !bmQ.IsRunning()
+                bmQ.Start()
+            endif
+            if bmQ.GetStage() < 10
+                bmQ.SetStage(10)
+            endif
+            V13SideQuestTardisScript bmS = bmQ as V13SideQuestTardisScript
+            if bmS != None
+                bmS.SetupTardisListeners()
+            endif
         endif
     endif
     Quest pcQ = Game.GetFormFromFile(0x0001D000, "Vault13Chronicles.esp") as Quest
     if pcQ != None
-        if !pcQ.IsRunning() && !pcQ.IsCompleted()
-            pcQ.Start()
-        endif
-        if pcQ.GetStage() < 10
-            pcQ.SetStage(10)
-        endif
-        V13SideQuestTardisScript pcS = pcQ as V13SideQuestTardisScript
-        if pcS != None
-            pcS.SetupTardisListeners()
+        if pcQ.IsCompleted() || pcQ.GetStage() >= 30 || pcQ.IsStageDone(30)
+            if !pcQ.IsCompleted()
+                pcQ.CompleteAllObjectives()
+                pcQ.CompleteQuest()
+            endif
+        else
+            if !pcQ.IsRunning()
+                pcQ.Start()
+            endif
+            if pcQ.GetStage() < 10
+                pcQ.SetStage(10)
+            endif
+            V13SideQuestTardisScript pcS = pcQ as V13SideQuestTardisScript
+            if pcS != None
+                pcS.SetupTardisListeners()
+            endif
         endif
     endif
     Quest tandiQ = Game.GetFormFromFile(0x00018000, "Vault13Chronicles.esp") as Quest
     if tandiQ != None
-        if !tandiQ.IsRunning() && !tandiQ.IsCompleted()
-            tandiQ.Start()
+        if tandiQ.IsCompleted() || tandiQ.GetStage() >= 40 || tandiQ.IsStageDone(40)
+            if !tandiQ.IsCompleted()
+                tandiQ.CompleteAllObjectives()
+                tandiQ.CompleteQuest()
+            endif
+        else
+            if !tandiQ.IsRunning()
+                tandiQ.Start()
+            endif
+            V13SideQuestTandiRescueScript tandiS = tandiQ as V13SideQuestTandiRescueScript
+            if tandiS != None
+                tandiS.SetupTandiRescueListeners()
+            endif
         endif
-        V13SideQuestTandiRescueScript tandiS = tandiQ as V13SideQuestTandiRescueScript
-        if tandiS != None
-            tandiS.SetupTandiRescueListeners()
+    endif
+    Quest glowQ = Game.GetFormFromFile(0x00013000, "Vault13Chronicles.esp") as Quest
+    if glowQ != None
+        if glowQ.IsCompleted() || glowQ.GetStage() >= 40 || glowQ.IsStageDone(40)
+            if !glowQ.IsCompleted()
+                glowQ.CompleteAllObjectives()
+                glowQ.CompleteQuest()
+            endif
+        elseif !glowQ.IsRunning()
+            glowQ.Start()
+            V13SideQuestGlowScript glowS = glowQ as V13SideQuestGlowScript
+            if glowS != None
+                glowS.SetupGlowListeners()
+            endif
+        endif
+    endif
+    Quest lhPAQ = Game.GetFormFromFile(0x000D1000, "Vault13Chronicles.esp") as Quest
+    if lhPAQ != None
+        if lhPAQ.IsCompleted() || lhPAQ.GetStage() >= 40 || lhPAQ.IsStageDone(40)
+            if !lhPAQ.IsCompleted()
+                lhPAQ.CompleteAllObjectives()
+                lhPAQ.CompleteQuest()
+            endif
+        elseif !lhPAQ.IsRunning()
+            lhPAQ.Start()
+        endif
+        V13SideQuestLostHillsPAScript lhPAS = lhPAQ as V13SideQuestLostHillsPAScript
+        if lhPAS != None
+            lhPAS.SetupLostHillsPAListeners()
         endif
     endif
 EndFunction
 
 bool Function IsPointInShadySandsSafeZone(float ax, float ay)
-    return (ax >= 400.0 && ax <= 4400.0 && ay >= 8200.0 && ay <= 11150.0)
+    return (ax >= 3300.0 && ax <= 9600.0 && ay >= 21100.0 && ay <= 25900.0)
 EndFunction
 
 Function DriveSingleCreatureAI(Actor akActor, bool abIsNorthernLair = false)
@@ -3508,14 +3897,14 @@ Function DriveSingleCreatureAI(Actor akActor, bool abIsNorthernLair = false)
     akActor.SetValue(Game.GetAggressionAV(), 2.0)
     akActor.SetValue(Game.GetConfidenceAV(), 4.0)
 
-    if fDist > 1850.0
+    if fDist > 4200.0
         if akActor.IsInCombat()
             akActor.StopCombat()
         endif
         return
     endif
 
-    if abIsNorthernLair && py < 10400.0 && fDist > 1100.0
+    if abIsNorthernLair && py < 30000.0 && fDist > 1100.0
         if akActor.IsInCombat()
             akActor.StopCombat()
         endif
@@ -3535,8 +3924,8 @@ Function UpdateExteriorWastelandCreatures()
         kPlayer.StopCombatAlarm()
     endif
     ObjectReference nestRef = Game.GetFormFromFile(0x000035A9, "Vault13Chronicles.esp") as ObjectReference
-    if nestRef != None && (nestRef.GetPositionX() < 5800.0 || nestRef.GetPositionY() < 13200.0)
-        nestRef.SetPosition(6400.0, 13800.0, 160.0)
+    if nestRef != None && (nestRef.GetPositionX() < 15500.0 || nestRef.GetPositionY() < 34000.0)
+        nestRef.SetPosition(16000.0, 34500.0, -2000.0)
     endif
     int idx = 0
     while idx < 28
@@ -3593,9 +3982,13 @@ EndFunction
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
     BindRadioQuestActive()
     ForceAllAct1Aliases()
+    californiaCoordsSyncedOnce = false
     SyncAllCaliforniaPersistentCoords()
     UpdateSouthernCaliforniaMapMarkers()
     int stg = Self.GetStage()
+    if Self.IsCompleted() || Self.IsStageDone(40) || hydroCoreAnalyzedInTerm || rewardsGiven
+        stg = 40
+    endif
     if stg >= 20 && stg < 30
         ApplyV13Act1Stage(stg)
     endif
@@ -3627,6 +4020,12 @@ Event Terminal.OnMenuItemRun(Terminal akSender, int auiMenuItemID, ObjectReferen
         V13SideQuestShadySandsScript sideS = qSide as V13SideQuestShadySandsScript
         if sideS != None
             sideS.QueueJumpToShadySands()
+        endif
+    elseif (akSender == mnemoTermBase || akSender == None) && auiMenuItemID == 24
+        Quest q5Jump = Game.GetFormFromFile(0x00008000, "Vault13Chronicles.esp") as Quest
+        V13Act5QuestScript act5Jump = q5Jump as V13Act5QuestScript
+        if act5Jump != None
+            act5Jump.QueueJumpToCathedral()
         endif
     endif
 EndEvent
@@ -3721,6 +4120,30 @@ Function OpenV13MedicBarter(Actor akMedic)
     akMedic.ShowBarterMenu()
 EndFunction
 
+Event OnHit(ObjectReference akTarget, ObjectReference akAggressor, Form akSource, Projectile akProjectile, bool abPowerAttack, bool abSneakAttack, bool abBashAttack, bool abHitBlocked, string asMaterialName)
+    if akTarget != None
+        RegisterForHitEvent(akTarget)
+    endif
+    if bVault15KhansHostile || akTarget == None || akAggressor == None
+        return
+    endif
+    Actor player = Game.GetPlayer()
+    Actor aggActor = akAggressor as Actor
+    bool isPlayerSide = (player != None && akAggressor == (player as ObjectReference)) || (aggActor != None && aggActor.IsPlayerTeammate())
+    if !isPlayerSide
+        return
+    endif
+    int kHitIdx = 0
+    while kHitIdx < 12
+        int kHitFid = 0x0000254E + kHitIdx
+        if kHitFid != 0x00002551 && akTarget == Game.GetFormFromFile(kHitFid, "Vault13Chronicles.esp")
+            TriggerVault15KhansHostile()
+            return
+        endif
+        kHitIdx += 1
+    endwhile
+EndEvent
+
 Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akActionRef)
     Actor player = Game.GetPlayer()
     if akSender == None || akActionRef != player
@@ -3782,6 +4205,23 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
 EndEvent
 
 Event OnStageSet(int auiStageID, int auiItemID)
+    if auiStageID == 22 || auiStageID == 23
+        if !bVault15KhansTruce && !bVault15KhansHostile
+            bVault15KhansTruce = true
+            UnlockAndOpenVault15BarracksDoors()
+            UnlockVault15Armory()
+            UnlockVault15CommandCenter()
+            if auiStageID == 22
+                Debug.Notification("[Desafío Khan] Garl respeta tu fuerza y ordena a los Khans abrir paso hacia los niveles inferiores del Refugio 15.")
+            else
+                Debug.Notification("[Parlamento Khan] Has convencido a Garl: los Khans te permiten registrar el archivo del Refugio 15 en paz.")
+            endif
+        endif
+    elseif auiStageID == 24
+        if !bVault15KhansHostile
+            StartTimer(0.25, 6)
+        endif
+    endif
     ApplyV13Act1Stage(auiStageID)
     StartTimer(0.2, 1)
 EndEvent
@@ -3814,6 +4254,7 @@ Event OnTimer(int aiTimerID)
                 junktownS1.CheckDogmeatProximity()
             endif
         endif
+        CheckSettlementQuestProximity(player, inCaliWorld, pCell)
         if inMnemo || inV13 || inV15 || inCaliWorld || Self.GetStage() < 15 || !introShown
             StartTimer(2.0, 1)
         endif
@@ -3871,5 +4312,148 @@ Event OnTimer(int aiTimerID)
             endif
             Debug.Notification("[Archivo Mnemosyne - 2287] Has regresado a la Commonwealth. Tu progreso en 2161 se conserva intacto para cuando vuelvas.")
         endif
+    elseif aiTimerID == 6
+        Scene garlStopT = Game.GetFormFromFile(0x000D7100, "Vault13Chronicles.esp") as Scene
+        if garlStopT != None && garlStopT.IsPlaying()
+            garlStopT.Stop()
+        endif
+        TriggerVault15KhansHostile()
+    elseif aiTimerID == 7
+        if !IsJacorenInDialogueOrScene()
+            if IsPlayerInMnemosyneCell()
+                if !exteriorInitialized
+                    EnableMnemosyneAndVault13()
+                endif
+                SyncVault13ExpeditionDoors()
+            else
+                SyncAllCaliforniaPersistentCoords()
+                EnableMnemosyneAndVault13()
+                Actor p7 = Game.GetPlayer()
+                Cell v15C7 = Game.GetFormFromFile(0x00002500, "Vault13Chronicles.esp") as Cell
+                int stg7 = Self.GetStage()
+                if Self.IsCompleted() || Self.IsStageDone(40) || hydroCoreAnalyzedInTerm || rewardsGiven
+                    stg7 = 40
+                endif
+                if stg7 >= 20 && p7 != None && v15C7 != None && p7.GetParentCell() == v15C7
+                    SetVault15State(true)
+                endif
+            endif
+        endif
     endif
 EndEvent
+
+Function TriggerSettlementProximityStage(int aiQuestFormID, int aiStageID)
+    Quest q = Game.GetFormFromFile(aiQuestFormID, "Vault13Chronicles.esp") as Quest
+    if q != None && !q.IsCompleted() && !q.IsStageDone(40) && !q.IsStageDone(aiStageID) && q.GetStage() < aiStageID
+        if !q.IsRunning()
+            q.Start()
+        endif
+        q.SetStage(aiStageID)
+    endif
+EndFunction
+
+Function CheckSettlementQuestProximity(Actor player, bool inCaliWorld, Cell pCell)
+    if player == None
+        return
+    endif
+    Cell lhCell = Game.GetFormFromFile(0x00002B00, "Vault13Chronicles.esp") as Cell
+    if pCell != None && lhCell != None && pCell == lhCell
+        TriggerSettlementProximityStage(0x000D1000, 11)
+        TriggerSettlementProximityStage(0x00013000, 11)
+        return
+    endif
+    Cell wtCell = Game.GetFormFromFile(0x00002800, "Vault13Chronicles.esp") as Cell
+    if pCell != None && wtCell != None && pCell == wtCell
+        TriggerSettlementProximityStage(0x00013000, 22)
+        return
+    endif
+    if !inCaliWorld
+        return
+    endif
+
+    float px = player.GetPositionX()
+    float py = player.GetPositionY()
+    float dx = 0.0
+    float dy = 0.0
+
+    ; Shady Sands (6500, 23500) r=4500 -> 0x00009500 Stg 11 + Tandi (0x00018000) Stg 15 si ya se completó Shady Sands
+    dx = px - 6500.0
+    dy = py - 23500.0
+    if dx * dx + dy * dy <= 20250000.0
+        TriggerSettlementProximityStage(0x00009500, 11)
+        Quest qShady = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
+        if qShady != None && (qShady.IsCompleted() || qShady.GetStage() >= 40 || qShady.IsStageDone(40))
+            TriggerSettlementProximityStage(0x00018000, 15)
+        endif
+    endif
+
+    ; Junktown (7500, 5500) r=4500 -> 0x00010000 Stg 11 (Killian y Lars) + 0x00019000 Stg 15 (Neal)
+    dx = px - 7500.0
+    dy = py - 5500.0
+    if dx * dx + dy * dy <= 20250000.0
+        TriggerSettlementProximityStage(0x00010000, 11)
+        TriggerSettlementProximityStage(0x00019000, 15)
+    endif
+
+    ; The Hub (-3500, -13500) r=5200 -> 0x00011000 Stg 11 (Irwin) + 0x0001A000 Stg 15 (Justin Greene) + 0x0001E000 Stg 15 (Martha Rastello)
+    dx = px + 3500.0
+    dy = py + 13500.0
+    if dx * dx + dy * dy <= 27040000.0
+        TriggerSettlementProximityStage(0x00011000, 11)
+        TriggerSettlementProximityStage(0x0001A000, 15)
+        TriggerSettlementProximityStage(0x0001E000, 15)
+    endif
+
+    ; Old Town Lorenzo Shack (2540, -13500) r=480 -> Confrontation + Stage 20
+    dx = px - 2540.0
+    dy = py + 13500.0
+    if dx * dx + dy * dy <= 230400.0
+        V13SideQuestLostHillsPAScript lhPAS = Game.GetFormFromFile(0x000D1000, "Vault13Chronicles.esp") as V13SideQuestLostHillsPAScript
+        if lhPAS != None
+            lhPAS.NotifyPlayerApproachedOldTownShack()
+        endif
+    endif
+
+    ; Paso Norte / Khans (21500, 18500) r=4000 -> 0x00012000 Stg 11 (Diana)
+    dx = px - 21500.0
+    dy = py - 18500.0
+    if dx * dx + dy * dy <= 16000000.0
+        TriggerSettlementProximityStage(0x00012000, 11)
+    endif
+
+    ; Lost Hills Exterior (-24500, -7500) r=4200 -> 0x00013000 Stg 11 (Cabbot)
+    dx = px + 24500.0
+    dy = py + 7500.0
+    if dx * dx + dy * dy <= 17640000.0
+        TriggerSettlementProximityStage(0x00013000, 11)
+    endif
+
+    ; El Resplandor / Escotilla de West Tek (31500, -33850) r=4200 -> 0x00013000 Stg 20
+    dx = px - 31500.0
+    dy = py + 33850.0
+    if dx * dx + dy * dy <= 17640000.0
+        TriggerSettlementProximityStage(0x00013000, 20)
+    endif
+
+    ; Boneyard / Adytum (7 distritos): triggers independientes por distrito (r=2400)
+    dx = px + 6800.0
+    dy = py + 33180.0
+    if dx * dx + dy * dy <= 5760000.0
+        TriggerSettlementProximityStage(0x00014000, 11)
+    endif
+    dx = px - 2200.0
+    dy = py + 31600.0
+    if dx * dx + dy * dy <= 5760000.0
+        TriggerSettlementProximityStage(0x000D2000, 11)
+    endif
+    dx = px + 7800.0
+    dy = py + 30850.0
+    if dx * dx + dy * dy <= 5760000.0
+        TriggerSettlementProximityStage(0x000D3000, 11)
+    endif
+    dx = px + 2200.0
+    dy = py + 34400.0
+    if dx * dx + dy * dy <= 5760000.0
+        TriggerSettlementProximityStage(0x000D4000, 11)
+    endif
+EndFunction

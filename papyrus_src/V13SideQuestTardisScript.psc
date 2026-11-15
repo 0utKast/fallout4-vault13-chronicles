@@ -7,6 +7,10 @@ bool bNukaCapsStocked = False
 bool bStg20Notified = False
 bool bStg25Notified = False
 bool bMenuJumpBusy = False
+bool bFootprintStealthBoySeeded = False
+bool bMotionSensorBonusActive = False
+int iLastMotionHostiles = -1
+float fLastMotionAlertTime = -999.0
 
 int Function GetEncounterType()
     Quest qNuka = Game.GetFormFromFile(0x00016000, "Vault13Chronicles.esp") as Quest
@@ -131,7 +135,41 @@ int Function ComputeFallout1NukaTruckCaps()
     return totalCaps
 EndFunction
 
+Function EnsureUFOAliensAccessible()
+    ObjectReference alien1 = Game.GetFormFromFile(0x00003542, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference alien2 = Game.GetFormFromFile(0x00003543, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference elvisRef = Game.GetFormFromFile(0x00003547, "Vault13Chronicles.esp") as ObjectReference
+    ObjectReference blasterRef = Game.GetFormFromFile(0x00003548, "Vault13Chronicles.esp") as ObjectReference
+    if alien1 != None && !alien1.IsDisabled() && alien1.Is3DLoaded()
+        if alien1.GetPositionX() > -20320.0 || alien1.GetPositionZ() < 156.0
+            alien1.SetPosition(-20480.0, 19560.0, 162.0)
+            alien1.SetAngle(0.0, 0.0, 45.0)
+        endif
+    endif
+    if alien2 != None && !alien2.IsDisabled() && alien2.Is3DLoaded()
+        if alien2.GetPositionX() > -20150.0 || alien2.GetPositionY() > 19200.0 || alien2.GetPositionZ() < 156.0
+            alien2.SetPosition(-20260.0, 19060.0, 162.0)
+            alien2.SetAngle(0.0, 0.0, 110.0)
+        endif
+    endif
+    if elvisRef != None && elvisRef.Is3DLoaded() && elvisRef.GetContainer() == None && !elvisRef.IsDisabled()
+        if elvisRef.GetPositionX() > -20150.0 || elvisRef.GetPositionY() > 19200.0 || elvisRef.GetPositionZ() < 156.0
+            elvisRef.SetPosition(-20235.0, 19085.0, 164.0)
+        endif
+    endif
+    if blasterRef != None && blasterRef.Is3DLoaded() && blasterRef.GetContainer() == None && !blasterRef.IsDisabled()
+        if blasterRef.GetPositionX() > -20320.0 || blasterRef.GetPositionZ() < 156.0
+            blasterRef.SetPosition(-20505.0, 19585.0, 164.0)
+        endif
+    endif
+EndFunction
+
 Function RefreshTardisEncounterLayout()
+    Actor pTar = Game.GetPlayer()
+    WorldSpace caliTar = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pTar == None || caliTar == None || pTar.GetWorldSpace() != caliTar
+        return
+    endif
     int encType = GetEncounterType()
     if encType == 2
         ObjectReference wreckRef = Game.GetFormFromFile(0x00003530, "Vault13Chronicles.esp") as ObjectReference
@@ -167,7 +205,7 @@ Function RefreshTardisEncounterLayout()
             termRef2.EnableNoWait()
         endif
         if docRef2 != None && docRef2.Is3DLoaded() && docRef2.GetContainer() == None
-            docRef2.SetPosition(4405.0, -5644.0, 104.5)
+            docRef2.SetPosition(10105.0, -15744.0, 104.5)
         endif
         if wreckRef != None && wreckRef.IsDisabled()
             wreckRef.EnableNoWait()
@@ -191,8 +229,8 @@ Function RefreshTardisEncounterLayout()
             if crateRef.IsDisabled()
                 crateRef.EnableNoWait()
             endif
-            if Math.Abs(crateRef.GetPositionX() - 4750.0) > 15.0 || Math.Abs(crateRef.GetPositionY() - (-5520.0)) > 15.0
-                crateRef.SetPosition(4750.0, -5520.0, 48.0)
+            if crateRef.Is3DLoaded() && (Math.Abs(crateRef.GetPositionX() - 10520.0) > 15.0 || Math.Abs(crateRef.GetPositionY() - (-15540.0)) > 15.0)
+                crateRef.SetPosition(10520.0, -15540.0, 48.0)
             endif
             if !bNukaCapsStocked && !bRewardGranted && Self.GetStage() < 30
                 bNukaCapsStocked = True
@@ -222,7 +260,7 @@ Function RefreshTardisEncounterLayout()
             termRef3.EnableNoWait()
         endif
         if docRef3 != None && docRef3.Is3DLoaded() && docRef3.GetContainer() == None
-            docRef3.SetPosition(-7815.0, 7336.0, 216.5)
+            docRef3.SetPosition(-20415.0, 19236.0, 216.5)
         endif
         if ufoRef != None && ufoRef.IsDisabled()
             ufoRef.EnableNoWait()
@@ -246,6 +284,7 @@ Function RefreshTardisEncounterLayout()
                 alien2.KillSilent()
             endif
         endif
+        EnsureUFOAliensAccessible()
         Actor player3 = Game.GetPlayer()
         Form elvisBase = Game.GetFormFromFile(0x00001458, "Vault13Chronicles.esp")
         Form blasterBase = Game.GetFormFromFile(0x0000110F, "Vault13Chronicles.esp")
@@ -268,34 +307,26 @@ Function RefreshTardisEncounterLayout()
         ObjectReference sbRef = Game.GetFormFromFile(0x00003564, "Vault13Chronicles.esp") as ObjectReference
         ObjectReference ftRef4 = Game.GetFormFromFile(0x0000352B, "Vault13Chronicles.esp") as ObjectReference
         if ftRef4 != None
-            ftRef4.SetPosition(11840.0, -12340.0, 160.0)
+            ftRef4.SetPosition(19440.0, -34040.0, 160.0)
             ftRef4.SetAngle(0.0, 0.0, 37.2)
         endif
         if fpRef != None
             if fpRef.IsDisabled()
                 fpRef.EnableNoWait()
             endif
-            if Math.Abs(fpRef.GetPositionX() - 12400.0) > 1.0 || Math.Abs(fpRef.GetPositionY() - (-11800.0)) > 1.0 || Math.Abs(fpRef.GetPositionZ() - 160.0) > 1.0 || Math.Abs(fpRef.GetAngleX()) > 0.5 || Math.Abs(fpRef.GetAngleY()) > 0.5
+            if Math.Abs(fpRef.GetPositionX() - 20000.0) > 1.0 || Math.Abs(fpRef.GetPositionY() - (-33500.0)) > 1.0 || Math.Abs(fpRef.GetPositionZ() - 160.0) > 1.0 || Math.Abs(fpRef.GetAngleX()) > 0.5 || Math.Abs(fpRef.GetAngleY()) > 0.5
                 fpRef.DisableNoWait()
                 Utility.Wait(0.05)
                 fpRef.EnableNoWait()
-                fpRef.SetPosition(12400.0, -11800.0, 160.0)
+                fpRef.SetPosition(20000.0, -33500.0, 160.0)
                 fpRef.SetAngle(0.0, 0.0, 0.0)
             endif
-        endif
-        ObjectReference rockA4 = Game.GetFormFromFile(0x000B1505, "Vault13Chronicles.esp") as ObjectReference
-        if rockA4 != None && !rockA4.IsDisabled()
-            rockA4.DisableNoWait()
-        endif
-        ObjectReference rockB4 = Game.GetFormFromFile(0x000B1507, "Vault13Chronicles.esp") as ObjectReference
-        if rockB4 != None && !rockB4.IsDisabled()
-            rockB4.DisableNoWait()
         endif
         if termRef4 != None && termRef4.IsDisabled()
             termRef4.EnableNoWait()
         endif
         if docRef4 != None && docRef4.Is3DLoaded() && docRef4.GetContainer() == None
-            docRef4.SetPosition(11805.0, -12264.0, 216.5)
+            docRef4.SetPosition(19405.0, -33964.0, 216.5)
         endif
         Actor player4 = Game.GetPlayer()
         Form sbBase = Game.GetFormFromFile(0x00001460, "Vault13Chronicles.esp")
@@ -304,29 +335,31 @@ Function RefreshTardisEncounterLayout()
                 victimAct.EnableNoWait()
             endif
             if victimAct.Is3DLoaded()
-                Armor drifterArmor = Game.GetFormFromFile(0x0014BF50, "Fallout4.esm") as Armor
-                Armor underSuit = Game.GetFormFromFile(0x00001308, "Vault13Chronicles.esp") as Armor
-                if drifterArmor != None && !victimAct.IsEquipped(drifterArmor)
-                    if victimAct.IsDead()
-                        victimAct.Resurrect()
-                        Utility.Wait(0.15)
+                Armor nonPlayDrifter = Game.GetFormFromFile(0x00001309, "Vault13Chronicles.esp") as Armor
+                Armor legacyUnder = Game.GetFormFromFile(0x00001308, "Vault13Chronicles.esp") as Armor
+                Armor legacyDrifter = Game.GetFormFromFile(0x0014BF50, "Fallout4.esm") as Armor
+                if legacyUnder != None && victimAct.GetItemCount(legacyUnder) > 0
+                    victimAct.RemoveItem(legacyUnder, victimAct.GetItemCount(legacyUnder), True)
+                endif
+                if legacyDrifter != None && victimAct.GetItemCount(legacyDrifter) > 0
+                    victimAct.RemoveItem(legacyDrifter, victimAct.GetItemCount(legacyDrifter), True)
+                endif
+                if nonPlayDrifter != None
+                    if victimAct.GetItemCount(nonPlayDrifter) == 0
+                        victimAct.AddItem(nonPlayDrifter, 1, True)
                     endif
-                    if underSuit != None
-                        if victimAct.GetItemCount(underSuit) == 0
-                            victimAct.AddItem(underSuit, 1, True)
-                        endif
-                        victimAct.EquipItem(underSuit, True, True)
+                    if !victimAct.IsEquipped(nonPlayDrifter)
+                        victimAct.EquipItem(nonPlayDrifter, True, True)
                     endif
-                    if victimAct.GetItemCount(drifterArmor) == 0
-                        victimAct.AddItem(drifterArmor, 1, True)
-                    endif
-                    victimAct.EquipItem(drifterArmor, False, True)
+                endif
+                if !bFootprintStealthBoySeeded && !bStg25Notified && !Self.IsCompleted()
+                    bFootprintStealthBoySeeded = True
                     if sbBase != None && victimAct.GetItemCount(sbBase) == 0 && (player4 == None || player4.GetItemCount(sbBase) == 0)
                         victimAct.AddItem(sbBase, 1, True)
                     endif
                 endif
-                if victimAct.GetPositionZ() < 156.0 || victimAct.GetPositionZ() > 175.0 || Math.Abs(victimAct.GetPositionX() - 12400.0) > 45.0 || Math.Abs(victimAct.GetPositionY() - (-11800.0)) > 45.0
-                    victimAct.SetPosition(12400.0, -11800.0, 162.2)
+                if victimAct.GetPositionZ() < 156.0 || victimAct.GetPositionZ() > 175.0 || Math.Abs(victimAct.GetPositionX() - 20000.0) > 45.0 || Math.Abs(victimAct.GetPositionY() - (-33500.0)) > 45.0
+                    victimAct.SetPosition(20000.0, -33500.0, 162.2)
                 endif
                 if !victimAct.IsDead()
                     victimAct.KillSilent()
@@ -339,8 +372,8 @@ Function RefreshTardisEncounterLayout()
                     sbRef.DisableNoWait()
                 endif
             elseif sbRef.Is3DLoaded()
-                if sbRef.GetPositionZ() < 156.0 || sbRef.GetPositionZ() > 175.0 || Math.Abs(sbRef.GetPositionX() - 12435.0) > 45.0 || Math.Abs(sbRef.GetPositionY() - (-11815.0)) > 45.0
-                    sbRef.SetPosition(12435.0, -11815.0, 163.0)
+                if sbRef.GetPositionZ() < 156.0 || sbRef.GetPositionZ() > 175.0 || Math.Abs(sbRef.GetPositionX() - 20035.0) > 45.0 || Math.Abs(sbRef.GetPositionY() - (-33515.0)) > 45.0
+                    sbRef.SetPosition(20035.0, -33515.0, 163.0)
                 endif
             endif
         endif
@@ -356,95 +389,37 @@ Function RefreshTardisEncounterLayout()
             if signRef5.IsDisabled()
                 signRef5.EnableNoWait()
             endif
-            if signRef5.Is3DLoaded() && (Math.Abs(signRef5.GetPositionX() - 8180.0) > 20.0 || Math.Abs(signRef5.GetPositionY() - 3080.0) > 20.0 || signRef5.GetPositionZ() < 120.0)
-                signRef5.SetPosition(8180.0, 3080.0, 144.0)
+            if signRef5.Is3DLoaded() && (Math.Abs(signRef5.GetPositionX() - 20280.0) > 20.0 || Math.Abs(signRef5.GetPositionY() - 4880.0) > 20.0 || signRef5.GetPositionZ() < 120.0)
+                signRef5.SetPosition(20280.0, 4880.0, 144.0)
             endif
         endif
         if caseRef5 != None
             if caseRef5.IsDisabled()
                 caseRef5.EnableNoWait()
             endif
-            if caseRef5.Is3DLoaded() && (Math.Abs(caseRef5.GetPositionX() - 8450.0) > 10.0 || Math.Abs(caseRef5.GetPositionY() - 3220.0) > 10.0)
-                caseRef5.SetPosition(8450.0, 3220.0, 80.0)
+            if caseRef5.Is3DLoaded() && (Math.Abs(caseRef5.GetPositionX() - 20550.0) > 10.0 || Math.Abs(caseRef5.GetPositionY() - 5020.0) > 10.0)
+                caseRef5.SetPosition(20550.0, 5020.0, 80.0)
                 caseRef5.SetAngle(0.0, 0.0, 0.0)
             endif
-        endif
-        ObjectReference shack5 = Game.GetFormFromFile(0x000B0A06, "Vault13Chronicles.esp") as ObjectReference
-        if shack5 != None && shack5.Is3DLoaded() && Math.Abs(shack5.GetPositionY() - 3620.0) > 10.0
-            shack5.SetPosition(8400.0, 3620.0, 90.0)
-            shack5.SetAngle(0.0, 0.0, 180.0)
-        endif
-        ObjectReference dispDesk5 = Game.GetFormFromFile(0x000B0A07, "Vault13Chronicles.esp") as ObjectReference
-        if dispDesk5 != None && dispDesk5.Is3DLoaded() && Math.Abs(dispDesk5.GetPositionX() - 8360.0) > 5.0
-            dispDesk5.SetPosition(8360.0, 3220.0, 80.0)
-            dispDesk5.SetAngle(0.0, 0.0, 90.0)
-        endif
-        ObjectReference car1Ref5 = Game.GetFormFromFile(0x000B0A08, "Vault13Chronicles.esp") as ObjectReference
-        if car1Ref5 != None && car1Ref5.Is3DLoaded() && (Math.Abs(car1Ref5.GetPositionX() - 8920.0) > 15.0 || Math.Abs(car1Ref5.GetPositionY() - 3560.0) > 15.0)
-            car1Ref5.SetPosition(8920.0, 3560.0, 86.0)
-            car1Ref5.SetAngle(0.0, 0.0, 0.0)
-        endif
-        ObjectReference car2Ref5 = Game.GetFormFromFile(0x000B0A09, "Vault13Chronicles.esp") as ObjectReference
-        if car2Ref5 != None && car2Ref5.Is3DLoaded() && (Math.Abs(car2Ref5.GetPositionX() - 8920.0) > 15.0 || Math.Abs(car2Ref5.GetPositionY() - 3260.0) > 15.0)
-            car2Ref5.SetPosition(8920.0, 3260.0, 82.0)
-            car2Ref5.SetAngle(0.0, 0.0, 0.0)
-        endif
-        ObjectReference car3Ref5 = Game.GetFormFromFile(0x000B0A0A, "Vault13Chronicles.esp") as ObjectReference
-        if car3Ref5 != None && car3Ref5.Is3DLoaded() && (Math.Abs(car3Ref5.GetPositionX() - 8920.0) > 15.0 || Math.Abs(car3Ref5.GetPositionY() - 2960.0) > 15.0)
-            car3Ref5.SetPosition(8920.0, 2960.0, 86.0)
-            car3Ref5.SetAngle(0.0, 0.0, 0.0)
-        endif
-        ObjectReference pumpRef5 = Game.GetFormFromFile(0x000B0A0B, "Vault13Chronicles.esp") as ObjectReference
-        if pumpRef5 != None && pumpRef5.Is3DLoaded() && (Math.Abs(pumpRef5.GetPositionX() - 8160.0) > 15.0 || Math.Abs(pumpRef5.GetPositionY() - 3420.0) > 15.0)
-            pumpRef5.SetPosition(8160.0, 3420.0, 80.0)
-            pumpRef5.SetAngle(0.0, 0.0, 0.0)
         endif
         if deskRef5 != None
             if deskRef5.IsDisabled()
                 deskRef5.EnableNoWait()
             endif
-            if deskRef5.Is3DLoaded() && (Math.Abs(deskRef5.GetPositionX() - 8020.0) > 20.0 || Math.Abs(deskRef5.GetPositionY() - 3020.0) > 20.0)
-                deskRef5.SetPosition(8020.0, 3020.0, 80.0)
+            if deskRef5.Is3DLoaded() && (Math.Abs(deskRef5.GetPositionX() - 20120.0) > 20.0 || Math.Abs(deskRef5.GetPositionY() - 4820.0) > 20.0)
+                deskRef5.SetPosition(20120.0, 4820.0, 80.0)
             endif
         endif
         if termRef5 != None
             if termRef5.IsDisabled()
                 termRef5.EnableNoWait()
             endif
-            if termRef5.Is3DLoaded() && (Math.Abs(termRef5.GetPositionX() - 8010.0) > 20.0 || Math.Abs(termRef5.GetPositionY() - 3020.0) > 20.0)
-                termRef5.SetPosition(8010.0, 3020.0, 80.0)
+            if termRef5.Is3DLoaded() && (Math.Abs(termRef5.GetPositionX() - 20110.0) > 20.0 || Math.Abs(termRef5.GetPositionY() - 4820.0) > 20.0)
+                termRef5.SetPosition(20110.0, 4820.0, 80.0)
             endif
         endif
         if docRef5 != None && docRef5.Is3DLoaded() && docRef5.GetContainer() == None
-            docRef5.SetPosition(8045.0, 3016.0, 136.5)
-        endif
-        Form oldCurbBase = Game.GetFormFromFile(0x0001EBE6, "Fallout4.esm")
-        if oldCurbBase != None
-            ObjectReference oldCurbRef = Game.FindClosestReferenceOfType(oldCurbBase, 8260.0, 3160.0, 80.0, 600.0)
-            if oldCurbRef != None && !oldCurbRef.IsDisabled()
-                oldCurbRef.DisableNoWait()
-            endif
-        endif
-        Form oldGarageBase = Game.GetFormFromFile(0x00004B3B, "Fallout4.esm")
-        if oldGarageBase != None
-            ObjectReference oldGarageRef = Game.FindClosestReferenceOfType(oldGarageBase, 8520.0, 2600.0, 80.0, 900.0)
-            if oldGarageRef != None && !oldGarageRef.IsDisabled()
-                oldGarageRef.DisableNoWait()
-            endif
-        endif
-        Form oldRRBase = Game.GetFormFromFile(0x000F397A, "Fallout4.esm")
-        if oldRRBase != None
-            ObjectReference oldRRRef = Game.FindClosestReferenceOfType(oldRRBase, 7800.0, 2600.0, 80.0, 900.0)
-            if oldRRRef != None && !oldRRRef.IsDisabled()
-                oldRRRef.DisableNoWait()
-            endif
-        endif
-        Form barrelBase5 = Game.GetFormFromFile(0x00048281, "Fallout4.esm")
-        if barrelBase5 != None
-            ObjectReference barrelRef5 = Game.FindClosestReferenceOfType(barrelBase5, 7960.0, 3080.0, 80.0, 120.0)
-            if barrelRef5 != None && barrelRef5.Is3DLoaded()
-                barrelRef5.SetPosition(7900.0, 2920.0, 80.0)
-            endif
+            docRef5.SetPosition(20145.0, 4816.0, 136.5)
         endif
         Actor player5 = Game.GetPlayer()
         Form rrBase = Game.GetFormFromFile(0x00001117, "Vault13Chronicles.esp")
@@ -468,8 +443,8 @@ Function RefreshTardisEncounterLayout()
                 patrickAct.Resurrect()
             endif
             patrickAct.SetValue(Game.GetAggressionAV(), 0.0)
-            if !patrickAct.IsInCombat() && patrickAct.Is3DLoaded() && (Math.Abs(patrickAct.GetPositionX() - 2600.0) > 450.0 || Math.Abs(patrickAct.GetPositionY() - (-380.0)) > 450.0)
-                patrickAct.SetPosition(2600.0, -380.0, 80.0)
+            if !patrickAct.IsInCombat() && patrickAct.Is3DLoaded() && (Math.Abs(patrickAct.GetPositionX() - 5500.0) > 450.0 || Math.Abs(patrickAct.GetPositionY() - (-4780.0)) > 450.0)
+                patrickAct.SetPosition(5500.0, -4780.0, 80.0)
             endif
         endif
         if campRef6 != None && campRef6.IsDisabled()
@@ -482,7 +457,7 @@ Function RefreshTardisEncounterLayout()
             termRef6.EnableNoWait()
         endif
         if docRef6 != None && docRef6.Is3DLoaded() && docRef6.GetContainer() == None
-            docRef6.SetPosition(2345.0, -524.0, 136.5)
+            docRef6.SetPosition(5245.0, -4924.0, 136.5)
         endif
         return
     endif
@@ -502,11 +477,11 @@ Function RefreshTardisEncounterLayout()
         termRef.EnableNoWait()
     endif
     if manualRef != None && manualRef.Is3DLoaded() && manualRef.GetContainer() == None
-        manualRef.SetPosition(-11995.0, 7156.0, 216.5)
+        manualRef.SetPosition(-31895.0, 16256.0, 216.5)
     endif
     if brahminAct != None && !brahminAct.IsDead() && brahminAct.Is3DLoaded()
-        if !brahminAct.IsInCombat() && (Math.Abs(brahminAct.GetPositionX() - (-11360.0)) > 650.0 || Math.Abs(brahminAct.GetPositionY() - 7540.0) > 650.0)
-            brahminAct.SetPosition(-11360.0, 7540.0, 160.0)
+        if !brahminAct.IsInCombat() && (Math.Abs(brahminAct.GetPositionX() - (-31260.0)) > 650.0 || Math.Abs(brahminAct.GetPositionY() - 16640.0) > 650.0)
+            brahminAct.SetPosition(-31260.0, 16640.0, 160.0)
         endif
     endif
 
@@ -520,14 +495,14 @@ Function RefreshTardisEncounterLayout()
             if tardisRef.IsDisabled()
                 tardisRef.EnableNoWait(False)
             endif
-            tardisRef.SetPosition(-11600.0, 7400.0, 160.0)
+            tardisRef.SetPosition(-31500.0, 16500.0, 160.0)
             tardisRef.SetAngle(0.0, 0.0, 30.0)
         endif
         if beaconRef != None && !bDematerializing
             if beaconRef.IsDisabled()
                 beaconRef.EnableNoWait()
             endif
-            beaconRef.SetPosition(-11600.0, 7400.0, 424.0)
+            beaconRef.SetPosition(-31500.0, 16500.0, 424.0)
         endif
         if sensorRef != None && sensorRef.GetContainer() == None && !sensorRef.IsDisabled()
             sensorRef.DisableNoWait()
@@ -545,12 +520,71 @@ Function RefreshTardisEncounterLayout()
             if sensorRef.IsDisabled()
                 sensorRef.EnableNoWait()
             endif
-            sensorRef.SetPosition(-11600.0, 7400.0, 166.0)
+            sensorRef.SetPosition(-31500.0, 16500.0, 166.0)
         endif
     endif
 EndFunction
 
-Function SetupTardisListeners()
+bool Function HasEncounterCompletionProof(int encType, Actor player)
+    if player == None
+        return False
+    endif
+    int docFid = 0x0000114F
+    if encType == 2
+        docFid = 0x00001C80
+    elseif encType == 3
+        docFid = 0x00001C81
+    elseif encType == 4
+        docFid = 0x00001C8A
+    elseif encType == 5
+        docFid = 0x00001C8B
+    elseif encType == 6
+        docFid = 0x00001C8C
+    endif
+    Form proofDoc = Game.GetFormFromFile(docFid, "Vault13Chronicles.esp")
+    if proofDoc != None && player.GetItemCount(proofDoc) > 0
+        return True
+    endif
+    return False
+EndFunction
+
+Function SetupTardisListeners(bool abRefreshLayout = True)
+    int encType = GetEncounterType()
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    bool inCaliWorld = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
+    bool isDone = Self.IsCompleted() || Self.GetStage() >= 30 || Self.IsStageDone(30) || bRewardGranted || HasEncounterCompletionProof(encType, player)
+    if isDone
+        bRewardGranted = True
+        bDematerialized = True
+        Self.CompleteAllObjectives()
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+        ForceAllTardisAliases()
+        if abRefreshLayout && inCaliWorld
+            RefreshTardisEncounterLayout()
+        endif
+        if encType == 1
+            Self.RemoveAllInventoryEventFilters()
+            Form doneSensorBase = Game.GetFormFromFile(0x00001456, "Vault13Chronicles.esp")
+            if doneSensorBase != None
+                AddInventoryEventFilter(doneSensorBase)
+            endif
+            if player != None
+                RegisterForRemoteEvent(player, "OnPlayerLoadGame")
+                RegisterForRemoteEvent(player, "OnLocationChange")
+                if doneSensorBase != None
+                    RegisterForRemoteEvent(player as ObjectReference, "OnItemAdded")
+                endif
+                if inCaliWorld && doneSensorBase != None && player.GetItemCount(doneSensorBase) > 0
+                    StartTimer(2.0, 99)
+                endif
+            endif
+        endif
+        return
+    endif
+
     if !Self.IsRunning() && !Self.IsCompleted()
         Self.Start()
     endif
@@ -558,12 +592,10 @@ Function SetupTardisListeners()
         Self.SetStage(10)
     endif
     ForceAllTardisAliases()
-    RefreshTardisEncounterLayout()
+    if abRefreshLayout && inCaliWorld
+        RefreshTardisEncounterLayout()
+    endif
 
-    int encType = GetEncounterType()
-    Actor player = Game.GetPlayer()
-    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
-    bool inCaliWorld = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
     Self.RemoveAllInventoryEventFilters()
     if encType == 2
         Form manifestBase = Game.GetFormFromFile(0x00001457, "Vault13Chronicles.esp")
@@ -751,43 +783,72 @@ Function SetupTardisListeners()
 EndFunction
 
 Event OnInit()
-    SetupTardisListeners()
+    SetupTardisListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 97)
+    endif
 EndEvent
 
 Event OnQuestInit()
-    SetupTardisListeners()
+    SetupTardisListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
+        StartTimer(2.5, 97)
+    endif
 EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    bool inCaliWorld = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
     if GetEncounterType() == 1
-        Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
-        if stateHolder != None
-            stateHolder.SetValue(Game.GetLuckAV(), 0.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
+        iLastMotionHostiles = -1
+        fLastMotionAlertTime = -999.0
+        if inCaliWorld
+            Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
+            if !bMotionSensorBonusActive && stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0
+                bMotionSensorBonusActive = True
+                stateHolder.SetValue(Game.GetAgilityAV(), 1.0)
+            endif
         endif
     endif
-    SetupTardisListeners()
+    SetupTardisListeners(False)
+    if inCaliWorld
+        StartTimer(2.5, 97)
+    endif
+    if GetEncounterType() == 1
+        Form sensorBase = Game.GetFormFromFile(0x00001456, "Vault13Chronicles.esp")
+        bool hasSensor = (player != None && sensorBase != None && player.GetItemCount(sensorBase) > 0)
+        if hasSensor && inCaliWorld
+            StartTimer(2.5, 99)
+        elseif !hasSensor && bMotionSensorBonusActive
+            RunPipBoyMotionSensorSweep()
+        endif
+    endif
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
     if GetEncounterType() == 1
-        Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
-        if stateHolder != None
-            stateHolder.SetValue(Game.GetLuckAV(), 0.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
-        endif
+        iLastMotionHostiles = -1
+        fLastMotionAlertTime = -999.0
     endif
     SetupTardisListeners()
     Actor player = Game.GetPlayer()
     WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
     if player != None && caliWorld != None && player.GetWorldSpace() == caliWorld
-        if Self.GetStage() < 30
+        if !bRewardGranted && !Self.IsCompleted() && !Self.IsStageDone(30) && Self.GetStage() < 30 && !HasEncounterCompletionProof(GetEncounterType(), player)
             StartTimer(1.5, 98)
         endif
         if GetEncounterType() == 1
             Form sensorBase = Game.GetFormFromFile(0x00001456, "Vault13Chronicles.esp")
             if sensorBase != None && player.GetItemCount(sensorBase) > 0
                 StartTimer(2.0, 99)
+            elseif bMotionSensorBonusActive
+                CancelTimer(99)
+                RunPipBoyMotionSensorSweep()
             endif
         endif
     else
@@ -839,7 +900,7 @@ Function TriggerTardisDematerialization()
             Self.SetStage(20)
         endif
         ObjectReference wreckRef = Game.GetFormFromFile(0x00003530, "Vault13Chronicles.esp") as ObjectReference
-        Sound capsSfx = Game.GetFormFromFile(0x00001068, "Vault13Chronicles.esp") as Sound
+        Sound capsSfx = Game.GetFormFromFile(0x00001069, "Vault13Chronicles.esp") as Sound
         if capsSfx != None && wreckRef != None
             capsSfx.Play(wreckRef)
         elseif capsSfx != None
@@ -864,7 +925,7 @@ Function TriggerTardisDematerialization()
             Self.SetStage(20)
         endif
         ObjectReference ufoRef = Game.GetFormFromFile(0x00003540, "Vault13Chronicles.esp") as ObjectReference
-        Sound ufoSfx = Game.GetFormFromFile(0x0000106A, "Vault13Chronicles.esp") as Sound
+        Sound ufoSfx = Game.GetFormFromFile(0x0000106B, "Vault13Chronicles.esp") as Sound
         EffectShader phaseFX3 = Game.GetFormFromFile(0x002494E4, "Fallout4.esm") as EffectShader
         if ufoSfx != None && ufoRef != None
             ufoSfx.Play(ufoRef)
@@ -956,7 +1017,7 @@ Function TriggerTardisDematerialization()
     ObjectReference tardisRef = Game.GetFormFromFile(0x000035F0, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference beaconRef = Game.GetFormFromFile(0x000035F1, "Vault13Chronicles.esp") as ObjectReference
     ObjectReference sensorRef = Game.GetFormFromFile(0x000035F2, "Vault13Chronicles.esp") as ObjectReference
-    Sound tardisSfx = Game.GetFormFromFile(0x00001066, "Vault13Chronicles.esp") as Sound
+    Sound tardisSfx = Game.GetFormFromFile(0x00001067, "Vault13Chronicles.esp") as Sound
     EffectShader phaseFX = Game.GetFormFromFile(0x002494E4, "Fallout4.esm") as EffectShader
 
     if tardisSfx != None && tardisRef != None
@@ -1015,7 +1076,7 @@ Function TriggerTardisDematerialization()
 
     if sensorRef != None
         sensorRef.EnableNoWait()
-        sensorRef.SetPosition(-11600.0, 7400.0, 166.0)
+        sensorRef.SetPosition(-31500.0, 16500.0, 166.0)
     endif
 
     if Self.GetStage() < 25
@@ -1086,7 +1147,7 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
         if akSender == wreckRef
             TriggerTardisDematerialization()
         elseif akSender == crateRef
-            Sound capsSfx = Game.GetFormFromFile(0x00001068, "Vault13Chronicles.esp") as Sound
+            Sound capsSfx = Game.GetFormFromFile(0x00001069, "Vault13Chronicles.esp") as Sound
             if capsSfx != None
                 capsSfx.Play(crateRef)
             endif
@@ -1225,12 +1286,16 @@ Function RunPipBoyMotionSensorSweep()
     endif
     Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
     ActorValue perAV = Game.GetFormFromFile(0x000002C3, "Fallout4.esm") as ActorValue
+    if !bMotionSensorBonusActive && stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0
+        bMotionSensorBonusActive = True
+        stateHolder.SetValue(Game.GetAgilityAV(), 1.0)
+    endif
     bool hasSensor = (player.GetItemCount(sensorBase) > 0)
     if !hasSensor
-        if stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0
-            stateHolder.SetValue(Game.GetAgilityAV(), 1.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
-            stateHolder.SetValue(Game.GetLuckAV(), 0.0)
+        if bMotionSensorBonusActive
+            bMotionSensorBonusActive = False
+            iLastMotionHostiles = -1
+            fLastMotionAlertTime = -999.0
             if perAV != None
                 player.ModValue(perAV, -2.0)
             endif
@@ -1438,41 +1503,24 @@ Function RunPipBoyMotionSensorSweep()
     endif
     float nowTime = Utility.GetCurrentRealTime()
 
-    if stateHolder != None
-        bool firstSweep = (stateHolder.GetValue(Game.GetAgilityAV()) != 13.0)
-        if firstSweep
-            stateHolder.SetValue(Game.GetAgilityAV(), 13.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), hostileCount as float)
-            stateHolder.SetValue(Game.GetLuckAV(), nowTime)
-            if perAV != None
-                player.ModValue(perAV, 2.0)
-            endif
-            if hostileCount > 0
-                Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
-            else
-                Debug.Notification("[Sensor de Movimiento] Radar ultrasónico Pip-Boy 2000 activo (+2 PER). Sin amenazas en un radio de 65 m.")
-            endif
-        else
-            int lastHostiles = stateHolder.GetValue(Game.GetCharismaAV()) as int
-            float lastPing = stateHolder.GetValue(Game.GetLuckAV())
-            float elapsed = nowTime - lastPing
-            if elapsed < 0.0
-                elapsed = 999.0
-            endif
-            if hostileCount > 0
-                if hostileCount != lastHostiles || elapsed >= 8.0
-                    stateHolder.SetValue(Game.GetCharismaAV(), hostileCount as float)
-                    stateHolder.SetValue(Game.GetLuckAV(), nowTime)
-                    Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
-                endif
-            elseif lastHostiles > 0
-                stateHolder.SetValue(Game.GetCharismaAV(), 0.0)
-                stateHolder.SetValue(Game.GetLuckAV(), nowTime)
-                Debug.Notification("[Sensor de Movimiento] Perímetro despejado: sin amenazas hostiles en rango radar.")
-            endif
+    if !bMotionSensorBonusActive
+        bMotionSensorBonusActive = True
+        if perAV != None
+            player.ModValue(perAV, 2.0)
         endif
-    elseif hostileCount > 0
-        Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
+    endif
+
+    if hostileCount > 0
+        float elapsed = nowTime - fLastMotionAlertTime
+        if iLastMotionHostiles <= 0 || hostileCount > iLastMotionHostiles || elapsed >= 25.0 || elapsed < 0.0
+            iLastMotionHostiles = hostileCount
+            fLastMotionAlertTime = nowTime
+            Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
+        else
+            iLastMotionHostiles = hostileCount
+        endif
+    else
+        iLastMotionHostiles = 0
     endif
 EndFunction
 
@@ -1486,13 +1534,13 @@ Function TickMotionSensorFromMainLoop()
         return
     endif
     if player.GetItemCount(sensorBase) > 0
-        if Self.GetStage() < 30
+        if Self.GetStage() < 30 && !Self.IsCompleted() && !Self.IsStageDone(30)
             Self.SetStage(30)
         endif
         RunPipBoyMotionSensorSweep()
     else
         Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
-        if stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0
+        if bMotionSensorBonusActive || (stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0)
             RunPipBoyMotionSensorSweep()
         endif
     endif
@@ -1561,7 +1609,7 @@ Event OnTimer(int aiTimerID)
     elseif aiTimerID == 98
         Actor player = Game.GetPlayer()
         WorldSpace v13World = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
-        if Self.GetStage() >= 30 || player == None || v13World == None || player.GetWorldSpace() != v13World
+        if bRewardGranted || Self.IsCompleted() || Self.IsStageDone(30) || Self.GetStage() >= 30 || HasEncounterCompletionProof(encType, player) || player == None || v13World == None || player.GetWorldSpace() != v13World
             return
         endif
         RefreshTardisEncounterLayout()
@@ -1667,6 +1715,8 @@ Event OnTimer(int aiTimerID)
                 Debug.Notification("[Patrick el Celta] ♪ Ballad of Na Fianna (The Wanderer of Vault Thirteen) ♪")
             endif
         endif
+    elseif aiTimerID == 97
+        RefreshTardisEncounterLayout()
     elseif aiTimerID == 99
         if encType == 1
             Actor player = Game.GetPlayer()
@@ -1697,7 +1747,17 @@ Event OnStageSet(int auiStageID, int auiItemID)
             doStage25 = True
         endif
     elseif auiStageID == 30
-        if !bRewardGranted
+        if bRewardGranted || HasEncounterCompletionProof(GetEncounterType(), Game.GetPlayer())
+            bRewardGranted = True
+            bDematerialized = True
+            SetObjectiveCompleted(20, True)
+            SetObjectiveCompleted(25, True)
+            Self.CompleteAllObjectives()
+            if !Self.IsCompleted()
+                Self.CompleteQuest()
+            endif
+            return
+        else
             bRewardGranted = True
             bDematerialized = True
             doStage30Reward = True
@@ -1737,8 +1797,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
             SetObjectiveCompleted(20, True)
             if !Self.IsObjectiveDisplayed(25)
                 Self.SetObjectiveDisplayed(25, True, False)
+                Self.SetActive(True)
             endif
-            Self.SetActive(True)
             if doStage25
                 Debug.Notification("¡Has encontrado la Caja de Caudales del Camión de Nuka-Cola! Recoge el Albarán y el tesoro de chapas.")
             endif
@@ -1797,8 +1857,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
             SetObjectiveCompleted(20, True)
             if !Self.IsObjectiveDisplayed(25)
                 Self.SetObjectiveDisplayed(25, True, False)
+                Self.SetActive(True)
             endif
-            Self.SetActive(True)
             if doStage25
                 Debug.Notification("«PROPIEDAD DEL ÁREA 51 — DEVOLVER SI SE ENCUENTRA». Registra los dos cuerpos alienígenas para recuperar el Bláster Alienígena y el Cuadro de «El Rey».")
             endif
@@ -1863,8 +1923,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
             SetObjectiveCompleted(20, True)
             if !Self.IsObjectiveDisplayed(25)
                 Self.SetObjectiveDisplayed(25, True, False)
+                Self.SetActive(True)
             endif
-            Self.SetActive(True)
             if doStage25
                 Debug.Notification("Registra el cadáver aplastado en el centro de la Huella Gigante para recuperar el RobCo Stealth Boy 3001.")
             endif
@@ -1922,8 +1982,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
             SetObjectiveCompleted(20, True)
             if !Self.IsObjectiveDisplayed(25)
                 Self.SetObjectiveDisplayed(25, True, False)
+                Self.SetActive(True)
             endif
-            Self.SetActive(True)
             if doStage25
                 Debug.Notification("Abre la Caja Fuerte de Exposición de Bob y recoge la legendaria carabina Red Ryder LE BB Gun.")
             endif
@@ -1989,8 +2049,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
             SetObjectiveCompleted(20, True)
             if !Self.IsObjectiveDisplayed(25)
                 Self.SetObjectiveDisplayed(25, True, False)
+                Self.SetActive(True)
             endif
-            Self.SetActive(True)
             if doStage25
                 Debug.Notification("Habla con Patrick el Celta junto a su hoguera y pídele que cante su balada tradicional gaélica (+1 Carisma).")
             endif
@@ -2051,8 +2111,8 @@ Event OnStageSet(int auiStageID, int auiItemID)
         SetObjectiveCompleted(20, True)
         if !Self.IsObjectiveDisplayed(25)
             Self.SetObjectiveDisplayed(25, True, False)
+            Self.SetActive(True)
         endif
-        Self.SetActive(True)
         if doStage25
             Debug.Notification("¡La cabina se ha desmaterializado en el espacio-tiempo! Recoge el Sensor de Movimiento que ha dejado atrás.")
         endif

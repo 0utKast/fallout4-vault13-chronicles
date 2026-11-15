@@ -46,8 +46,11 @@ Function SyncSyndicateProgressFlags()
             bUrnRecovered = True
         endif
     endif
-    if bUrnReturnedToNeal
+    if bUrnReturnedToNeal || Self.IsStageDone(22) || Self.IsStageDone(23)
         bUrnRecovered = True
+    endif
+    if Self.IsStageDone(26) || Self.IsStageDone(27)
+        bGizmoResolved = True
     endif
     if gizmoAct != None && gizmoAct.IsDead()
         bGizmoResolved = True
@@ -55,9 +58,23 @@ Function SyncSyndicateProgressFlags()
     if vinnieAct != None && vinnieAct.IsDead()
         bUrnRecovered = True
     endif
-    if killianQ != None && (killianQ.IsCompleted() || killianQ.GetStage() >= 40) && bUrnRecovered
+    if killianQ != None && (killianQ.IsCompleted() || killianQ.GetStage() >= 40 || killianQ.IsStageDone(40)) && bUrnRecovered
         bGizmoResolved = True
     endif
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || Self.IsStageDone(30)
+        bUrnRecovered = True
+        bUrnReturnedToNeal = True
+        bGizmoResolved = True
+        bFinalRewardGranted = True
+    endif
+EndFunction
+
+Function TryClearGizmoAliasSafely()
+    ClearQuestAlias(1)
+EndFunction
+
+Function TryClearVinnieAliasSafely()
+    ClearQuestAlias(9)
 EndFunction
 
 Function FinalizeSyndicateQuestCleanly()
@@ -69,8 +86,8 @@ Function FinalizeSyndicateQuestCleanly()
     endif
     Self.CompleteAllObjectives()
     ClearQuestAlias(0)
-    ClearQuestAlias(1)
-    ClearQuestAlias(9)
+    TryClearGizmoAliasSafely()
+    TryClearVinnieAliasSafely()
     ClearQuestAlias(10)
     if !Self.IsCompleted()
         Self.CompleteQuest()
@@ -79,28 +96,23 @@ EndFunction
 
 Function ForceAllSyndicateAliases()
     SyncSyndicateProgressFlags()
-    if Self.IsCompleted() || Self.GetStage() >= 40 || (bFinalRewardGranted && bUrnReturnedToNeal)
-        if Self.GetStage() < 40
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || Self.IsStageDone(30) || (bFinalRewardGranted && bUrnReturnedToNeal)
+        if Self.GetStage() < 40 && !Self.IsCompleted() && Self.IsRunning()
             Self.SetStage(40)
         endif
         FinalizeSyndicateQuestCleanly()
         return
     endif
 
-    Scene gizmoScn = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
-    Scene vinnieScn = Game.GetFormFromFile(0x00019102, "Vault13Chronicles.esp") as Scene
     ForceQuestAlias(0, 0x000035DC)
     if !bGizmoResolved
         ForceQuestAlias(1, 0x000035DE)
     else
-        if gizmoScn != None && gizmoScn.IsPlaying()
-            gizmoScn.Stop()
-        endif
         if Self.IsObjectiveDisplayed(21)
             SetObjectiveCompleted(21, True)
             Self.SetObjectiveDisplayed(21, False, False)
         endif
-        ClearQuestAlias(1)
+        TryClearGizmoAliasSafely()
     endif
     ForceQuestAlias(2, 0x00003005)
     ForceQuestAlias(3, 0x00002003)
@@ -112,14 +124,11 @@ Function ForceAllSyndicateAliases()
     if !bUrnRecovered
         ForceQuestAlias(9, 0x000035EC)
     else
-        if vinnieScn != None && vinnieScn.IsPlaying()
-            vinnieScn.Stop()
-        endif
         if Self.IsObjectiveDisplayed(20)
             SetObjectiveCompleted(20, True)
             Self.SetObjectiveDisplayed(20, False, False)
         endif
-        ClearQuestAlias(9)
+        TryClearVinnieAliasSafely()
     endif
     ForceQuestAlias(10, 0x000035DD)
 EndFunction
@@ -134,15 +143,11 @@ EndFunction
 Function CheckLarsSyndicateReward()
     SyncSyndicateProgressFlags()
     if bGizmoResolved
-        Scene gizmoScn = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
-        if gizmoScn != None && gizmoScn.IsPlaying()
-            gizmoScn.Stop()
-        endif
         SetObjectiveCompleted(21, True)
         if Self.IsObjectiveDisplayed(21)
             Self.SetObjectiveDisplayed(21, False, False)
         endif
-        ClearQuestAlias(1)
+        TryClearGizmoAliasSafely()
         if bUrnRecovered && !bFinalRewardGranted
             if !bUrnReturnedToNeal
                 DeliverUrnToNeal()
@@ -172,7 +177,11 @@ Function StopAllSyndicateScenesExcept(int aiKeepSceneIdx)
 EndFunction
 
 Function EquipSyndicateActorGear(Actor akAct, int aiOutfitID, int aiBodyArmorID, int aiHatID, int aiOldBodyID)
-    if akAct == None || akAct.IsDead() || !akAct.Is3DLoaded() || akAct.IsTalking()
+    if akAct == None || akAct.IsDead() || !akAct.Is3DLoaded() || akAct.IsTalking() || akAct.IsInDialogueWithPlayer()
+        return
+    endif
+    Actor plDist = Game.GetPlayer()
+    if plDist != None && akAct.GetDistance(plDist) < 2200.0
         return
     endif
     Form bodyArmor = None
@@ -207,6 +216,11 @@ Function EquipSyndicateActorGear(Actor akAct, int aiOutfitID, int aiBodyArmorID,
 EndFunction
 
 Function RefreshJunktownSyndicateLayout()
+    Actor pJSyn = Game.GetPlayer()
+    WorldSpace caliJSyn = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if pJSyn == None || caliJSyn == None || pJSyn.GetWorldSpace() != caliJSyn
+        return
+    endif
     Actor nealAct = Game.GetFormFromFile(0x000035DC, "Vault13Chronicles.esp") as Actor
     if nealAct != None && !nealAct.IsDead()
         if nealAct.IsDisabled()
@@ -215,8 +229,8 @@ Function RefreshJunktownSyndicateLayout()
         if nealAct.Is3DLoaded() && !nealAct.IsInCombat()
             nealAct.AllowPCDialogue(True)
             nealAct.BlockActivation(False, False)
-            if Math.Abs(nealAct.GetPositionX() - 3340.0) > 450.0 || Math.Abs(nealAct.GetPositionY() - 4320.0) > 450.0
-                nealAct.SetPosition(3340.0, 4320.0, 80.0)
+            if Math.Abs(nealAct.GetPositionX() - 7240.0) > 450.0 || Math.Abs(nealAct.GetPositionY() - 6020.0) > 450.0
+                nealAct.SetPosition(7240.0, 6020.0, 80.0)
                 nealAct.SetAngle(0.0, 0.0, 180.0)
             endif
             EquipSyndicateActorGear(nealAct, 0x00001031, 0x00237685, 0, 0x000A740B)
@@ -231,8 +245,8 @@ Function RefreshJunktownSyndicateLayout()
         if morbidAct.Is3DLoaded() && !morbidAct.IsInCombat()
             morbidAct.AllowPCDialogue(True)
             morbidAct.BlockActivation(False, False)
-            if Math.Abs(morbidAct.GetPositionX() - 3600.0) > 450.0 || Math.Abs(morbidAct.GetPositionY() - 3320.0) > 450.0
-                morbidAct.SetPosition(3600.0, 3320.0, 80.0)
+            if Math.Abs(morbidAct.GetPositionX() - 8120.0) > 450.0 || Math.Abs(morbidAct.GetPositionY() - 4880.0) > 450.0
+                morbidAct.SetPosition(8120.0, 4880.0, 80.0)
                 morbidAct.SetAngle(0.0, 0.0, 0.0)
             endif
             EquipSyndicateActorGear(morbidAct, 0x00001032, 0x001E8CAB, 0, 0x00178B68)
@@ -278,8 +292,8 @@ Function RefreshJunktownSyndicateLayout()
             if !gizmoAct.IsInCombat()
                 gizmoAct.AllowPCDialogue(True)
                 gizmoAct.BlockActivation(False, False)
-                if Math.Abs(gizmoAct.GetPositionX() + 1760.0) > 450.0 || Math.Abs(gizmoAct.GetPositionY() - 1460.0) > 450.0
-                    gizmoAct.SetPosition(-1760.0, 1460.0, 86.0)
+                if Math.Abs(gizmoAct.GetPositionX() + 4160.0) > 450.0 || Math.Abs(gizmoAct.GetPositionY() - 2260.0) > 450.0
+                    gizmoAct.SetPosition(-4160.0, 2260.0, 86.0)
                     gizmoAct.SetAngle(0.0, 0.0, 180.0)
                 endif
                 EquipSyndicateActorGear(gizmoAct, 0x0000102E, 0x001BDE07, 0x001BA8DA, 0x001536F4)
@@ -319,8 +333,8 @@ Function RefreshJunktownSyndicateLayout()
             endif
             if !izoAct.IsInCombat()
                 izoAct.BlockActivation(False, False)
-                if Math.Abs(izoAct.GetPositionX() + 1900.0) > 450.0 || Math.Abs(izoAct.GetPositionY() - 1460.0) > 450.0
-                    izoAct.SetPosition(-1900.0, 1460.0, 86.0)
+                if Math.Abs(izoAct.GetPositionX() + 4300.0) > 450.0 || Math.Abs(izoAct.GetPositionY() - 2260.0) > 450.0
+                    izoAct.SetPosition(-4300.0, 2260.0, 86.0)
                     izoAct.SetAngle(0.0, 0.0, 180.0)
                 endif
                 EquipSyndicateActorGear(izoAct, 0x0000102F, 0x00237679, 0x001C4BE8, 0x000B2D8E)
@@ -356,8 +370,8 @@ Function RefreshJunktownSyndicateLayout()
             if !vinnieAct.IsInCombat()
                 vinnieAct.AllowPCDialogue(True)
                 vinnieAct.BlockActivation(False, False)
-                if Math.Abs(vinnieAct.GetPositionX() + 480.0) > 350.0 || Math.Abs(vinnieAct.GetPositionY() - 780.0) > 350.0
-                    vinnieAct.SetPosition(-480.0, 780.0, 86.0)
+                if Math.Abs(vinnieAct.GetPositionX() + 2880.0) > 350.0 || Math.Abs(vinnieAct.GetPositionY() - 1580.0) > 350.0
+                    vinnieAct.SetPosition(-2880.0, 1580.0, 86.0)
                     vinnieAct.SetAngle(0.0, 0.0, 270.0)
                 endif
                 EquipSyndicateActorGear(vinnieAct, 0x00001030, 0x00237682, 0x0017E91D, 0x000B2D8E)
@@ -369,7 +383,7 @@ Function RefreshJunktownSyndicateLayout()
     endif
 EndFunction
 
-Function BindSyndicateListeners()
+Function BindSyndicateListeners(bool abRefreshLayout = True)
     Actor player = Game.GetPlayer()
     Form tapeBase = Game.GetFormFromFile(0x0000145A, "Vault13Chronicles.esp")
     Form urnBase = Game.GetFormFromFile(0x0000145B, "Vault13Chronicles.esp")
@@ -393,7 +407,9 @@ Function BindSyndicateListeners()
     endif
 
     ForceAllSyndicateAliases()
-    RefreshJunktownSyndicateLayout()
+    if abRefreshLayout
+        RefreshJunktownSyndicateLayout()
+    endif
 
     ObjectReference nealRef = Game.GetFormFromFile(0x000035DC, "Vault13Chronicles.esp") as ObjectReference
     if nealRef != None
@@ -438,24 +454,19 @@ Function BindSyndicateListeners()
         endif
     endif
     WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
-    if player != None && v13Wrld != None && player.GetWorldSpace() == v13Wrld && Self.GetStage() < 40 && !Self.IsCompleted()
+    if abRefreshLayout && player != None && v13Wrld != None && player.GetWorldSpace() == v13Wrld && Self.GetStage() < 40 && !Self.IsCompleted()
         StartTimer(1.5, 95)
     endif
 EndFunction
 
 Function CheckAdvanceToStage30()
     SyncSyndicateProgressFlags()
-    Scene gizmoScn = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
-    Scene vinnieScn = Game.GetFormFromFile(0x00019102, "Vault13Chronicles.esp") as Scene
     if bUrnRecovered
         SetObjectiveCompleted(20, True)
         if Self.IsObjectiveDisplayed(20)
             Self.SetObjectiveDisplayed(20, False, False)
         endif
-        if vinnieScn != None && vinnieScn.IsPlaying()
-            vinnieScn.Stop()
-        endif
-        ClearQuestAlias(9)
+        TryClearVinnieAliasSafely()
     elseif Self.GetStage() >= 20 && Self.GetStage() < 40 && !Self.IsObjectiveDisplayed(20)
         ForceQuestAlias(9, 0x000035EC)
         Self.SetObjectiveDisplayed(20, True, False)
@@ -466,10 +477,7 @@ Function CheckAdvanceToStage30()
         if Self.IsObjectiveDisplayed(21)
             Self.SetObjectiveDisplayed(21, False, False)
         endif
-        if gizmoScn != None && gizmoScn.IsPlaying()
-            gizmoScn.Stop()
-        endif
-        ClearQuestAlias(1)
+        TryClearGizmoAliasSafely()
     elseif Self.GetStage() >= 20 && Self.GetStage() < 40 && !Self.IsObjectiveDisplayed(21)
         ForceQuestAlias(1, 0x000035DE)
         Self.SetObjectiveDisplayed(21, True, False)
@@ -512,7 +520,7 @@ Function NotifyGizmoTapeRecovered()
         endif
     endif
     Game.RewardPlayerXP(250)
-    Debug.Notification("¡Has obtenido la Confesión Grabada de Gizmo! Entrégasela al Capitán Lars o a Neal en Junktown.")
+    Debug.Notification("¡Has obtenido la Confesión Grabada de Gizmo! Devuélvesela al barman Neal en La Espumadera (Junktown).")
     CheckAdvanceToStage30()
 EndFunction
 
@@ -585,7 +593,7 @@ Function DeliverUrnToNeal()
     if Self.IsObjectiveDisplayed(20)
         SetObjectiveCompleted(20, True)
     endif
-    ClearQuestAlias(9)
+    TryClearVinnieAliasSafely()
     Actor player = Game.GetPlayer()
     Form urnBase = Game.GetFormFromFile(0x0000145B, "Vault13Chronicles.esp")
     Form caps = Game.GetFormFromFile(0x0000000F, "Fallout4.esm")
@@ -706,6 +714,7 @@ Event OnStageSet(int auiStageID, int auiItemID)
         ForceQuestAlias(0, 0x000035DC)
         if !Self.IsObjectiveDisplayed(15)
             Self.SetObjectiveDisplayed(15, True, False)
+            Self.SetActive(True)
         endif
     elseif auiStageID == 20
         ForceAllSyndicateAliases()
@@ -713,15 +722,20 @@ Event OnStageSet(int auiStageID, int auiItemID)
         if Self.IsObjectiveDisplayed(15)
             Self.SetObjectiveDisplayed(15, False, False)
         endif
+        bool bNeedTrack20 = False
         if !bUrnRecovered && !Self.IsObjectiveDisplayed(20)
             Self.SetObjectiveDisplayed(20, True, False)
+            bNeedTrack20 = True
         endif
         if !bGizmoResolved && !Self.IsObjectiveDisplayed(21)
             Self.SetObjectiveDisplayed(21, True, False)
+            bNeedTrack20 = True
         endif
-        Quest killianQ20 = Game.GetFormFromFile(0x00010000, "Vault13Chronicles.esp") as Quest
-        if killianQ20 == None || killianQ20.GetStage() != 30
-            Self.SetActive(True)
+        if bNeedTrack20
+            Quest killianQ20 = Game.GetFormFromFile(0x00010000, "Vault13Chronicles.esp") as Quest
+            if killianQ20 == None || killianQ20.GetStage() != 30
+                Self.SetActive(True)
+            endif
         endif
         CheckAdvanceToStage30()
     elseif auiStageID == 22 || auiStageID == 23
@@ -802,23 +816,15 @@ Event OnStageSet(int auiStageID, int auiItemID)
         if Self.IsObjectiveDisplayed(21)
             Self.SetObjectiveDisplayed(21, False, False)
         endif
-        Scene gizmoScn30 = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
-        Scene vinnieScn30 = Game.GetFormFromFile(0x00019102, "Vault13Chronicles.esp") as Scene
-        if gizmoScn30 != None && gizmoScn30.IsPlaying()
-            gizmoScn30.Stop()
-        endif
-        if vinnieScn30 != None && vinnieScn30.IsPlaying()
-            vinnieScn30.Stop()
-        endif
-        ClearQuestAlias(1)
-        ClearQuestAlias(9)
+        TryClearGizmoAliasSafely()
+        TryClearVinnieAliasSafely()
         ForceQuestAlias(0, 0x000035DC)
         if !Self.IsObjectiveDisplayed(30)
             Self.SetObjectiveDisplayed(30, True, False)
-        endif
-        Quest killianQ30 = Game.GetFormFromFile(0x00010000, "Vault13Chronicles.esp") as Quest
-        if killianQ30 == None || killianQ30.GetStage() != 30
-            Self.SetActive(True)
+            Quest killianQ30 = Game.GetFormFromFile(0x00010000, "Vault13Chronicles.esp") as Quest
+            if killianQ30 == None || killianQ30.GetStage() != 30
+                Self.SetActive(True)
+            endif
         endif
     elseif auiStageID == 40
         GrantSyndicateFinalReward()
@@ -827,17 +833,29 @@ Event OnStageSet(int auiStageID, int auiItemID)
 EndEvent
 
 Event OnInit()
-    BindSyndicateListeners()
+    BindSyndicateListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && v13Wrld != None && player.GetWorldSpace() == v13Wrld && Self.GetStage() < 40 && !Self.IsCompleted()
+        StartTimer(2.5, 95)
+    endif
 EndEvent
 
 Event OnQuestInit()
-    BindSyndicateListeners()
+    BindSyndicateListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && v13Wrld != None && player.GetWorldSpace() == v13Wrld && Self.GetStage() < 40 && !Self.IsCompleted()
+        StartTimer(2.5, 95)
+    endif
 EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
-    BindSyndicateListeners()
-    if Self.GetStage() >= 20 && !Self.IsCompleted()
-        CheckAdvanceToStage30()
+    BindSyndicateListeners(False)
+    Actor player = Game.GetPlayer()
+    WorldSpace v13Wrld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    if player != None && v13Wrld != None && player.GetWorldSpace() == v13Wrld && Self.GetStage() < 40 && !Self.IsCompleted()
+        StartTimer(2.5, 95)
     endif
 EndEvent
 
@@ -923,11 +941,10 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
     Form urnBase = Game.GetFormFromFile(0x0000145B, "Vault13Chronicles.esp")
     Topic synGreeting = Game.GetFormFromFile(0x00019001, "Vault13Chronicles.esp") as Topic
 
-    if Self.GetStage() < 20
-        Self.SetStage(20)
-    endif
-
     if coolerRef != None && akSender == coolerRef
+        if Self.GetStage() < 20
+            Self.SetStage(20)
+        endif
         if !bDocMorbidExposed
             NotifyDocMorbidLedgerRecovered()
         endif
@@ -936,14 +953,23 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
 
     if izoAct != None && akSender == (izoAct as ObjectReference)
         if !izoAct.IsDead() && !izoAct.IsInCombat()
+            if Self.GetStage() < 20
+                if Self.GetStage() < 15
+                    Self.SetStage(15)
+                endif
+                ForceQuestAlias(0, 0x000035DC)
+                if !Self.IsObjectiveDisplayed(15)
+                    Self.SetObjectiveDisplayed(15, True, False)
+                    Self.SetActive(True)
+                endif
+                Debug.Notification("Izo: «No buscas trabajo aquí si ni siquiera has hablado con Neal en El Pozo de la Escoria o con el alcalde Darkwater.»")
+                return
+            endif
             Debug.Notification("Izo (Guardaespaldas): «Si tienes negocios en el Casino, habla con el jefe Gizmo. Y mantén las manos lejos del arma.»")
             if gizmoAct != None && !gizmoAct.IsDead() && !bGizmoResolved
                 StopAllSyndicateScenesExcept(1)
-                if synGreeting != None && !gizmoAct.IsTalking()
-                    gizmoAct.Say(synGreeting, None, false, None)
-                endif
                 sceneWaitTicks = 0
-                StartTimer(0.6, 91)
+                StartTimer(1.2, 91)
             endif
         endif
         return
@@ -956,23 +982,32 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
             endif
             return
         endif
+        if Self.GetStage() < 20 && !gizmoAct.IsInCombat()
+            if Self.GetStage() < 15
+                Self.SetStage(15)
+            endif
+            ForceQuestAlias(0, 0x000035DC)
+            if !Self.IsObjectiveDisplayed(15)
+                Self.SetObjectiveDisplayed(15, True, False)
+                Self.SetActive(True)
+            endif
+            Debug.Notification("Gizmo: «¿Un morador husmeando en mi casino? Primero entérate en El Pozo de la Escoria de quién manda en Junktown.»")
+            return
+        endif
         if !bGizmoResolved
             if vinnieAct != None && !bStg24Done && !vinnieAct.IsDead()
                 if vinnieAct.IsInCombat()
                     vinnieAct.StopCombat()
                     vinnieAct.StopCombatAlarm()
                 endif
-                if vinnieAct.Is3DLoaded() && (Math.Abs(vinnieAct.GetPositionX() + 480.0) > 350.0 || Math.Abs(vinnieAct.GetPositionY() - 780.0) > 350.0)
-                    vinnieAct.SetPosition(-480.0, 780.0, 86.0)
+                if vinnieAct.Is3DLoaded() && (Math.Abs(vinnieAct.GetPositionX() + 2880.0) > 350.0 || Math.Abs(vinnieAct.GetPositionY() - 1580.0) > 350.0)
+                    vinnieAct.SetPosition(-2880.0, 1580.0, 86.0)
                     vinnieAct.SetAngle(0.0, 0.0, 270.0)
                 endif
             endif
             StopAllSyndicateScenesExcept(1)
-            if synGreeting != None && !gizmoAct.IsTalking()
-                gizmoAct.Say(synGreeting, None, false, None)
-            endif
             sceneWaitTicks = 0
-            StartTimer(0.6, 91)
+            StartTimer(1.2, 91)
         endif
         return
     endif
@@ -984,18 +1019,30 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
             endif
             return
         endif
+        if Self.GetStage() < 20 && !vinnieAct.IsInCombat()
+            if Self.GetStage() < 15
+                Self.SetStage(15)
+            endif
+            ForceQuestAlias(0, 0x000035DC)
+            if !Self.IsObjectiveDisplayed(15)
+                Self.SetObjectiveDisplayed(15, True, False)
+                Self.SetActive(True)
+            endif
+            Debug.Notification("Vinnie (Skulz): «Los asuntos de El Pozo de la Escoria no te incumben todavía. Ve a hablar primero con Neal en la taberna.»")
+            return
+        endif
         if !bUrnRecovered
             StopAllSyndicateScenesExcept(3)
-            if synGreeting != None && !vinnieAct.IsTalking()
-                vinnieAct.Say(synGreeting, None, false, None)
-            endif
             sceneWaitTicks = 0
-            StartTimer(0.6, 93)
+            StartTimer(1.2, 93)
         endif
         return
     endif
 
     if nealRef != None && akSender == nealRef
+        if Self.GetStage() < 20
+            Self.SetStage(20)
+        endif
         Actor nealAct = nealRef as Actor
         SyncSyndicateProgressFlags()
         if bUrnRecovered && !bUrnReturnedToNeal
@@ -1006,9 +1053,6 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
             if Self.GetStage() < 30
                 Self.SetStage(30)
             endif
-            if synGreeting != None && nealAct != None && !nealAct.IsTalking()
-                nealAct.Say(synGreeting, None, false, None)
-            endif
             GrantSyndicateFinalReward()
             return
         elseif bUrnReturnedToNeal && !bGizmoResolved
@@ -1018,34 +1062,31 @@ Event ObjectReference.OnActivate(ObjectReference akSender, ObjectReference akAct
             ForceQuestAlias(1, 0x000035DE)
             if !Self.IsObjectiveDisplayed(21)
                 Self.SetObjectiveDisplayed(21, True, False)
+                Self.SetActive(True)
             endif
-            Self.SetActive(True)
             Debug.Notification("Neal: «¡Gracias por devolverme la urna! Ahora obtén la Confesión de Gizmo en el Casino del Oeste para acabar con su sindicato.»")
             return
         endif
         StopAllSyndicateScenesExcept(2)
-        if synGreeting != None && nealAct != None && !nealAct.IsTalking()
-            nealAct.Say(synGreeting, None, false, None)
-        endif
         if Self.GetStage() < 30 && !bUrnReturnedToNeal
             sceneWaitTicks = 0
-            StartTimer(0.6, 92)
+            StartTimer(1.2, 92)
         endif
         return
     endif
 
     if morbidRef != None && akSender == morbidRef
+        if Self.GetStage() < 20
+            Self.SetStage(20)
+        endif
         Actor morbidAct = morbidRef as Actor
         if player != None
             player.ResetHealthAndLimbs()
         endif
         StopAllSyndicateScenesExcept(4)
-        if synGreeting != None && morbidAct != None && !morbidAct.IsTalking()
-            morbidAct.Say(synGreeting, None, false, None)
-        endif
         if !bDocMorbidExposed
             sceneWaitTicks = 0
-            StartTimer(0.6, 94)
+            StartTimer(1.2, 94)
         else
             Debug.Notification("Doc Morbid ha curado tus heridas en silencio.")
         endif
@@ -1062,12 +1103,7 @@ Event OnTimer(int aiTimerID)
         Scene gizmoScn = Game.GetFormFromFile(0x00019100, "Vault13Chronicles.esp") as Scene
         Actor gizmoAct = Game.GetFormFromFile(0x000035DE, "Vault13Chronicles.esp") as Actor
         if gizmoScn != None && !bGizmoResolved && gizmoAct != None && !gizmoAct.IsDead()
-            if gizmoScn.IsPlaying()
-                return
-            elseif gizmoAct.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 91)
-            else
+            if !gizmoScn.IsPlaying() && !Utility.IsInMenuMode() && !gizmoAct.IsInDialogueWithPlayer() && !gizmoAct.IsTalking()
                 ForceAllSyndicateAliases()
                 StopAllSyndicateScenesExcept(1)
                 gizmoScn.Start()
@@ -1077,12 +1113,7 @@ Event OnTimer(int aiTimerID)
         Scene nealScn = Game.GetFormFromFile(0x00019101, "Vault13Chronicles.esp") as Scene
         Actor nealAct = Game.GetFormFromFile(0x000035DC, "Vault13Chronicles.esp") as Actor
         if nealScn != None && Self.GetStage() < 30 && nealAct != None
-            if nealScn.IsPlaying()
-                return
-            elseif nealAct.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 92)
-            else
+            if !nealScn.IsPlaying() && !Utility.IsInMenuMode() && !nealAct.IsInDialogueWithPlayer() && !nealAct.IsTalking()
                 ForceAllSyndicateAliases()
                 StopAllSyndicateScenesExcept(2)
                 nealScn.Start()
@@ -1092,12 +1123,7 @@ Event OnTimer(int aiTimerID)
         Scene vinnieScn = Game.GetFormFromFile(0x00019102, "Vault13Chronicles.esp") as Scene
         Actor vinnieAct = Game.GetFormFromFile(0x000035EC, "Vault13Chronicles.esp") as Actor
         if vinnieScn != None && !bUrnRecovered && vinnieAct != None && !vinnieAct.IsDead()
-            if vinnieScn.IsPlaying()
-                return
-            elseif vinnieAct.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 93)
-            else
+            if !vinnieScn.IsPlaying() && !Utility.IsInMenuMode() && !vinnieAct.IsInDialogueWithPlayer() && !vinnieAct.IsTalking()
                 ForceAllSyndicateAliases()
                 StopAllSyndicateScenesExcept(3)
                 vinnieScn.Start()
@@ -1107,12 +1133,7 @@ Event OnTimer(int aiTimerID)
         Scene morbidScn = Game.GetFormFromFile(0x00019103, "Vault13Chronicles.esp") as Scene
         Actor morbidAct = Game.GetFormFromFile(0x000035DD, "Vault13Chronicles.esp") as Actor
         if morbidScn != None && !bDocMorbidExposed && morbidAct != None
-            if morbidScn.IsPlaying()
-                return
-            elseif morbidAct.IsTalking() && sceneWaitTicks < 28
-                sceneWaitTicks += 1
-                StartTimer(0.4, 94)
-            else
+            if !morbidScn.IsPlaying() && !Utility.IsInMenuMode() && !morbidAct.IsInDialogueWithPlayer() && !morbidAct.IsTalking()
                 ForceAllSyndicateAliases()
                 StopAllSyndicateScenesExcept(4)
                 morbidScn.Start()
@@ -1133,5 +1154,12 @@ Event OnTimer(int aiTimerID)
         endif
         RefreshJunktownSyndicateLayout()
         StartTimer(2.0, 95)
+    elseif aiTimerID == 96
+        if bGizmoResolved
+            TryClearGizmoAliasSafely()
+        endif
+        if bUrnRecovered
+            TryClearVinnieAliasSafely()
+        endif
     endif
 EndEvent

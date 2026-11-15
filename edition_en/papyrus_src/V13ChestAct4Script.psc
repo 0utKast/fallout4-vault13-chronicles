@@ -7,6 +7,11 @@ Event OnActivate(ObjectReference akActionRef)
         Form mariposaCodes = Game.GetFormFromFile(0x00001114, "Vault13Chronicles.esp")
         Form report4 = Game.GetFormFromFile(0x00001144, "Vault13Chronicles.esp")
         if q != None && q.GetStage() >= 20 && q.GetStage() < 30
+            V13Act4QuestScript act4S = q as V13Act4QuestScript
+            if act4S != None && !act4S.CanSabotageMariposaVats()
+                act4S.EnforceLieutenantBeforeSabotage()
+                return
+            endif
             if mariposaCodes != None && player.GetItemCount(mariposaCodes) == 0
                 player.AddItem(mariposaCodes, 1, false)
             endif
@@ -14,6 +19,9 @@ Event OnActivate(ObjectReference akActionRef)
                 player.AddItem(report4, 1, false)
             endif
             q.SetStage(30)
+            if act4S != None
+                act4S.ArmMariposaSelfDestructCountdown()
+            endif
         endif
     endif
 EndEvent
