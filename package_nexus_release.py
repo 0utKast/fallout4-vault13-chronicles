@@ -3,7 +3,7 @@
 r"""
 Packages the Vortex / Mod Organizer 2 ready-to-upload Nexus Mods & GitHub release archives
 for 'Vault 13 Chronicles / Crónicas del Refugio 13' (EN + ES) in:
-  c:\proyectos_python\Mods_Fallout\cronicas_refugio_13\release_nexus\
+  c:\proyectos_python\Mods_Fallout\cronicas_refugio_13_v09x\release_nexus\
 """
 
 import os
@@ -21,17 +21,61 @@ MOD_FILES = (
 )
 
 README_EN = """===============================================================================
-VAULT 13 CHRONICLES (2161) - v0.9.0 Public Beta (English Standalone Edition)
+VAULT 13 CHRONICLES (2161) - v0.9.3 Public Beta (English Standalone Edition)
 Chapter 1: The Water Chip — Recreation of Fallout 1 (1997) Inside Fallout 4
 GitHub: https://github.com/0utKast/fallout4-vault13-chronicles
 ===============================================================================
 
-1. OVERVIEW & WHAT IS INCLUDED IN v0.9.0 (CHAPTER 1 COMPLETE)
+1. OVERVIEW & WHAT IS INCLUDED IN v0.9.3 (CHAPTER 1 COMPLETE)
 -------------------------------------------------------------
 Step into the Vault-Tec Mnemosyne Historical Archive in the Commonwealth and
 cross the Temporal Bridge back to December 5, 2161 as the original Vault Dweller.
 
-Included & 100% Playable in v0.9.0 (Chapter 1: The Water Chip):
+What's New in v0.9.3 Hotfix (100% Savegame Compatible with v0.9.0 - v0.9.2):
+- Fixed Completed Quests Marked as "Fail Quest" in ESP / Quest Restart Loops:
+  * Fixed 11 side quests and Special Encounters whose final stage QSDT flag was
+    erroneously set to Fail Quest (0x02) instead of Complete Quest (0x01), which
+    prevented IsCompleted() from becoming True and caused listener loops on
+    save load or cell transitions to restart finished quests at Stage 10 and
+    replay notifications (unrelated to TimeScale settings).
+  * Added retroactive IsStageDone() / completion-proof guards so existing
+    saves from v0.9.0-v0.9.2 cleanly lock finished quests as completed on load
+    without re-firing notifications or duplicating completion rewards.
+- Fixed Pip-Boy Motion Sensor ("Police Box") Notification Spam:
+  * Moved Motion Sensor active/threat tracking into persistent quest variables
+    and silenced idle "No threats" / "Perimeter clear" notifications so radar
+    alerts now trigger ONLY when hostile enemies are actually detected nearby
+    (with a 25-second cooldown unless additional hostiles enter range).
+- Fixed Traders / NPCs Briefly Swimming in Mid-Air on Exterior Cell Load:
+  * Enabled Has Water (0x0002) with safe dry default water height (-10000.0) on
+    all Southern California dry exterior cells instead of empty flags with an
+    uninitialized +3.4e38 water height, preventing persistent caravans/NPCs
+    (such as Crimson Caravan / Water Merchants traders) from evaluating bogus
+    underwater swimming on initial load.
+
+Previous Hotfix v0.9.2:
+- Fixed Human Companion Combat & High-Difficulty / Survival Scaling (Ian & Tycho):
+  * Enabled 1.0x Player Level scaling (PC Level Mult, min level 12), companion
+    perks (Sneak I-IV, Companion Inspirational, Radiation Immunity, Live & Love
+    bonuses, abDogmeatHealthBonus), ranged companion CombatStyle, and high base
+    Health (340+ HP) & Damage/Energy Resistance (95 DR / 85 ER) so Ian and Tycho
+    no longer get one-shotted at fixed Level 2 / 60 HP on Very Hard or Survival.
+  * Retroactive Savegame Upgrade: Existing saves dynamically scale Ian, Tycho,
+    and Dogmeat's Health and Armor Resistance to your current character level.
+  * Fixed Permanent Bleedout Lock on Survival / High Difficulty: Detached custom
+    human companions from vanilla FollowersScript.Companion alias (which caused
+    HC_ManagerScript to lock SetNoBleedoutRecovery(True) without vanilla Stimpak
+    recovery), added automatic post-combat & timed bleedout recovery, and added
+    instant one-press [E]/[A] field revival whenever a companion is downed.
+  * Fixed Independent Target Acquisition & Brave AI (Confidence 3.0): Ian and
+    Tycho now actively scan and engage hostiles even when Dogmeat is not in the
+    party, and automatically keep their signature firearms equipped.
+
+Previous Hotfix v0.9.1:
+- Fixed Shady Sands perimeter walls so neither the player nor NPCs can walk
+  through them (Havok-solid CovWall01/CovWallEndcap meshes + NavMesh cutouts).
+
+Included & 100% Playable in v0.9.3 (Chapter 1: The Water Chip):
 - Custom Southern California (2161) Open Worldspace (64 exterior cells) with a
   calibrated 2048x2048 Pip-Boy World Map, 23 Map Markers, quest tracking & fast travel.
 - Complete Chapter 1 Main Campaign (Acts I & II): Vault 13 (Overseer Jacoren &
@@ -103,18 +147,59 @@ Commonwealth at any time, keeping all unlocked classic weapons and gear.
 """
 
 README_ES = """===============================================================================
-CRONICAS DEL REFUGIO 13 (2161) - v0.9.0 Beta Publica (Edicion en Espanol)
+CRONICAS DEL REFUGIO 13 (2161) - v0.9.3 Beta Publica (Edicion en Espanol)
 Capitulo 1: El Chip de Agua — Recreacion de Fallout 1 (1997) en Fallout 4
 GitHub: https://github.com/0utKast/fallout4-vault13-chronicles
 ===============================================================================
 
-1. DESCRIPCION GENERAL Y CONTENIDO DE v0.9.0 (CAPITULO 1 COMPLETO)
+1. DESCRIPCION GENERAL Y CONTENIDO DE v0.9.3 (CAPITULO 1 COMPLETO)
 ------------------------------------------------------------------
 Adentrate en el Archivo Historico Mnemosyne de Vault-Tec en la Commonwealth y
 cruza la Puerta Temporal hasta el 5 de diciembre de 2161 como el Morador del
 Refugio original.
 
-Incluido y 100% Jugable en v0.9.0 (Capitulo 1: El Chip de Agua):
+Novedades del Parche v0.9.3 (100% Compatible con Partidas de v0.9.0 - v0.9.2):
+- Corregidas Misiones Secundarias Marcadas como Fallo ("Fail Quest") y Bucles de
+  Repeticion de Mensajes:
+  * Corregido el flag QSDT de etapa final en 11 misiones secundarias y
+    Encuentros Especiales (de 0x02 Fail Quest a 0x01 Complete Quest), evitando
+    que quedasen con IsCompleted() falso y se reiniciasen en la etapa 10 al
+    cargar partida o cambiar de celda repitiendo notificaciones (independiente
+    del TimeScale).
+  * Anadidas guardas retroactivas con IsStageDone() y comprobacion de logro
+    para sellar limpiamente las misiones ya terminadas en partidas de v0.9.0 a
+    v0.9.2 sin repetir mensajes ni recompensas.
+- Eliminado el Spam del Sensor de Movimiento Pip-Boy (Cabina de Policia):
+  * Persistido el estado del radar en variables de mision y silenciados los
+    avisos de "Sin amenazas" / "Perimetro despejado"; ahora solo muestra alerta
+    cuando detecta enemigos hostiles cerca (con refresco cada 25 s o si sube
+    el numero de hostiles).
+- Corregida la Animacion Breve de "Nado en el Aire" de Comerciantes al Cargar:
+  * Corregida la cabecera DATA (0x0002) y altura de agua (-10000.0) en las
+    celdas exteriores secas del Sur de California (antes +3.4e38 sin definir),
+    evitando que mercaderes y caravanas naden en el aire al cargar la celda.
+
+Parche Anterior v0.9.2:
+- Corregido el Escalado de Combate y Recuperacion en Dificultad Alta / Supervivencia
+  para Companeros Humanos (Ian y el Ranger Tycho):
+  * Activado escalado 1.0x al nivel del jugador (PC Level Mult, nivel minimo 12),
+    extras oficiales de companero, estilo de combate a distancia, Salud base de
+    340+ PV y Resistencia Balistica/Energetica (95 RD / 85 RE) para evitar que
+    Ian y Tycho caigan de un disparo en Muy Dificil o Supervivencia.
+  * Mejora Retroactiva en Partidas Guardadas: Las partidas ya iniciadas actualizan
+    automaticamente la Salud y Resistencia de Ian, Tycho y Albondiga segun tu nivel.
+  * Eliminado el bloqueo permanente en estado abatido (Bleedout) en Supervivencia:
+    desvinculado el alias vanilla FollowersScript.Companion que activaba
+    SetNoBleedoutRecovery(True), anadida recuperacion automatica tras el combate
+    y reanimacion instantanea pulsando [E]/[A] sobre un companero abatido.
+  * Escaneo autonomo de enemigos con Confianza Valiente (3.0) aunque Albondiga no
+    forme parte del grupo activo, asegurando siempre el equipado de sus armas.
+
+Parche Anterior v0.9.1:
+- Corregidas las murallas perimetrales de Shady Sands con colision Havok solida
+  y recortes de obstaculo en la NavMesh exterior.
+
+Incluido y 100% Jugable en v0.9.3 (Capitulo 1: El Chip de Agua):
 - Mundo Exterior Propio "Sur de California (2161)" (64 celdas exteriores) con
   Mapa Tactico del Pip-Boy 2048x2048 en espanol calibrado 1:1, 23 marcadores de
   mapa, seguimiento completo de misiones y viaje rapido.
@@ -213,8 +298,8 @@ def build_zip(src_dir: str, zip_path: str, readme_name: str, readme_body: str) -
 
 
 def main() -> None:
-    en_zip = os.path.join(RELEASE_DIR, "Vault13Chronicles_EN_v0.9.0_Beta.zip")
-    es_zip = os.path.join(RELEASE_DIR, "CronicasDelRefugio13_ES_v0.9.0_Beta.zip")
+    en_zip = os.path.join(RELEASE_DIR, "Vault13Chronicles_EN_v0.9.3_Beta.zip")
+    es_zip = os.path.join(RELEASE_DIR, "CronicasDelRefugio13_ES_v0.9.3_Beta.zip")
     build_zip(EN_BUILD_DIR, en_zip, "README_EN.txt", README_EN)
     build_zip(ES_BUILD_DIR, es_zip, "LEEME_ES.txt", README_ES)
 

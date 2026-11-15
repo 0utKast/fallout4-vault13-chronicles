@@ -181,6 +181,16 @@ Function SilenceBoneyardActorsExcept(Actor akSpeaker, int aiKeepScene = 0)
 EndFunction
 
 Function SetupBoneyardListeners()
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        SetObjectiveCompleted(20, True)
+        SetObjectiveCompleted(22, True)
+        SetObjectiveCompleted(25, True)
+        SetObjectiveCompleted(30, True)
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+        return
+    endif
     if !Self.IsRunning() && !Self.IsCompleted()
         Self.Start()
     endif

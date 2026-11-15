@@ -500,6 +500,12 @@ PSC_LINE_TRANSLATIONS: dict[str, str] = {
         'Debug.Notification("Neal: \'Thank you for returning the urn! Now get Gizmo\'s Confession at the Westside Casino to bring down his syndicate.\'")',
     'Debug.Notification("Tug ha sucumbido a las heridas del Sanguinario tras entregarte el Holodisco. Investiga a Decker en El Halcón Maltés o informa al Sheriff Greene.")':
         'Debug.Notification("Tug succumbed to his Deathclaw wounds after handing you the Holodisk. Investigate Decker at The Maltese Falcon or report to Sheriff Greene.")',
+    'Debug.Notification("Has reanimado a Albóndiga (2161); vuelve al combate.")':
+        'Debug.Notification("You revived Dogmeat (2161); he is back in the fight.")',
+    'Debug.Notification("Has reanimado a Ian; vuelve a cubrir tu flanco.")':
+        'Debug.Notification("You revived Ian; he is back covering your flank.")',
+    'Debug.Notification("Has reanimado al Ranger Tycho; vuelve a primera línea.")':
+        'Debug.Notification("You revived Ranger Tycho; he is back on the front line.")',
 }
 
 

@@ -7,6 +7,34 @@ bool bNukaCapsStocked = False
 bool bStg20Notified = False
 bool bStg25Notified = False
 bool bMenuJumpBusy = False
+bool bMotionSensorBonusActive = False
+int iLastMotionHostiles = -1
+float fLastMotionAlertTime = -999.0
+
+bool Function HasEncounterCompletionProof(int encType, Actor player)
+    if player == None
+        return False
+    endif
+    int proofFid = 0
+    if encType == 1
+        proofFid = 0x0000114F
+    elseif encType == 2
+        proofFid = 0x00001C80
+    elseif encType == 3
+        proofFid = 0x00001C81
+    elseif encType == 4
+        proofFid = 0x00001C8A
+    elseif encType == 5
+        proofFid = 0x00001C8B
+    elseif encType == 6
+        proofFid = 0x00001C8C
+    endif
+    if proofFid == 0
+        return False
+    endif
+    Form proofForm = Game.GetFormFromFile(proofFid, "Vault13Chronicles.esp")
+    return (proofForm != None && player.GetItemCount(proofForm) > 0)
+EndFunction
 
 int Function GetEncounterType()
     Quest qNuka = Game.GetFormFromFile(0x00016000, "Vault13Chronicles.esp") as Quest
@@ -551,6 +579,31 @@ Function RefreshTardisEncounterLayout()
 EndFunction
 
 Function SetupTardisListeners()
+    int encType = GetEncounterType()
+    Actor player = Game.GetPlayer()
+    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
+    bool inCaliWorld = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
+
+    if Self.IsCompleted() || Self.GetStage() >= 30 || Self.IsStageDone(30) || bRewardGranted || HasEncounterCompletionProof(encType, player)
+        bRewardGranted = True
+        bDematerialized = True
+        CancelTimer(98)
+        SetObjectiveCompleted(20, True)
+        SetObjectiveCompleted(25, True)
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+        if encType == 1 && player != None
+            Form sensorBaseDone = Game.GetFormFromFile(0x00001456, "Vault13Chronicles.esp")
+            if inCaliWorld && sensorBaseDone != None && player.GetItemCount(sensorBaseDone) > 0
+                RegisterForRemoteEvent(player, "OnPlayerLoadGame")
+                RegisterForRemoteEvent(player, "OnLocationChange")
+                StartTimer(6.0, 99)
+            endif
+        endif
+        return
+    endif
+
     if !Self.IsRunning() && !Self.IsCompleted()
         Self.Start()
     endif
@@ -559,11 +612,6 @@ Function SetupTardisListeners()
     endif
     ForceAllTardisAliases()
     RefreshTardisEncounterLayout()
-
-    int encType = GetEncounterType()
-    Actor player = Game.GetPlayer()
-    WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
-    bool inCaliWorld = (player != None && caliWorld != None && player.GetWorldSpace() == caliWorld)
     Self.RemoveAllInventoryEventFilters()
     if encType == 2
         Form manifestBase = Game.GetFormFromFile(0x00001457, "Vault13Chronicles.esp")
@@ -760,23 +808,16 @@ EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
     if GetEncounterType() == 1
+        fLastMotionAlertTime = -999.0
         Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
         if stateHolder != None
             stateHolder.SetValue(Game.GetLuckAV(), 0.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
         endif
     endif
     SetupTardisListeners()
 EndEvent
 
 Event Actor.OnLocationChange(Actor akSender, Location akOldLoc, Location akNewLoc)
-    if GetEncounterType() == 1
-        Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
-        if stateHolder != None
-            stateHolder.SetValue(Game.GetLuckAV(), 0.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
-        endif
-    endif
     SetupTardisListeners()
     Actor player = Game.GetPlayer()
     WorldSpace caliWorld = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
@@ -1225,12 +1266,22 @@ Function RunPipBoyMotionSensorSweep()
     endif
     Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
     ActorValue perAV = Game.GetFormFromFile(0x000002C3, "Fallout4.esm") as ActorValue
+    bool hasLegacyBonus = (stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0)
+    bool bonusActive = bMotionSensorBonusActive || hasLegacyBonus
+    if hasLegacyBonus && !bMotionSensorBonusActive
+        bMotionSensorBonusActive = True
+    endif
     bool hasSensor = (player.GetItemCount(sensorBase) > 0)
     if !hasSensor
-        if stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0
-            stateHolder.SetValue(Game.GetAgilityAV(), 1.0)
-            stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
-            stateHolder.SetValue(Game.GetLuckAV(), 0.0)
+        if bonusActive
+            bMotionSensorBonusActive = False
+            iLastMotionHostiles = -1
+            fLastMotionAlertTime = -999.0
+            if stateHolder != None
+                stateHolder.SetValue(Game.GetAgilityAV(), 1.0)
+                stateHolder.SetValue(Game.GetCharismaAV(), -1.0)
+                stateHolder.SetValue(Game.GetLuckAV(), 0.0)
+            endif
             if perAV != None
                 player.ModValue(perAV, -2.0)
             endif
@@ -1438,41 +1489,44 @@ Function RunPipBoyMotionSensorSweep()
     endif
     float nowTime = Utility.GetCurrentRealTime()
 
-    if stateHolder != None
-        bool firstSweep = (stateHolder.GetValue(Game.GetAgilityAV()) != 13.0)
-        if firstSweep
+    if !bonusActive
+        bMotionSensorBonusActive = True
+        iLastMotionHostiles = hostileCount
+        if stateHolder != None
             stateHolder.SetValue(Game.GetAgilityAV(), 13.0)
             stateHolder.SetValue(Game.GetCharismaAV(), hostileCount as float)
             stateHolder.SetValue(Game.GetLuckAV(), nowTime)
-            if perAV != None
-                player.ModValue(perAV, 2.0)
-            endif
-            if hostileCount > 0
+        endif
+        if perAV != None
+            player.ModValue(perAV, 2.0)
+        endif
+        if hostileCount > 0
+            fLastMotionAlertTime = nowTime
+            Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
+        endif
+    else
+        if stateHolder != None
+            stateHolder.SetValue(Game.GetAgilityAV(), 13.0)
+            stateHolder.SetValue(Game.GetCharismaAV(), hostileCount as float)
+        endif
+        float elapsed = nowTime - fLastMotionAlertTime
+        if elapsed < 0.0 || fLastMotionAlertTime < 0.0
+            elapsed = 999.0
+        endif
+        if hostileCount > 0
+            if iLastMotionHostiles <= 0 || hostileCount > iLastMotionHostiles || elapsed >= 25.0
+                iLastMotionHostiles = hostileCount
+                fLastMotionAlertTime = nowTime
+                if stateHolder != None
+                    stateHolder.SetValue(Game.GetLuckAV(), nowTime)
+                endif
                 Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
-            else
-                Debug.Notification("[Sensor de Movimiento] Radar ultrasónico Pip-Boy 2000 activo (+2 PER). Sin amenazas en un radio de 65 m.")
+            elseif hostileCount < iLastMotionHostiles
+                iLastMotionHostiles = hostileCount
             endif
         else
-            int lastHostiles = stateHolder.GetValue(Game.GetCharismaAV()) as int
-            float lastPing = stateHolder.GetValue(Game.GetLuckAV())
-            float elapsed = nowTime - lastPing
-            if elapsed < 0.0
-                elapsed = 999.0
-            endif
-            if hostileCount > 0
-                if hostileCount != lastHostiles || elapsed >= 8.0
-                    stateHolder.SetValue(Game.GetCharismaAV(), hostileCount as float)
-                    stateHolder.SetValue(Game.GetLuckAV(), nowTime)
-                    Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
-                endif
-            elseif lastHostiles > 0
-                stateHolder.SetValue(Game.GetCharismaAV(), 0.0)
-                stateHolder.SetValue(Game.GetLuckAV(), nowTime)
-                Debug.Notification("[Sensor de Movimiento] Perímetro despejado: sin amenazas hostiles en rango radar.")
-            endif
+            iLastMotionHostiles = 0
         endif
-    elseif hostileCount > 0
-        Debug.Notification("[Sensor de Movimiento] ¡ALERTA RADAR! " + hostileCount + " enemigo(s) hostil(es) detectado(s) a " + minMeters + " m (marcados en rojo).")
     endif
 EndFunction
 
@@ -1486,13 +1540,13 @@ Function TickMotionSensorFromMainLoop()
         return
     endif
     if player.GetItemCount(sensorBase) > 0
-        if Self.GetStage() < 30
+        if Self.GetStage() < 30 && !Self.IsCompleted() && !Self.IsStageDone(30)
             Self.SetStage(30)
         endif
         RunPipBoyMotionSensorSweep()
     else
         Actor stateHolder = Game.GetFormFromFile(0x000035F3, "Vault13Chronicles.esp") as Actor
-        if stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0
+        if bMotionSensorBonusActive || (stateHolder != None && stateHolder.GetValue(Game.GetAgilityAV()) == 13.0)
             RunPipBoyMotionSensorSweep()
         endif
     endif
@@ -1561,7 +1615,7 @@ Event OnTimer(int aiTimerID)
     elseif aiTimerID == 98
         Actor player = Game.GetPlayer()
         WorldSpace v13World = Game.GetFormFromFile(0x00003400, "Vault13Chronicles.esp") as WorldSpace
-        if Self.GetStage() >= 30 || player == None || v13World == None || player.GetWorldSpace() != v13World
+        if Self.IsCompleted() || Self.GetStage() >= 30 || Self.IsStageDone(30) || bRewardGranted || player == None || v13World == None || player.GetWorldSpace() != v13World
             return
         endif
         RefreshTardisEncounterLayout()
@@ -1697,10 +1751,13 @@ Event OnStageSet(int auiStageID, int auiItemID)
             doStage25 = True
         endif
     elseif auiStageID == 30
-        if !bRewardGranted
+        if !bRewardGranted && !Self.IsCompleted() && !HasEncounterCompletionProof(GetEncounterType(), Game.GetPlayer())
             bRewardGranted = True
             bDematerialized = True
             doStage30Reward = True
+        else
+            bRewardGranted = True
+            bDematerialized = True
         endif
     endif
 

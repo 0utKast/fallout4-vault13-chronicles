@@ -233,6 +233,21 @@ Function BindHubListeners()
     ForceAllHubAliases()
     RefreshHubSettlementLayout()
 
+    ObjectReference butchDoneRef = Game.GetFormFromFile(0x000035C8, "Vault13Chronicles.esp") as ObjectReference
+    if butchDoneRef != None
+        EnsureButchVendorReady(butchDoneRef as Actor)
+    endif
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bRewardGranted
+        SetObjectiveCompleted(20, True)
+        SetObjectiveCompleted(22, True)
+        SetObjectiveCompleted(25, True)
+        SetObjectiveCompleted(30, True)
+        if !Self.IsCompleted()
+            Self.CompleteQuest()
+        endif
+        return
+    endif
+
     Actor player = Game.GetPlayer()
     Form deedBase = Game.GetFormFromFile(0x00001452, "Vault13Chronicles.esp")
     Self.RemoveAllInventoryEventFilters()

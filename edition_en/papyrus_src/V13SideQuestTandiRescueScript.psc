@@ -38,6 +38,16 @@ EndFunction
 
 Function SetupTandiRescueListeners()
     ForceAllTandiRescueAliases()
+    If Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || bStg40Done
+        Self.CancelTimer(101)
+        Self.SetObjectiveCompleted(15, True)
+        Self.SetObjectiveCompleted(20, True)
+        Self.SetObjectiveCompleted(30, True)
+        If !Self.IsCompleted()
+            Self.CompleteQuest()
+        EndIf
+        Return
+    EndIf
     Actor player = Game.GetPlayer()
     Form keyForm = Game.GetFormFromFile(0x0001459, "Vault13Chronicles.esp")
     Self.RemoveAllInventoryEventFilters()
@@ -84,7 +94,7 @@ Function SetupTandiRescueListeners()
         Quest shadyQ = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
         Actor aradeshCheck = aradeshRef as Actor
         Actor tandiCheck = tandiRef as Actor
-        if shadyQ != None && shadyQ.GetStage() >= 40 && player != None && (aradeshCheck == None || !aradeshCheck.IsTalking())
+        if shadyQ != None && (shadyQ.IsCompleted() || shadyQ.GetStage() >= 40 || shadyQ.IsStageDone(40)) && player != None && (aradeshCheck == None || !aradeshCheck.IsTalking())
             if player.IsInInterior() || ((aradeshCheck == None || player.GetDistance(aradeshCheck) >= 3200.0) && (tandiCheck == None || player.GetDistance(tandiCheck) >= 2800.0))
                 SetStage(15)
             endif

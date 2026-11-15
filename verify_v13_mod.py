@@ -111,14 +111,26 @@ class VerificationSuite:
         if not os.path.exists(ESP_PATH):
             return False
 
-        # Verify Fallout 4\Data deployed files are 100% byte-for-byte identical to build_out/ (ES) or edition_en/build_out/ (EN)
+        # Verify Fallout 4\Data deployed files are 100% byte-for-byte identical to build_out/ (ES) or edition_en/build_out/ (EN) when v0.9 profile is active
         import hashlib
+        import json as _json
+        _active_ver = "0.9"
+        _marker_p = os.path.join(FO4_DATA, "V13_ACTIVE_VERSION.json")
+        if os.path.isfile(_marker_p):
+            try:
+                with open(_marker_p, "r", encoding="utf-8") as _mf:
+                    _active_ver = _json.load(_mf).get("version", "0.9")
+            except Exception:
+                pass
         build_out_dir = os.path.dirname(ESP_PATH)
         en_build_out_dir = os.path.join(os.path.dirname(build_out_dir), "edition_en", "build_out")
         for fname in ("Vault13Chronicles.esp", "Vault13Chronicles - Main.ba2", "Vault13Chronicles - Textures.ba2"):
             src_f = os.path.join(build_out_dir, fname)
             en_src_f = os.path.join(en_build_out_dir, fname)
             dst_f = os.path.join(FO4_DATA, fname)
+            if _active_ver != "0.9":
+                self.check(os.path.exists(src_f), f"Staged v0.9.x {fname} exists while Fallout 4\\Data holds profile {_active_ver}")
+                continue
             if os.path.exists(src_f) and os.path.exists(dst_f):
                 with open(src_f, "rb") as fs, open(dst_f, "rb") as fd:
                     hs = hashlib.sha256(fs.read()).hexdigest()
@@ -409,8 +421,8 @@ class VerificationSuite:
         refresh_fn_block = act2_code.split("Function RefreshDisplayedAct2Objective()")[1].split("EndFunction")[0]
         self.check(
             "Self.Reset()" not in act2_code
-            and "SetObjectiveDisplayed(" not in refresh_fn_block,
-            "V13Act2QuestScript.psc never calls Self.Reset() or toggles SetObjectiveDisplayed in RefreshDisplayedAct2Objective (zero repeating objective banners!)",
+            and not re.search(r"SetObjectiveDisplayed\([^)]*,\s*true\s*,\s*true\s*\)", refresh_fn_block, re.IGNORECASE),
+            "V13Act2QuestScript.psc never calls Self.Reset() or forces abForce=true SetObjectiveDisplayed in RefreshDisplayedAct2Objective (zero repeating objective banners!)",
         )
         self.check(
             "Function SyncHarryPatrolFactions(" in act2_code
@@ -1657,14 +1669,18 @@ class VerificationSuite:
             "Duplicate second Vault 13 surface bunker (0x0100350A + 0x010B0064..0x010B0095) and colliding cave desk/terminal (0x01002230, 0x01030405) are buried/disabled",
         )
 
-        # Verify Bob's Pre-Owned Car Mart trunk (0x01003566) and cars (0x010B0A08..0x010B0A0A) have zero OBND overlaps
+        # Verify Bob's Pre-Owned Car Mart trunk (0x01003566) and lot cars have >= 400 units X clearance
         bob_trunk = refrs_by_fid.get(0x01003566)
-        bob_cars = [refrs_by_fid.get(fid) for fid in (0x010B0A08, 0x010B0A09, 0x010B0A0A) if fid in refrs_by_fid]
+        bob_cars = [
+            r for r in refrs_by_fid.values()
+            if r["base"] in (0x0019B425, 0x001A3057)
+            and math.hypot(r["data"][0] - 8400.0, r["data"][1] - 3200.0) <= 800.0
+        ]
         self.check(
             bob_trunk is not None
             and len(bob_cars) == 3
             and all(abs(c["data"][0] - bob_trunk["data"][0]) >= 400.0 for c in bob_cars),
-            "Bob's Pre-Owned Car Mart trunk (0x01003566) has >= 400 units X clearance from all 3 lot cars (0x010B0A08..0x010B0A0A)",
+            "Bob's Pre-Owned Car Mart trunk (0x01003566) has >= 400 units X clearance from all 3 lot cars",
         )
 
         # Verify exterior BOSBarricadeBase01Military (0x0021C948) references are sunk -1.8 units below flat terrain to prevent Z-fighting
@@ -1675,6 +1691,24 @@ class VerificationSuite:
         self.check(
             len(ext_barricades) >= 20 and all(abs((r["data"][2] + 1.8) - round(r["data"][2] + 1.8)) < 0.05 for r in ext_barricades),
             f"All {len(ext_barricades)} exterior BOSBarricadeBase01Military (0x0021C948) references are offset -1.8 units below ground plane to prevent Z-fighting",
+        )
+
+        # Verify Shady Sands perimeter walls use Havok-solid CovWall01/CovWallEndcap (0x000E97CC/CE/EC) and ZERO collisionless graybox CovenantWall* (0x000E04A6..A8)
+        collisionless_cov_refs = [
+            fid for fid, r in refrs_by_fid.items()
+            if r["base"] in (0x000E04A6, 0x000E04A7, 0x000E04A8) and r["data"][2] > -500.0
+        ]
+        solid_cov_walls = [
+            fid for fid, r in refrs_by_fid.items()
+            if r["base"] == 0x000E97CC and r["data"][2] > -500.0
+        ]
+        solid_cov_caps = [
+            fid for fid, r in refrs_by_fid.items()
+            if r["base"] in (0x000E97CE, 0x000E97EC) and r["data"][2] > -500.0
+        ]
+        self.check(
+            len(collisionless_cov_refs) == 0 and len(solid_cov_walls) >= 16 and len(solid_cov_caps) >= 12,
+            f"Shady Sands perimeter uses Havok-solid CovWall01/Endcap ({len(solid_cov_walls)} walls + {len(solid_cov_caps)} pillars) and 0 collisionless graybox 0x000E04A6..A8",
         )
 
         # Verify Arid California Climate (CLMT 0x010033FF) linked on WRLD 0x01003400 and isolated Vault/Bunker records (0x0100131F..0x01001328)

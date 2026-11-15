@@ -1227,6 +1227,33 @@ def run_full_qa_audit() -> int:
         if len(occupied_sectors) < 9:
             report.err(f"Sectores del mapa ocupados: {len(occupied_sectors)}/9")
 
+    # 4.6 Check Havok-solid Covenant perimeter walls (0x000E97CC/CE/EC) and zero collisionless graybox statics (0x000E04A6..A8)
+    collisionless_wall_refs: list[int] = []
+    solid_wall_count = 0
+    for r in records[1:]:
+        if r.rtype == "REFR" and (r.flags & 0x0800) == 0:
+            b_fid = 0
+            rz_val = 0.0
+            for st, sv in r.subs:
+                if st == "NAME" and len(sv) == 4:
+                    b_fid = struct.unpack("<I", sv)[0]
+                elif st == "DATA" and len(sv) >= 12:
+                    rz_val = struct.unpack_from("<3f", sv, 0)[2]
+            if rz_val > -500.0:
+                if b_fid in (0x000E04A6, 0x000E04A7, 0x000E04A8):
+                    collisionless_wall_refs.append(r.fid)
+                elif b_fid == 0x000E97CC:
+                    solid_wall_count += 1
+    if not collisionless_wall_refs and solid_wall_count >= 16:
+        report.ok(
+            f"Colisión física Havok de murallas verificada: {solid_wall_count} tramos CovWall01 (0x000E97CC) sólidos y 0 referencias sin colisión (0x000E04A6..A8)."
+        )
+    else:
+        if collisionless_wall_refs:
+            report.err(f"Murallas sin colisión física 0x000E04A6..A8 detectadas: {[hex(x) for x in collisionless_wall_refs[:10]]}")
+        if solid_wall_count < 16:
+            report.err(f"Tramos sólidos CovWall01 insuficientes: {solid_wall_count} (esperados >= 16)")
+
     # ------------------------------------------------------------------
     # MÓDULO 5: TRAZABILIDAD DE ACTIVOS (ESP -> NIF -> BGSM/BGEM -> DDS)
     # ------------------------------------------------------------------

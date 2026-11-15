@@ -32,6 +32,9 @@ bool bCompanionsSuspendedInCommonwealth = False
 int iSavedDogmeatState = 0
 int iSavedIanState = 0
 int iSavedTychoState = 0
+int iDogBleedoutTicks = 0
+int iIanBleedoutTicks = 0
+int iTychoBleedoutTicks = 0
 
 Function ForceQuestAlias(int aiAliasID, int aiFormID)
     ObjectReference targetRef = Game.GetFormFromFile(aiFormID, "Vault13Chronicles.esp") as ObjectReference
@@ -132,7 +135,7 @@ Function EnsureKillianStage30Marker()
     if Self.IsObjectiveDisplayed(30)
         Self.SetObjectiveDisplayed(30, False, False)
     endif
-    Self.SetObjectiveDisplayed(30, True, True)
+    Self.SetObjectiveDisplayed(30, True, False)
     Self.SetActive(True)
 EndFunction
 
@@ -561,6 +564,133 @@ Function RestoreCompanionsOnReturnTo2161()
     endif
 EndFunction
 
+Function EnsureCompanionCombatReady(Actor akComp, Actor akPlayer, int aiWho)
+    if akComp == None || akComp.IsDead()
+        return
+    endif
+    if aiWho >= 1
+        FollowersScript vanillaFollowers = Game.GetFormFromFile(0x000289E4, "Fallout4.esm") as FollowersScript
+        if vanillaFollowers != None && vanillaFollowers.IsCompanion(akComp)
+            vanillaFollowers.ClearCompanion()
+            akComp.IgnoreFriendlyHits(True)
+            akComp.SetPlayerTeammate(True, True, True)
+            akComp.SetCanDoCommand(True)
+            akComp.FollowerFollow()
+            akComp.FollowerSetDistanceNear()
+        endif
+    endif
+    akComp.SetNoBleedoutRecovery(False)
+    akComp.EnableAI(True)
+    if akPlayer != None
+        int pLvl = akPlayer.GetLevel()
+        if pLvl < 12
+            pLvl = 12
+        endif
+        float targetHP = 340.0 + (pLvl as float) * 8.0
+        float targetDR = 95.0 + (pLvl as float) * 1.5
+        float targetER = 85.0 + (pLvl as float) * 1.5
+        if aiWho == 0
+            targetHP = 280.0 + (pLvl as float) * 7.0
+            targetDR = 85.0 + (pLvl as float) * 1.5
+            targetER = 75.0 + (pLvl as float) * 1.5
+        endif
+        ActorValue healthAV = Game.GetFormFromFile(0x000002D4, "Fallout4.esm") as ActorValue
+        if healthAV != None && akComp.GetBaseValue(healthAV) < (targetHP - 5.0)
+            akComp.SetValue(healthAV, targetHP)
+            akComp.RestoreValue(healthAV, 9999.0)
+        endif
+        ActorValue drAV = Game.GetFormFromFile(0x000002E3, "Fallout4.esm") as ActorValue
+        if drAV != None && akComp.GetBaseValue(drAV) < (targetDR - 5.0)
+            akComp.SetValue(drAV, targetDR)
+        endif
+        ActorValue erAV = Game.GetFormFromFile(0x000002EB, "Fallout4.esm") as ActorValue
+        if erAV != None && akComp.GetBaseValue(erAV) < (targetER - 5.0)
+            akComp.SetValue(erAV, targetER)
+        endif
+    endif
+EndFunction
+
+bool Function HandleCompanionBleedoutTick(Actor akComp, Actor akPlayer, int aiWho)
+    if akComp == None || akComp.IsDead()
+        return False
+    endif
+    if !akComp.IsBleedingOut()
+        if aiWho == 0
+            iDogBleedoutTicks = 0
+        elseif aiWho == 1
+            iIanBleedoutTicks = 0
+        else
+            iTychoBleedoutTicks = 0
+        endif
+        return False
+    endif
+    akComp.SetNoBleedoutRecovery(False)
+    if akPlayer == None || !akPlayer.IsInCombat()
+        if aiWho == 0
+            iDogBleedoutTicks = 0
+        elseif aiWho == 1
+            iIanBleedoutTicks = 0
+        else
+            iTychoBleedoutTicks = 0
+        endif
+        akComp.ResetHealthAndLimbs()
+        akComp.EvaluatePackage(True)
+        return False
+    endif
+    int bTicks = 0
+    if aiWho == 0
+        iDogBleedoutTicks += 1
+        bTicks = iDogBleedoutTicks
+    elseif aiWho == 1
+        iIanBleedoutTicks += 1
+        bTicks = iIanBleedoutTicks
+    else
+        iTychoBleedoutTicks += 1
+        bTicks = iTychoBleedoutTicks
+    endif
+    if bTicks >= 8
+        if aiWho == 0
+            iDogBleedoutTicks = 0
+        elseif aiWho == 1
+            iIanBleedoutTicks = 0
+        else
+            iTychoBleedoutTicks = 0
+        endif
+        akComp.ResetHealthAndLimbs()
+        akComp.EvaluatePackage(True)
+        return False
+    endif
+    return True
+EndFunction
+
+Function ReviveBleedingOutCompanion(Actor akComp, Actor akPlayer, int aiWho)
+    if akComp == None
+        return
+    endif
+    Form stim = Game.GetFormFromFile(0x00023736, "Fallout4.esm")
+    if akPlayer != None && stim != None && akPlayer.GetItemCount(stim) > 0
+        akPlayer.RemoveItem(stim, 1, False)
+    endif
+    if aiWho == 0
+        iDogBleedoutTicks = 0
+    elseif aiWho == 1
+        iIanBleedoutTicks = 0
+    else
+        iTychoBleedoutTicks = 0
+    endif
+    akComp.SetNoBleedoutRecovery(False)
+    akComp.ResetHealthAndLimbs()
+    akComp.EvaluatePackage(True)
+    if aiWho == 0
+        PlayDogmeatVocal(akComp, 1)
+        Debug.Notification("Has reanimado a Albóndiga (2161); vuelve al combate.")
+    elseif aiWho == 1
+        Debug.Notification("Has reanimado a Ian; vuelve a cubrir tu flanco.")
+    else
+        Debug.Notification("Has reanimado al Ranger Tycho; vuelve a primera línea.")
+    endif
+EndFunction
+
 Function RefreshIanCompanionGear(Actor akIan)
     if akIan == None || akIan.IsDead()
         return
@@ -568,6 +698,7 @@ Function RefreshIanCompanionGear(Actor akIan)
     if akIan.IsDisabled()
         akIan.EnableNoWait()
     endif
+    EnsureCompanionCombatReady(akIan, Game.GetPlayer(), 1)
     RegisterForRemoteEvent(akIan as ObjectReference, "OnActivate")
     RegisterForRemoteEvent(akIan, "OnCommandModeGiveCommand")
     RegisterForRemoteEvent(akIan, "OnCompanionDismiss")
@@ -583,6 +714,8 @@ Function RefreshIanCompanionGear(Actor akIan)
     if coltPistol != None
         if akIan.GetItemCount(coltPistol) == 0
             akIan.AddItem(coltPistol, 1, True)
+        endif
+        if akIan.GetEquippedWeapon() == None
             akIan.EquipItem(coltPistol, False, True)
         endif
     endif
@@ -599,6 +732,7 @@ Function RefreshTychoCompanionGear(Actor akTycho)
     if akTycho.IsDisabled()
         akTycho.EnableNoWait()
     endif
+    EnsureCompanionCombatReady(akTycho, Game.GetPlayer(), 2)
     RegisterForRemoteEvent(akTycho as ObjectReference, "OnActivate")
     RegisterForRemoteEvent(akTycho, "OnCommandModeGiveCommand")
     RegisterForRemoteEvent(akTycho, "OnCompanionDismiss")
@@ -611,9 +745,13 @@ Function RefreshTychoCompanionGear(Actor akTycho)
     endif
     EquipCustomGear(akTycho, 0x00001022, 0x001153DB, 0, 0x00001315)
     Form cShotgun = Game.GetFormFromFile(0x0014831C, "Fallout4.esm")
-    if cShotgun != None && akTycho.GetItemCount(cShotgun) == 0
-        akTycho.AddItem(cShotgun, 1, True)
-        akTycho.EquipItem(cShotgun, False, True)
+    if cShotgun != None
+        if akTycho.GetItemCount(cShotgun) == 0
+            akTycho.AddItem(cShotgun, 1, True)
+        endif
+        if akTycho.GetEquippedWeapon() == None
+            akTycho.EquipItem(cShotgun, False, True)
+        endif
     endif
     Form shells = Game.GetFormFromFile(0x0001F673, "Fallout4.esm")
     if shells != None && akTycho.GetItemCount(shells) < 50
@@ -636,19 +774,23 @@ Function SetIanFollowMode(Actor akIan)
     if akIan.IsDisabled()
         akIan.EnableNoWait()
     endif
+    Actor player = Game.GetPlayer()
     IanState = 1
-    ConfigureDogmeatCombatAI(akIan, 2.0)
+    iIanBleedoutTicks = 0
+    EnsureCompanionCombatReady(akIan, player, 1)
+    if akIan.IsBleedingOut()
+        akIan.ResetHealthAndLimbs()
+    endif
+    ConfigureDogmeatCombatAI(akIan, 3.0)
     akIan.SetCommandState(False)
     akIan.AllowPCDialogue(False)
     akIan.IgnoreFriendlyHits(True)
     akIan.SetPlayerTeammate(True, True, True)
     akIan.SetCanDoCommand(True)
-    akIan.AllowCompanion(True, True)
     akIan.FollowerFollow()
     akIan.FollowerSetDistanceNear()
     akIan.EvaluatePackage(True)
     RefreshIanCompanionGear(akIan)
-    Actor player = Game.GetPlayer()
     if player != None
         RegisterForRemoteEvent(player, "OnCombatStateChanged")
         RegisterForHitEvent(player)
@@ -669,19 +811,23 @@ Function SetTychoFollowMode(Actor akTycho)
     if akTycho.IsDisabled()
         akTycho.EnableNoWait()
     endif
+    Actor player = Game.GetPlayer()
     TychoState = 1
-    ConfigureDogmeatCombatAI(akTycho, 2.0)
+    iTychoBleedoutTicks = 0
+    EnsureCompanionCombatReady(akTycho, player, 2)
+    if akTycho.IsBleedingOut()
+        akTycho.ResetHealthAndLimbs()
+    endif
+    ConfigureDogmeatCombatAI(akTycho, 3.0)
     akTycho.SetCommandState(False)
     akTycho.AllowPCDialogue(False)
     akTycho.IgnoreFriendlyHits(True)
     akTycho.SetPlayerTeammate(True, True, True)
     akTycho.SetCanDoCommand(True)
-    akTycho.AllowCompanion(True, True)
     akTycho.FollowerFollow()
     akTycho.FollowerSetDistanceNear()
     akTycho.EvaluatePackage(True)
     RefreshTychoCompanionGear(akTycho)
-    Actor player = Game.GetPlayer()
     if player != None
         RegisterForRemoteEvent(player, "OnCombatStateChanged")
         RegisterForHitEvent(player)
@@ -716,7 +862,7 @@ Function RefreshDogmeatAppearance(Actor akDog)
     if akDog.IsDisabled()
         akDog.EnableNoWait()
     endif
-    akDog.EnableAI(True)
+    EnsureCompanionCombatReady(akDog, Game.GetPlayer(), 0)
     RegisterForRemoteEvent(akDog as ObjectReference, "OnActivate")
     RegisterForRemoteEvent(akDog, "OnCommandModeGiveCommand")
     RegisterForRemoteEvent(akDog, "OnCompanionDismiss")
@@ -776,25 +922,30 @@ Function ConfigureDogmeatCombatAI(Actor akDog, float afConfidence)
         return
     endif
     akDog.EnableAI(True)
+    akDog.SetNoBleedoutRecovery(False)
+    float targetConf = afConfidence
+    if targetConf < 3.5
+        targetConf = 3.0
+    endif
     ActorValue aggressionAV = Game.GetFormFromFile(0x000002BC, "Fallout4.esm") as ActorValue
     ActorValue confidenceAV = Game.GetFormFromFile(0x000002BD, "Fallout4.esm") as ActorValue
     ActorValue assistanceAV = Game.GetFormFromFile(0x000002BF, "Fallout4.esm") as ActorValue
     ActorValue followerStateAV = Game.GetFormFromFile(0x00000344, "Fallout4.esm") as ActorValue
     if aggressionAV != None
-        if afConfidence >= 3.0
+        if targetConf >= 3.5
             akDog.SetValue(aggressionAV, 0.0)
         else
             akDog.SetValue(aggressionAV, 1.0)
         endif
     endif
     if confidenceAV != None
-        akDog.SetValue(confidenceAV, afConfidence)
+        akDog.SetValue(confidenceAV, targetConf)
     endif
     if assistanceAV != None
         akDog.SetValue(assistanceAV, 2.0)
     endif
     if followerStateAV != None
-        if afConfidence < 2.5
+        if targetConf < 3.5
             akDog.SetValue(followerStateAV, 1.0)
         else
             akDog.SetValue(followerStateAV, 2.0)
@@ -806,9 +957,9 @@ Function ConfigureDogmeatCombatAI(Actor akDog, float afConfidence)
     endif
     Faction curCompFaction = Game.GetFormFromFile(0x00023C01, "Fallout4.esm") as Faction
     if curCompFaction != None
-        if afConfidence < 2.5 && !akDog.IsInFaction(curCompFaction)
+        if targetConf < 3.5 && !akDog.IsInFaction(curCompFaction)
             akDog.AddToFaction(curCompFaction)
-        elseif afConfidence >= 2.5 && akDog.IsInFaction(curCompFaction)
+        elseif targetConf >= 3.5 && akDog.IsInFaction(curCompFaction)
             akDog.RemoveFromFaction(curCompFaction)
         endif
     endif
@@ -1207,6 +1358,7 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
     if akComp.IsDisabled()
         akComp.EnableNoWait()
     endif
+    EnsureCompanionCombatReady(akComp, akPlayer, aiWho)
     ActorValue followerStateAV = Game.GetFormFromFile(0x00000344, "Fallout4.esm") as ActorValue
     if followerStateAV != None
         float fsVal = akComp.GetValue(followerStateAV)
@@ -1226,7 +1378,7 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
             else
                 TychoState = 1
             endif
-            ConfigureDogmeatCombatAI(akComp, 2.0)
+            ConfigureDogmeatCombatAI(akComp, 3.0)
             akComp.EvaluatePackage(True)
         endif
     endif
@@ -1236,15 +1388,36 @@ Function UpdateHumanCompanionTick(Actor akComp, Actor akPlayer, int aiWho)
         endif
         return
     endif
+    if HandleCompanionBleedoutTick(akComp, akPlayer, aiWho)
+        return
+    endif
     if !akComp.IsDoingFavor()
         akComp.AllowPCDialogue(False)
+    endif
+    if akComp.GetEquippedWeapon() == None
+        if aiWho == 1
+            RefreshIanCompanionGear(akComp)
+        else
+            RefreshTychoCompanionGear(akComp)
+        endif
     endif
     if cState == 2
         return
     endif
-    if rDogCombatTarget != None && !rDogCombatTarget.IsDead() && !akComp.IsDead()
-        if akComp.GetCombatTarget() != rDogCombatTarget
-            akComp.StartCombat(rDogCombatTarget)
+    ConfigureDogmeatCombatAI(akComp, 3.0)
+    Actor compEnemy = rDogCombatTarget
+    if compEnemy == None || compEnemy.IsDead() || compEnemy.IsDisabled()
+        compEnemy = FindDogmeatCombatTarget(akPlayer, akComp)
+        if compEnemy != None
+            rDogCombatTarget = compEnemy
+        endif
+    endif
+    if compEnemy != None && !compEnemy.IsDead() && !akComp.IsDead()
+        if akComp.GetCombatTarget() != compEnemy
+            akComp.StartCombat(compEnemy)
+        endif
+        if akComp.GetDistance(compEnemy) > 950.0
+            StepDogmeatInExterior(akComp, compEnemy as ObjectReference, 620.0, 290.0)
         endif
         return
     endif
@@ -1354,6 +1527,12 @@ Function CheckDogmeatProximity()
         return
     endif
 
+    EnsureCompanionCombatReady(activeDog, player, 0)
+    if HandleCompanionBleedoutTick(activeDog, player, 0)
+        StartTimer(1.2, 98)
+        return
+    endif
+
     if (redBandana != None && activeDog.IsEquipped(redBandana)) || (medArmor != None && !activeDog.IsEquipped(medArmor)) || (reinfCollar != None && !activeDog.IsEquipped(reinfCollar))
         RefreshDogmeatAppearance(activeDog)
     endif
@@ -1458,6 +1637,11 @@ Function HandleDogmeatActivation(Actor akDog)
             Debug.Notification("¡Albóndiga (2161) se ha unido a ti! Pulsa [E]/[A] sobre él cuando quieras para darle órdenes o despedirlo.")
         endif
     else
+        if akDog.IsBleedingOut()
+            ReviveBleedingOutCompanion(akDog, Game.GetPlayer(), 0)
+            bDogmeatMenuBusy = False
+            return
+        endif
         Message cmdMsg = Game.GetFormFromFile(0x000011C1, "Vault13Chronicles.esp") as Message
         int cChoice = 0
         if cmdMsg != None
@@ -1546,6 +1730,11 @@ Function HandleIanActivation(Actor akIan)
             Debug.Notification("Ian: «Fui escolta de las caravanas del Eje hasta que los Khans me hirieron. Junktown queda al sur y el Eje más allá.»")
         endif
     else
+        if akIan.IsBleedingOut()
+            ReviveBleedingOutCompanion(akIan, player, 1)
+            bDogmeatMenuBusy = False
+            return
+        endif
         Message cmdMsg = Game.GetFormFromFile(0x000011C3, "Vault13Chronicles.esp") as Message
         int cChoice = 6
         if cmdMsg != None
@@ -1623,6 +1812,11 @@ Function HandleTychoActivation(Actor akTycho)
             endif
         endif
     else
+        if akTycho.IsBleedingOut()
+            ReviveBleedingOutCompanion(akTycho, Game.GetPlayer(), 2)
+            bDogmeatMenuBusy = False
+            return
+        endif
         Message cmdMsg = Game.GetFormFromFile(0x000011C5, "Vault13Chronicles.esp") as Message
         int cChoice = 6
         if cmdMsg != None

@@ -46,6 +46,14 @@ Function SyncSyndicateProgressFlags()
             bUrnRecovered = True
         endif
     endif
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || Self.GetStage() >= 30 || Self.IsStageDone(30)
+        bUrnRecovered = True
+        bGizmoResolved = True
+    endif
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40)
+        bUrnReturnedToNeal = True
+        bFinalRewardGranted = True
+    endif
     if bUrnReturnedToNeal
         bUrnRecovered = True
     endif
@@ -79,10 +87,14 @@ EndFunction
 
 Function ForceAllSyndicateAliases()
     SyncSyndicateProgressFlags()
-    if Self.IsCompleted() || Self.GetStage() >= 40 || (bFinalRewardGranted && bUrnReturnedToNeal)
-        if Self.GetStage() < 40
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || (bFinalRewardGranted && bUrnReturnedToNeal)
+        if Self.GetStage() < 40 && !Self.IsStageDone(40)
             Self.SetStage(40)
         endif
+        SetObjectiveCompleted(15, True)
+        SetObjectiveCompleted(20, True)
+        SetObjectiveCompleted(21, True)
+        SetObjectiveCompleted(30, True)
         FinalizeSyndicateQuestCleanly()
         return
     endif

@@ -48,6 +48,16 @@ Function SyncHubSyndicateProgressFlags()
             bDeckerResolved = True
         endif
     endif
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40) || Self.GetStage() >= 30 || Self.IsStageDone(30)
+        bMutantHoloRecovered = True
+        bDeckerResolved = True
+    endif
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40)
+        bItemsDeliveredToSheriff = True
+    endif
+    if Self.IsStageDone(25)
+        bMutantHoloRecovered = True
+    endif
     if bItemsDeliveredToSheriff
         bMutantHoloRecovered = True
         bDeckerResolved = True
@@ -82,7 +92,11 @@ EndFunction
 
 Function ForceAllHubSyndicateAliases()
     SyncHubSyndicateProgressFlags()
-    if Self.IsCompleted() || Self.GetStage() >= 40
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40)
+        SetObjectiveCompleted(15, True)
+        SetObjectiveCompleted(20, True)
+        SetObjectiveCompleted(21, True)
+        SetObjectiveCompleted(30, True)
         FinalizeHubSyndicateQuestCleanly()
         return
     endif
@@ -371,7 +385,11 @@ Function CheckHubSyndicateCompletionState()
         return
     endif
     SyncHubSyndicateProgressFlags()
-    if Self.IsCompleted() || Self.GetStage() >= 40
+    if Self.IsCompleted() || Self.GetStage() >= 40 || Self.IsStageDone(40)
+        SetObjectiveCompleted(15, True)
+        SetObjectiveCompleted(20, True)
+        SetObjectiveCompleted(21, True)
+        SetObjectiveCompleted(30, True)
         FinalizeHubSyndicateQuestCleanly()
         return
     endif

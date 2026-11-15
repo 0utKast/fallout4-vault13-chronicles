@@ -13923,13 +13923,43 @@ def build_esp_file(
         wrote_cnto = False
         wrote_full = False
         wrote_shrt = False
+        wrote_znam = False
         fmrs_idx = 0
         inv_items = rdef["inv_items"]
+        is_comp = bool(rdef.get("is_companion"))
+        companion_human_spells = [
+            0x001C63E2,  # AbMagLiveLoveCompanionPerks (Live & Love companion bonuses)
+            0x00215CD3,  # abDogmeatHealthBonus (level-scaled companion health bonus)
+        ]
+        companion_human_perks = [
+            0x0004C935,  # Sneak01
+            0x000B9882,  # Sneak02
+            0x000B9883,  # Sneak03
+            0x000B9884,  # Sneak04
+            0x001D33D7,  # CompanionInspirational
+            0x000A2775,  # ImmuneToRadiation
+        ]
+        companion_human_prps = [
+            (0x000002C2, 7.0),    # Strength
+            (0x000002C3, 9.0),    # Perception (high firearm accuracy)
+            (0x000002C4, 8.0),    # Endurance
+            (0x000002C5, 6.0),    # Charisma
+            (0x000002C6, 6.0),    # Intelligence
+            (0x000002C7, 9.0),    # Agility
+            (0x000002C8, 7.0),    # Luck
+            (0x000002D4, 340.0),  # Health (base 340 HP + 1.0x PC Level Mult scaling)
+            (0x000002D5, 110.0),  # ActionPoints
+            (0x000002DC, 200.0),  # CarryWeight
+            (0x000002E3, 95.0),   # DamageResist (survives Very Hard / Survival firefights)
+            (0x000002EB, 85.0),   # EnergyResist
+        ]
         while sp_n + 6 <= len(raw_npc):
             st_n = raw_npc[sp_n : sp_n + 4].decode("ascii", "ignore")
             ss_n = struct.unpack_from("<H", raw_npc, sp_n + 4)[0]
             sv_n = bytearray(raw_npc[sp_n + 6 : sp_n + 6 + ss_n])
             if st_n in ("EDID", "VMAD", "CRIF", "TPLT", "TPTA"):
+                pass
+            elif is_comp and st_n in ("SPCT", "SPLO", "PRKZ", "PRKR", "ZNAM"):
                 pass
             elif st_n == "OBND":
                 out.extend(pack_sub("OBND", b"\xea\xff\xf2\xff\x00\x00\x16\x00\x0e\x00\x80\x00"))
@@ -13938,6 +13968,15 @@ def build_esp_file(
                 if rdef.get("killable"):
                     fl_n |= 0x00000820  # Unique (0x20) + Protected (0x800, only player can kill)
                     fl_n &= ~0x0000000A # Clear Essential (0x02) and Respawn (0x08)
+                elif is_comp:
+                    fl_n |= 0x000008A2  # Essential (0x02) + Unique (0x20) + PC Level Mult (0x80) + Protected (0x800)
+                    fl_n &= ~0x00000008
+                    if ss_n >= 16:
+                        struct.pack_into("<H", sv_n, 4, 0)     # xpOffset
+                        struct.pack_into("<H", sv_n, 6, 1000)  # 1.00x Player Level scaling
+                        struct.pack_into("<H", sv_n, 8, 12)    # calcMin = 12
+                        struct.pack_into("<H", sv_n, 10, 0)    # calcMax = 0 (uncapped)
+                        struct.pack_into("<H", sv_n, 12, 35)   # bleedoutOverride = 35
                 else:
                     fl_n |= 0x00000822  # Essential (0x02) + Unique (0x20) + Protected (0x800)
                     fl_n &= ~0x00000008
@@ -13949,15 +13988,30 @@ def build_esp_file(
                 if not wrote_snam:
                     if not rdef.get("killable"):
                         out.extend(pack_sub("SNAM", struct.pack("<IB", 0x0001C21C, 0)))
-                    if rdef.get("is_companion"):
+                    if is_comp:
                         out.extend(pack_sub("SNAM", struct.pack("<IB", 0x00106C30, 0)))
                     if rdef.get("vendor_fact_fid"):
                         out.extend(pack_sub("SNAM", struct.pack("<IB", rdef["vendor_fact_fid"], 0)))
                     wrote_snam = True
+            elif st_n == "RNAM" and is_comp:
+                out.extend(raw_npc[sp_n : sp_n + 6 + ss_n])
+                out.extend(pack_sub("SPCT", struct.pack("<I", len(companion_human_spells))))
+                for sp_fid in companion_human_spells:
+                    out.extend(pack_sub("SPLO", struct.pack("<I", sp_fid)))
+                out.extend(pack_sub("PRKZ", struct.pack("<I", len(companion_human_perks))))
+                for pk_fid in companion_human_perks:
+                    out.extend(pack_sub("PRKR", struct.pack("<IB", pk_fid, 1)))
+            elif st_n == "PRPS" and is_comp:
+                out.extend(
+                    pack_sub(
+                        "PRPS",
+                        b"".join(struct.pack("<If", av_fid, av_val) for av_fid, av_val in companion_human_prps),
+                    )
+                )
             elif st_n == "AIDT" and ss_n >= 4:
-                if rdef.get("is_companion") and ss_n >= 6:
+                if is_comp and ss_n >= 6:
                     sv_n[0] = 0    # Unaggressive until recruited
-                    sv_n[1] = 4    # Foolhardy (Confidence = 4.0 >= 2.5 -> holds home position until recruited)
+                    sv_n[1] = 4    # Foolhardy (Confidence = 4.0 >= 3.5 -> holds home position until recruited)
                     sv_n[2] = 100  # Energy
                     sv_n[3] = 0    # Morality
                     sv_n[5] = 2    # Assistance = Helps Friends and Allies
@@ -13975,8 +14029,8 @@ def build_esp_file(
                 out.extend(pack_sub("VTCK", struct.pack("<I", rdef["vtyp_fid"])))
             elif st_n == "PKID":
                 if not wrote_pkid:
-                    if rdef.get("is_companion"):
-                        out.extend(pack_sub("PKID", struct.pack("<I", 0x01001055)))  # V13DogmeatCloseFollowPack (active when Confidence < 2.5)
+                    if is_comp:
+                        out.extend(pack_sub("PKID", struct.pack("<I", 0x01001055)))  # V13DogmeatCloseFollowPack (active when Confidence < 3.5)
                         out.extend(pack_sub("PKID", struct.pack("<I", 0x01001050)))  # V13StayAtCurrentPositionPack (default hold position)
                         out.extend(pack_sub("PKID", struct.pack("<I", 0x0023EC8E)))
                     elif rdef.get("custom_pkids"):
@@ -14010,8 +14064,14 @@ def build_esp_file(
                     out.extend(pack_zstr("SHRT", rdef["shrt"]))
                     wrote_shrt = True
                 out.extend(raw_npc[sp_n : sp_n + 6 + ss_n])
-            elif st_n == "HCLF" and rdef.get("hcl_fid"):
-                out.extend(pack_sub("HCLF", struct.pack("<I", rdef["hcl_fid"])))
+            elif st_n == "HCLF":
+                if rdef.get("hcl_fid"):
+                    out.extend(pack_sub("HCLF", struct.pack("<I", rdef["hcl_fid"])))
+                else:
+                    out.extend(raw_npc[sp_n : sp_n + 6 + ss_n])
+                if is_comp and not wrote_znam:
+                    out.extend(pack_sub("ZNAM", struct.pack("<I", 0x00237E27)))  # csCompPiper ranged companion CombatStyle
+                    wrote_znam = True
             elif st_n == "DOFT":
                 out.extend(pack_sub("DOFT", struct.pack("<I", rdef["outfit_fid"])))
             elif st_n == "MWGT" and rdef.get("mwgt"):
@@ -14169,8 +14229,14 @@ def build_esp_file(
             elif st_a == "ACBS" and ss_a >= 4:
                 fl_a = struct.unpack_from("<I", sv_a, 0)[0]
                 if is_companion_dog:
-                    fl_a |= 0x00000822  # Essential (0x02) + Unique (0x20) + Protected (0x800)
+                    fl_a |= 0x000008A2  # Essential (0x02) + Unique (0x20) + PC Level Mult (0x80) + Protected (0x800)
                     fl_a &= ~0x00000008
+                    if ss_a >= 16:
+                        struct.pack_into("<H", sv_a, 4, 0)     # xpOffset
+                        struct.pack_into("<H", sv_a, 6, 1000)  # 1.00x Player Level scaling
+                        struct.pack_into("<H", sv_a, 8, 12)    # calcMin = 12
+                        struct.pack_into("<H", sv_a, 10, 0)    # calcMax = 0 (uncapped)
+                        struct.pack_into("<H", sv_a, 12, 35)   # bleedoutOverride = 35
                 else:
                     fl_a |= 0x00000020
                     fl_a &= ~0x0000080A
@@ -15520,9 +15586,9 @@ def build_esp_file(
             pass
         elif st_pf == "PSDT":
             pack_dog_follow_subs.extend(raw_follow_pack[sp_pf : sp_pf + 6 + ss_pf])
-            # Only follow player when Confidence < 2.5 (set to 2.0 when DogmeatState == 1; 4.0 when unrecruited/dismissed/waiting)
+            # Only follow player when Confidence < 3.5 (set to 3.0 Brave when following; 4.0 Foolhardy when unrecruited/dismissed/waiting)
             pack_dog_follow_subs.extend(
-                pack_sub("CTDA", make_ctda_subject_getvalue(0x80, 0x000002BD, 2.5))
+                pack_sub("CTDA", make_ctda_subject_getvalue(0x80, 0x000002BD, 3.5))
             )
         elif st_pf == "ANAM":
             anam_idx += 1
@@ -17068,7 +17134,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "Aradesh y toda la comunidad de Shady Sands —Tandi, el capitán Seth, el Dr. Razlo, Jarvis y el pistolero Ian— me han expresado su eterna gratitud y entregado 500 chapas, munición y suministros. Shady Sands prosperará libre de los mutascorpiones hasta convertirse algún día en la semilla de la República de Nueva California.",
             ),
         ],
@@ -17180,7 +17246,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "Irwin ha recuperado su granja y, cumpliendo su palabra, me ha entregado su legendaria Pistola del calibre .223 ('Esa Arma' / .223 Pistol), munición y 600 chapas junto con el agradecimiento de Butch Harris y el viejo Harold.",
             ),
         ],
@@ -17236,7 +17302,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "La exploradora Diana y Gwen me han agradecido haber destruido el campamento de esclavistas Khans del norte, entregándome 550 chapas, granadas de fragmentación, munición y suministros.",
             ),
         ],
@@ -17291,7 +17357,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "Cabbot y el Paladín Talus me han proclamado Iniciado Honorario de la Hermandad del Acero en Lost Hills, entregándome un Rifle Láser Wattz 2000, células de fusión y 700 chapas.",
             ),
         ],
@@ -17346,7 +17412,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "Gabriel, el maestro armero Smitty y Nicole me han entregado el legendario Rifle de Plasma Turbo Winchester P94, cartuchos de plasma y 800 chapas por liberar El Boneyard de la Madre Sanguinario.",
             ),
         ],
@@ -17644,7 +17710,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "Aradesh y Tandi me han agradecido profundamente haber frustrado el secuestro de los Khans, entregándome 600 chapas (más el reembolso íntegro si pagué el rescate), suministros médicos, munición y una lanza de combate.",
             ),
         ],
@@ -17729,7 +17795,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "He devuelto la urna con las cenizas de su esposa a Neal en La Espumadera y he entregado la confesión grabada que desmantela por completo el sindicato de Gizmo y Los Cráneos en Ciudad Chatarra, recibiendo 650 chapas, munición y suministros.",
             ),
         ],
@@ -17805,7 +17871,7 @@ def build_esp_file(
             ),
             (
                 40,
-                2,
+                1,
                 "He entregado al Sheriff Justin Greene el Holodisco de Transmisiones Mutantes y el Libro Mayor de Decker, resolviendo el misterio de las Caravanas Desaparecidas y clausurando el sindicato criminal de El Halcón Maltés a cambio de 700 chapas y suministros.",
             ),
         ],
@@ -17863,7 +17929,7 @@ def build_esp_file(
             ),
             (
                 30,
-                2,
+                1,
                 "He examinado la Huella Gigante de Godzilla y he recuperado el dispositivo experimental RobCo Stealth Boy 3001 (junto con dos Chicos Sigilosos operativos y suministros) del viajero aplastado en el desierto.",
             ),
         ]:
@@ -17939,7 +18005,7 @@ def build_esp_file(
             ),
             (
                 30,
-                2,
+                1,
                 "He inspeccionado el Concesionario de Coches Usados de Bob y he recuperado la legendaria carabina de edición limitada Red Ryder LE BB Gun junto con su munición de precisión.",
             ),
         ]:
@@ -18009,7 +18075,7 @@ def build_esp_file(
             ),
             (
                 30,
-                2,
+                1,
                 "He compartido el fuego con Patrick el Celta y he escuchado con respeto la antigua balada gaélica de «Na Fianna», recibiendo su Medallón Celta, el pergamino con la balada y un aumento permanente de +1 punto de Carisma.",
             ),
         ],
@@ -18606,7 +18672,7 @@ def build_esp_file(
             0x01002035,
             pack_sub("VMAD", build_simple_vmad("V13TermMnemosyneScript"))
             + pack_sub("NAME", struct.pack("<I", 0x01001130))
-            + pack_sub("DATA", struct.pack("<6f", -335.0, -1012.0, 0.0, 0.0, 0.0, 2.99159)),
+            + pack_sub("DATA", struct.pack("<6f", -322.0, -1011.5, 0.0, 0.0, 0.0, 2.99159)),
             flags=0x00000400,
         )
     )
@@ -18720,7 +18786,7 @@ def build_esp_file(
         temp_start_fid=0x01090000,
         custom_temp_props=[
             (0x01001140, (-282.0, -1004.0, 56.8, 0.0, 0.0, 2.99), 1.25),
-            (0x00068D11, (-297.2, -1052.3, 132.0, 0.0, 0.0, 6.13), None),
+            (0x0000003B, (-297.2, -1052.3, 132.0, 0.0, 0.0, 6.13), None),
             (0x001E5FA9, (-552.0, -904.0, 56.1, 0.0, 0.0, 6.03), None),
             (0x00056723, (-510.0, -908.0, 82.0, 0.0, 0.0, 0.0), None),
             (0x0020F1CC, (-385.0, -650.0, 0.0, 0.0, 0.0, 6.13), None),
@@ -22338,6 +22404,9 @@ def build_esp_file(
         0x0000466D: (-115.0, 115.0, -220.0, 115.0),   # BldgMetal2Story1x1ComA
         0x000DBCEF: (-165.0, 165.0, -175.0, 155.0),   # GSChurch01
         0x00237CA7: (-490.0, 500.0, -795.0, 1240.0),  # BldChurch01Open02
+        0x000E97CC: (-258.0, 258.0, -44.0, 44.0),     # CovWall01 (Havok-solid Covenant perimeter wall)
+        0x000E97EC: (-44.0, 44.0, -44.0, 44.0),       # CovWallEndcap02 (Havok-solid Covenant corner pillar)
+        0x0021C948: (-112.0, 112.0, -40.0, 40.0),     # BOSBarricadeBase01Military (corral & barricade fences)
     }
     _solid_building_navm_cut_boxes: list[tuple[float, float, float, float]] = []
 
@@ -22884,7 +22953,7 @@ def build_esp_file(
     add_ext_scenery_ref(0x000560DC, 2400.0, 9600.0, 340.0, 0.0, 0.0, 0.0)
     add_ext_scenery_ref(0x001932C9, 2220.0, 9280.0, 160.0, 0.0, 0.0, 0.0)           # Torre y Pozo de Agua Comunal
     add_ext_scenery_ref(0x0022DC2C, 2140.0, 9220.0, 160.0, 0.0, 0.0, 0.0)           # Bomba de Riego de los Huertos
-    add_ext_scenery_ref(0x001AE17A, 1280.0, 9780.0, 160.0, 0.0, 0.0, 1.570796)      # Torre de Vigilancia Oeste de Seth
+    add_ext_scenery_ref(0x001AE17A, 1280.0, 10180.0, 160.0, 0.0, 0.0, 1.570796)     # Torre de Vigilancia Oeste de Seth (despejada entre Puesto Oeste y Cabaña NO)
     # Huerto Agrícola de Shady Sands (SW quadrant of town — single raised plot at Z=168.0 + 24 crop plants, preserving exact 30 REFR FormIDs)
     first_farm_plot = True
     for fx_plot in (1680.0, 1880.0, 2080.0):
@@ -22906,44 +22975,45 @@ def build_esp_file(
     for fy_corral in (8860.0, 9060.0):
         add_ext_scenery_ref(0x0021C948, 2620.0, fy_corral, 160.0, 0.0, 0.0, 1.570796) # Valla Oeste del Corral
         add_ext_scenery_ref(0x0021C948, 3160.0, fy_corral, 160.0, 0.0, 0.0, 4.712389) # Valla Este del Corral
-    # Casas de Adobe (Stucco) y Comercios de Shady Sands (elevadas +28 uds sobre el suelo para evitar Z-fighting)
+    # Casas de Adobe (Stucco) y Comercios de Shady Sands (elevadas +28 uds sobre el suelo para evitar Z-fighting y despejadas de la muralla)
     add_furnished_wasteland_cabin(1750.0, 10220.0, 160.0, rz=4.712389)              # Cabaña de Colonos NO (dentro de las murallas)
-    add_ext_scenery_ref(0x000E6939, 3950.0, 8950.0, 188.0, 0.0, 0.0, 0.0)           # CovenantHouse01 (Casa de Adobe Este exterior)
-    add_ext_scenery_ref(0x000E693A, 750.0, 10150.0, 188.0, 0.0, 0.0, 3.141593)      # CovenantHouse02 (Casa de Adobe Oeste exterior)
-    add_furnished_roadside_diner(550.0, 9050.0, 160.0, rz=1.570796)                 # Diner de Caravanas SO (exterior)
-    add_furnished_super_duper_mart(3750.0, 10150.0, 160.0, rz=0.0)                  # Almacén Comunal NE (exterior)
-    # Muralla Perimetral Completa de Adobe de Shady Sands (X en [1240..3560], Y en [8620..10580])
-    # 1. Muralla Oeste (X = 1240.0, rz = 0.0) con Puerta Oeste abierta (Y = 9516..9780) frente al Puesto de Seth
-    for wy_wall in (8876.0, 9260.0, 10036.0, 10324.0):
-        add_ext_scenery_ref(0x000E04A6, 1240.0, wy_wall, 160.0, 0.0, 0.0, 0.0)
-    add_ext_scenery_ref(0x000E04A8, 1240.0, 9516.0, 160.0, 0.0, 0.0, 0.0)           # Jamba Sur Puerta Oeste
-    add_ext_scenery_ref(0x000E04A8, 1240.0, 9780.0, 160.0, 0.0, 0.0, 3.141593)      # Jamba Norte Puerta Oeste
-    # 2. Muralla Este (X = 3560.0, rz = 3.141593) con Puerta Este abierta (Y = 9516..9780)
-    for ey_wall in (8876.0, 9260.0, 10036.0, 10324.0):
-        add_ext_scenery_ref(0x000E04A6, 3560.0, ey_wall, 160.0, 0.0, 0.0, 3.141593)
-    add_ext_scenery_ref(0x000E04A8, 3560.0, 9516.0, 160.0, 0.0, 0.0, 0.0)           # Jamba Sur Puerta Este
-    add_ext_scenery_ref(0x000E04A8, 3560.0, 9780.0, 160.0, 0.0, 0.0, 3.141593)      # Jamba Norte Puerta Este
-    # 3. Muralla Sur (Y = 8620.0, rz = 1.570796) con Puerta Sur de Caravanas abierta (X = 2260..2540)
-    for sx_wall in (1496.0, 2004.0, 2796.0, 3304.0):
-        add_ext_scenery_ref(0x000E04A6, sx_wall, 8620.0, 160.0, 0.0, 0.0, 1.570796)
-    add_ext_scenery_ref(0x000E04A8, 2260.0, 8620.0, 160.0, 0.0, 0.0, 1.570796)      # Jamba Oeste Puerta Sur
-    add_ext_scenery_ref(0x000E04A8, 2540.0, 8620.0, 160.0, 0.0, 0.0, 4.712389)      # Jamba Este Puerta Sur
-    # 4. Muralla Norte (Y = 10580.0, rz = 4.712389) con Puerta Norte abierta (X = 2260..2540)
-    for nx_wall in (1496.0, 2004.0, 2796.0, 3304.0):
-        add_ext_scenery_ref(0x000E04A6, nx_wall, 10580.0, 160.0, 0.0, 0.0, 4.712389)
-    add_ext_scenery_ref(0x000E04A8, 2260.0, 10580.0, 160.0, 0.0, 0.0, 1.570796)     # Jamba Oeste Puerta Norte
-    add_ext_scenery_ref(0x000E04A8, 2540.0, 10580.0, 160.0, 0.0, 0.0, 4.712389)     # Jamba Este Puerta Norte
-    # 5. Pilares de Esquina de la Muralla de Adobe (4 esquinas del poblado)
-    add_ext_scenery_ref(0x000E04A7, 1240.0, 8620.0, 160.0, 0.0, 0.0, 0.0)
-    add_ext_scenery_ref(0x000E04A7, 3560.0, 8620.0, 160.0, 0.0, 0.0, 4.712389)
-    add_ext_scenery_ref(0x000E04A7, 1240.0, 10580.0, 160.0, 0.0, 0.0, 1.570796)
-    add_ext_scenery_ref(0x000E04A7, 3560.0, 10580.0, 160.0, 0.0, 0.0, 3.141593)
+    add_ext_scenery_ref(0x000E6939, 4040.0, 8950.0, 188.0, 0.0, 0.0, 0.0)           # CovenantHouse01 (Casa de Adobe Este extramuros)
+    add_ext_scenery_ref(0x000E693A, 700.0, 10150.0, 188.0, 0.0, 0.0, 3.141593)      # CovenantHouse02 (Casa de Adobe Oeste extramuros)
+    add_furnished_roadside_diner(460.0, 9050.0, 160.0, rz=1.570796)                 # Diner de Caravanas SO (extramuros)
+    add_furnished_super_duper_mart(4040.0, 10150.0, 160.0, rz=0.0)                  # Almacén Comunal NE (extramuros)
+    # Muralla Perimetral Completa con Colisión Havok Sólida (CovWall01 0x000E97CC, X en [1120..3680], Y en [8580..10760])
+    # Conserva exactamente las mismas 44 llamadas add_ext_scenery_ref para mantener 100% idénticos todos los FormIDs REFR en partidas guardadas.
+    # 1. Muralla Oeste (X = 1120.0, rz = 1.570796) con Puerta Oeste abierta (Y = 9490..9750) frente al Puesto de Seth
+    for wy_wall in (8836.0, 9234.0, 10006.0, 10504.0):
+        add_ext_scenery_ref(0x000E97CC, 1120.0, wy_wall, 160.0, 0.0, 0.0, 1.570796)
+    add_ext_scenery_ref(0x000E97CE, 1120.0, 9490.0, 160.0, 0.0, 0.0, 1.570796)      # Jamba Sur Puerta Oeste
+    add_ext_scenery_ref(0x000E97CE, 1120.0, 9750.0, 160.0, 0.0, 0.0, 4.712389)      # Jamba Norte Puerta Oeste
+    # 2. Muralla Este (X = 3680.0, rz = 4.712389) con Puerta Este abierta (Y = 9490..9750)
+    for ey_wall in (8836.0, 9234.0, 10006.0, 10504.0):
+        add_ext_scenery_ref(0x000E97CC, 3680.0, ey_wall, 160.0, 0.0, 0.0, 4.712389)
+    add_ext_scenery_ref(0x000E97CE, 3680.0, 9490.0, 160.0, 0.0, 0.0, 1.570796)      # Jamba Sur Puerta Este
+    add_ext_scenery_ref(0x000E97CE, 3680.0, 9750.0, 160.0, 0.0, 0.0, 4.712389)      # Jamba Norte Puerta Este
+    # 3. Muralla Sur (Y = 8580.0, rz = 0.0) con Puerta Sur de Caravanas abierta (X = 2136..2664)
+    for sx_wall in (1376.0, 1880.0, 2920.0, 3424.0):
+        add_ext_scenery_ref(0x000E97CC, sx_wall, 8580.0, 160.0, 0.0, 0.0, 0.0)
+    add_ext_scenery_ref(0x000E97CE, 2136.0, 8580.0, 160.0, 0.0, 0.0, 0.0)           # Jamba Oeste Puerta Sur
+    add_ext_scenery_ref(0x000E97CE, 2664.0, 8580.0, 160.0, 0.0, 0.0, 3.141593)      # Jamba Este Puerta Sur
+    # 4. Muralla Norte (Y = 10760.0, rz = 3.141593) con Puerta Norte abierta (X = 2136..2664)
+    for nx_wall in (1376.0, 1880.0, 2920.0, 3424.0):
+        add_ext_scenery_ref(0x000E97CC, nx_wall, 10760.0, 160.0, 0.0, 0.0, 3.141593)
+    add_ext_scenery_ref(0x000E97CE, 2136.0, 10760.0, 160.0, 0.0, 0.0, 0.0)          # Jamba Oeste Puerta Norte
+    add_ext_scenery_ref(0x000E97CE, 2664.0, 10760.0, 160.0, 0.0, 0.0, 3.141593)     # Jamba Este Puerta Norte
+    # 5. Pilares Sólidos de Esquina de la Muralla (CovWallEndcap02 0x000E97EC en las 4 esquinas del poblado)
+    add_ext_scenery_ref(0x000E97EC, 1120.0, 8580.0, 160.0, 0.0, 0.0, 0.0)
+    add_ext_scenery_ref(0x000E97EC, 3680.0, 8580.0, 160.0, 0.0, 0.0, 4.712389)
+    add_ext_scenery_ref(0x000E97EC, 1120.0, 10760.0, 160.0, 0.0, 0.0, 1.570796)
+    add_ext_scenery_ref(0x000E97EC, 3680.0, 10760.0, 160.0, 0.0, 0.0, 3.141593)
     # 6. Antorchas / Bidones de Fuego en las Puertas de la Muralla
     for gx_torch, gy_torch in (
-        (2180.0, 10620.0), (2620.0, 10620.0),  # Puerta Norte
-        (2180.0, 8580.0), (2620.0, 8580.0),    # Puerta Sur
-        (1190.0, 9480.0), (1190.0, 9820.0),    # Puerta Oeste
-        (3610.0, 9480.0), (3610.0, 9820.0),    # Puerta Este
+        (2070.0, 10810.0), (2730.0, 10810.0),  # Puerta Norte
+        (2070.0, 8530.0), (2730.0, 8530.0),    # Puerta Sur
+        (1070.0, 9440.0), (1070.0, 9800.0),    # Puerta Oeste
+        (3730.0, 9440.0), (3730.0, 9800.0),    # Puerta Este
     ):
         add_ext_scenery_ref(0x00048281, gx_torch, gy_torch, 160.0, 0.0, 0.0, 0.0)
         add_ext_scenery_ref(0x0008ADFA, gx_torch, gy_torch, 258.0, 0.0, 0.0, 0.0)
@@ -23770,11 +23840,22 @@ def build_esp_file(
     _NAVM_VERTS = _NAVM_GRID + 1
     _NAVM_STEP = 4096.0 / _NAVM_GRID  # 256.0 units per quad
 
+    _shady_sands_open_gate_points = [
+        # Puerta Sur (X = 2400.0, Y = 8580.0)
+        (2400.0, 8450.0), (2400.0, 8580.0), (2400.0, 8710.0),
+        # Puerta Norte (X = 2400.0, Y = 10760.0)
+        (2400.0, 10630.0), (2400.0, 10760.0), (2400.0, 10890.0),
+        # Puerta Oeste (X = 1120.0, Y = 9620.0)
+        (990.0, 9620.0), (1120.0, 9620.0), (1250.0, 9620.0),
+        # Puerta Este (X = 3680.0, Y = 9620.0)
+        (3550.0, 9620.0), (3680.0, 9620.0), (3810.0, 9620.0),
+    ]
     _protected_navm_quads: set[tuple[int, int, int, int]] = set()
     for _px, _py in (
         [(ecx, ecy) for _, _, (ecx, ecy), _ in v13_exterior_creatures]
         + [(sax, say) for _, _, (sax, say, _), _ in shady_sands_pers_actors]
         + [(ftx, fty) for _, (ftx, fty, _, _, _, _) in v13_surface_ft_markers]
+        + _shady_sands_open_gate_points
     ):
         _pcx = max(-4, min(3, int(math.floor(_px / 4096.0))))
         _pcy = max(-4, min(3, int(math.floor(_py / 4096.0))))
@@ -23995,8 +24076,8 @@ def build_esp_file(
             land_rec, min_cell_z = build_california_land_record(land_fid, cx, cy)
             navm_rec = build_california_navm_record(navm_fid, cx, cy)
             has_ocean_water = min_cell_z < -20.0
-            cell_data_flags = 0x0002 if has_ocean_water else 0x0000
-            cell_xclw = struct.pack("<f", -20.0) if has_ocean_water else struct.pack("<I", 0x7F7FFFFF)
+            cell_data_flags = 0x0002
+            cell_xclw = struct.pack("<f", -20.0) if has_ocean_water else struct.pack("<f", -10000.0)
 
             # Assign specific LCTN FormID to cells containing major locations
             if cx == -1 and cy == 3:
@@ -25620,7 +25701,19 @@ def main() -> None:
         except OSError:
             pass
 
-    if INSTALL_TO_FO4_DATA and "--no-install" not in sys.argv and not en_already_installed:
+    v100_active_in_data = False
+    marker_json_path = os.path.join(FO4_DATA_DIR, "V13_ACTIVE_VERSION.json")
+    if os.path.isfile(marker_json_path) and "--force-install" not in sys.argv:
+        try:
+            with open(marker_json_path, "r", encoding="utf-8") as _mf:
+                if json.load(_mf).get("version") == "1.0":
+                    v100_active_in_data = True
+        except Exception:
+            pass
+
+    if v100_active_in_data:
+        print("  [Notice] Perfil v1.0-dev activo en Fallout 4\\Data — compilado v0.9.x en build_out/ sin sobreescribir v1.0 (usa 'python ..\\switch_v13_version.py 0.9' para activar v0.9.x).")
+    elif INSTALL_TO_FO4_DATA and "--no-install" not in sys.argv and not en_already_installed:
         locked_pairs = []
         for src_f, dst_name in [
             (staged_esp, ESP_NAME),

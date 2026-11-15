@@ -308,7 +308,9 @@ Function SyncRadioEnvironment()
 
     Quest kShadyQ = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
     if kShadyQ != None && !kShadyQ.IsCompleted()
-        if !kShadyQ.IsRunning()
+        if kShadyQ.GetStage() >= 40 || kShadyQ.IsStageDone(40)
+            kShadyQ.CompleteQuest()
+        elseif !kShadyQ.IsRunning()
             kShadyQ.Start()
             if kShadyQ.GetStage() < 10
                 kShadyQ.SetStage(10)

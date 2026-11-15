@@ -3358,10 +3358,10 @@ Function BindRadioQuestActive()
     endif
     Quest shadyQ = Game.GetFormFromFile(0x00009500, "Vault13Chronicles.esp") as Quest
     if shadyQ != None
-        if !shadyQ.IsRunning() && !shadyQ.IsCompleted()
+        if !shadyQ.IsRunning() && !shadyQ.IsCompleted() && shadyQ.GetStage() < 40 && !shadyQ.IsStageDone(40)
             shadyQ.Start()
         endif
-        if shadyQ.GetStage() < 10
+        if shadyQ.GetStage() < 10 && !shadyQ.IsCompleted() && !shadyQ.IsStageDone(40)
             shadyQ.SetStage(10)
         endif
         V13SideQuestShadySandsScript shadyS = shadyQ as V13SideQuestShadySandsScript
@@ -3379,10 +3379,10 @@ Function BindRadioQuestActive()
     endif
     Quest tardisQ = Game.GetFormFromFile(0x00015000, "Vault13Chronicles.esp") as Quest
     if tardisQ != None
-        if !tardisQ.IsRunning() && !tardisQ.IsCompleted()
+        if !tardisQ.IsRunning() && !tardisQ.IsCompleted() && tardisQ.GetStage() < 30 && !tardisQ.IsStageDone(30)
             tardisQ.Start()
         endif
-        if tardisQ.GetStage() < 10
+        if tardisQ.GetStage() < 10 && !tardisQ.IsCompleted() && !tardisQ.IsStageDone(30)
             tardisQ.SetStage(10)
         endif
         V13SideQuestTardisScript tardisS = tardisQ as V13SideQuestTardisScript
@@ -3392,10 +3392,10 @@ Function BindRadioQuestActive()
     endif
     Quest nukaQ = Game.GetFormFromFile(0x00016000, "Vault13Chronicles.esp") as Quest
     if nukaQ != None
-        if !nukaQ.IsRunning() && !nukaQ.IsCompleted()
+        if !nukaQ.IsRunning() && !nukaQ.IsCompleted() && nukaQ.GetStage() < 30 && !nukaQ.IsStageDone(30)
             nukaQ.Start()
         endif
-        if nukaQ.GetStage() < 10
+        if nukaQ.GetStage() < 10 && !nukaQ.IsCompleted() && !nukaQ.IsStageDone(30)
             nukaQ.SetStage(10)
         endif
         V13SideQuestTardisScript nukaS = nukaQ as V13SideQuestTardisScript
@@ -3405,10 +3405,10 @@ Function BindRadioQuestActive()
     endif
     Quest alienQ = Game.GetFormFromFile(0x00017000, "Vault13Chronicles.esp") as Quest
     if alienQ != None
-        if !alienQ.IsRunning() && !alienQ.IsCompleted()
+        if !alienQ.IsRunning() && !alienQ.IsCompleted() && alienQ.GetStage() < 30 && !alienQ.IsStageDone(30)
             alienQ.Start()
         endif
-        if alienQ.GetStage() < 10
+        if alienQ.GetStage() < 10 && !alienQ.IsCompleted() && !alienQ.IsStageDone(30)
             alienQ.SetStage(10)
         endif
         V13SideQuestTardisScript alienS = alienQ as V13SideQuestTardisScript
@@ -3418,10 +3418,10 @@ Function BindRadioQuestActive()
     endif
     Quest gfQ = Game.GetFormFromFile(0x0001B000, "Vault13Chronicles.esp") as Quest
     if gfQ != None
-        if !gfQ.IsRunning() && !gfQ.IsCompleted()
+        if !gfQ.IsRunning() && !gfQ.IsCompleted() && gfQ.GetStage() < 30 && !gfQ.IsStageDone(30)
             gfQ.Start()
         endif
-        if gfQ.GetStage() < 10
+        if gfQ.GetStage() < 10 && !gfQ.IsCompleted() && !gfQ.IsStageDone(30)
             gfQ.SetStage(10)
         endif
         V13SideQuestTardisScript gfS = gfQ as V13SideQuestTardisScript
@@ -3431,10 +3431,10 @@ Function BindRadioQuestActive()
     endif
     Quest bmQ = Game.GetFormFromFile(0x0001C000, "Vault13Chronicles.esp") as Quest
     if bmQ != None
-        if !bmQ.IsRunning() && !bmQ.IsCompleted()
+        if !bmQ.IsRunning() && !bmQ.IsCompleted() && bmQ.GetStage() < 30 && !bmQ.IsStageDone(30)
             bmQ.Start()
         endif
-        if bmQ.GetStage() < 10
+        if bmQ.GetStage() < 10 && !bmQ.IsCompleted() && !bmQ.IsStageDone(30)
             bmQ.SetStage(10)
         endif
         V13SideQuestTardisScript bmS = bmQ as V13SideQuestTardisScript
@@ -3444,10 +3444,10 @@ Function BindRadioQuestActive()
     endif
     Quest pcQ = Game.GetFormFromFile(0x0001D000, "Vault13Chronicles.esp") as Quest
     if pcQ != None
-        if !pcQ.IsRunning() && !pcQ.IsCompleted()
+        if !pcQ.IsRunning() && !pcQ.IsCompleted() && pcQ.GetStage() < 30 && !pcQ.IsStageDone(30)
             pcQ.Start()
         endif
-        if pcQ.GetStage() < 10
+        if pcQ.GetStage() < 10 && !pcQ.IsCompleted() && !pcQ.IsStageDone(30)
             pcQ.SetStage(10)
         endif
         V13SideQuestTardisScript pcS = pcQ as V13SideQuestTardisScript
@@ -3457,7 +3457,7 @@ Function BindRadioQuestActive()
     endif
     Quest tandiQ = Game.GetFormFromFile(0x00018000, "Vault13Chronicles.esp") as Quest
     if tandiQ != None
-        if !tandiQ.IsRunning() && !tandiQ.IsCompleted()
+        if !tandiQ.IsRunning() && !tandiQ.IsCompleted() && tandiQ.GetStage() < 40 && !tandiQ.IsStageDone(40)
             tandiQ.Start()
         endif
         V13SideQuestTandiRescueScript tandiS = tandiQ as V13SideQuestTandiRescueScript
